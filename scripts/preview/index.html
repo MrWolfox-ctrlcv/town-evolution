@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>Town Evolution · Cocos runtime preview</title>
+    <style>
+      html,
+      body,
+      #GameDiv {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #e9eadf;
+      }
+      #Cocos3dGameContainer {
+        width: 100%;
+        height: 100%;
+      }
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="GameDiv">
+      <div id="Cocos3dGameContainer"><canvas id="GameCanvas" tabindex="0"></canvas></div>
+    </div>
+    <script src="system.js"></script>
+    <script type="systemjs-importmap">
+      { "imports": { "cc": "./engine/cc.js" } }
+    </script>
+    <script>
+      System.import('./app.js').catch((e) => {
+        console.error(e);
+        document.body.insertAdjacentHTML('beforeend', '<pre>' + e.stack + '</pre>');
+      });
+    </script>
+  </body>
+</html>
