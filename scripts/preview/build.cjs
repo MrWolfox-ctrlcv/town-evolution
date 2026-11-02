@@ -5,6 +5,7 @@ const { execFileSync } = require('node:child_process');
 const engine = path.resolve(process.env.COCOS_ENGINE || 'temp/cocos-engine');
 const out = path.resolve(process.env.PREVIEW_OUT || 'build/preview');
 const dependency = (name) => require(path.join(engine, 'node_modules', name));
+const cli = path.resolve(process.env.COCOS_CLI || 'temp/cocos-cli');
 const revision = '411f98df047c25902f93440d4b22925c2fb65461';
 
 async function main() {
@@ -48,7 +49,7 @@ async function main() {
     format: 'esm',
     target: 'es2022',
     external: ['cc'],
-    alias: { 'cocos-preview-effects': path.join(engine, 'tests/fixtures/builtin-effects.ts') },
+    plugins: [require('./effects.cjs')(engine, cli)],
     tsconfigRaw: {
       compilerOptions: { experimentalDecorators: true, useDefineForClassFields: false },
     },
@@ -62,6 +63,7 @@ async function main() {
     path.join(engine, 'node_modules/systemjs/dist/system.js'),
     path.join(out, 'system.js'),
   );
+  fs.copyFileSync(path.join(cli, 'LICENSE'), path.join(out, 'COCOS-CLI-LICENSE.txt'));
   fs.copyFileSync(path.join(engine, 'LICENSE.md'), path.join(out, 'COCOS-LICENSE.md'));
   fs.cpSync(path.join(engine, 'licenses'), path.join(out, 'third-party-licenses'), {
     recursive: true,

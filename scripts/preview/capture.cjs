@@ -32,9 +32,15 @@ const server = http.createServer((req, res) => {
 async function capture(browser, width, height, name) {
   const page = await browser.newPage({ viewport: { width, height } });
   const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('pageerror', (error) => {
+    errors.push(error.message);
+    console.error(error.stack);
+  });
   page.on('console', (message) => {
-    if (message.type() === 'error') errors.push(message.text());
+    if (message.type() === 'error') {
+      errors.push(message.text());
+      console.error(message.text());
+    }
   });
   try {
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
