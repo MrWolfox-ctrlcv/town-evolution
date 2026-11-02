@@ -6,7 +6,7 @@ import type { KeyValueStorage } from '../domain/storage';
 export class GameSession {
   state: GameState;
   mode: 'normal' | 'recovered' | 'corrupt' = 'normal';
-  message = '点选菜地开始种植，收获后交订单赚取建设资金。';
+  message = '欢迎来到小镇 · 从一块菜地开始';
   constructor(
     private readonly storage: KeyValueStorage,
     private readonly now: () => number,
