@@ -1,0 +1,52 @@
+name: Actual Cocos browser preview
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['assets/**', 'scripts/preview/**', '.github/workflows/preview.yml']
+permissions:
+  contents: read
+jobs:
+  screenshot:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    env:
+      COCOS_ENGINE: ${{ github.workspace }}/temp/cocos-engine
+      PREVIEW_OUT: ${{ github.workspace }}/build/preview
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch pinned official Cocos 3.8.8 engine
+        run: |
+          git clone --depth 1 --branch v3.8.8 https://github.com/cocos/cocos-engine.git "$COCOS_ENGINE"
+          test "$(git -C "$COCOS_ENGINE" rev-parse HEAD)" = 411f98df047c25902f93440d4b22925c2fb65461
+      - name: Install isolated build tools
+        run: |
+          cd "$COCOS_ENGINE"
+          # Upstream lock contains unavailable npmmirror binary artifact URLs.
+          mv package-lock.json package-lock.upstream.json
+          npm install --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org
+          npm install --no-save --ignore-scripts --no-audit --no-fund esbuild@0.28.2 systemjs@6.15.1 playwright@1.56.1 pngjs@7.0.0
+          npx playwright install --with-deps chromium
+      - name: Install Chinese UI fonts
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+      - name: Build actual engine and project scripts
+        run: node scripts/preview/build.cjs
+      - name: Render actual game at desktop and mobile sizes
+        run: node scripts/preview/capture.cjs
+      - name: Preserve screenshots and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocos-runtime-evidence
+          path: build/screenshots
+          if-no-files-found: warn
+      - name: Preserve standalone preview with license notices
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocos-standalone-preview
+          path: build/preview
+          if-no-files-found: warn
