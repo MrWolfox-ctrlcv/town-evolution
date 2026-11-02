@@ -1,0 +1,10 @@
+node_modules
+.domain-build
+library
+temp
+local
+build
+profiles
+assets/scenes
+*.meta
+package-lock.json

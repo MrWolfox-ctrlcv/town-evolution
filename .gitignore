@@ -1,0 +1,15 @@
+node_modules/
+.domain-build/
+.npm-cache/
+library/
+temp/
+local/
+build/
+profiles/
+*.log
+*.keystore
+*.jks
+.env
+.env.*
+!.env.example
+.DS_Store

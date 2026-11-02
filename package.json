@@ -1,0 +1,25 @@
+{
+  "name": "town-evolution",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cocos Creator and TypeScript modular-building town MVP",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.domain.json --noEmit",
+    "build:domain": "tsc -p tsconfig.domain.json",
+    "test": "npm run build:domain && node --test tests/*.test.cjs",
+    "check": "npm run format:check && npm run typecheck && npm run typecheck:cocos && npm test && node scripts/check-project.cjs && node scripts/check-architecture.cjs",
+    "demo:domain": "npm run build:domain && node scripts/demo-domain.cjs",
+    "typecheck:cocos": "tsc -p tsconfig.cocos-check.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@cocos/creator-types": "3.8.8",
+    "prettier": "3.6.2",
+    "typescript": "5.9.3"
+  },
+  "creator": {
+    "version": "3.8.8"
+  },
+  "uuid": "1327f15b-eabf-4b07-9067-99b1b1e634c8"
+}
