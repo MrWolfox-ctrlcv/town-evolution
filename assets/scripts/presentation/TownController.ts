@@ -83,13 +83,14 @@ export class TownController {
   }
   private refresh(models = false): void {
     const state = this.session.state;
-    this.hud.render({
-      summary: `小镇进化 · 金币 ${state.coins}\n蔬菜 ${state.inventory.vegetable} · 冷藏菜 ${state.inventory.chilledVegetable}\n仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
+    const layoutChanged = this.hud.render({
+      summary: `小镇进化 · 金币 ${state.coins}\n蔬菜 ${state.inventory.vegetable} · 冷藏菜 ${state.inventory.chilledVegetable} · 仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
       message: this.session.message,
       detail: this.description(),
       tab: this.ui.tab,
       actions: actions(this.session, this.ui, this.handlers),
     });
+    if (layoutChanged) this.layout();
     if (models) this.town.sync(state, this.ui.selected, this.ui.preview);
   }
   private description(): string {
@@ -117,7 +118,7 @@ export class TownController {
       return '选择建筑类型 → 点地图预览 → 确认建造。\n制冷设施应与基础仓房边缘相邻。';
     if (this.ui.tab === 'tools')
       return '进度保存在当前设备，尚不支持跨设备同步。\n放大查看建筑；重新开始需要再次确认。';
-    return '点菜地开始种植 → 收获 → 在订单页换金币。\n选择仓房可以扩容或组合改造。';
+    return '点菜地种植，收获后交订单。\n拖动地图移动视角。';
   }
   private changeTab(tab: HudTab): void {
     this.ui.tab = tab;

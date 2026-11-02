@@ -80,31 +80,33 @@ export class TownHUD {
     // One logical unit is approximately one CSS px / platform UI point.
     const width = Math.max(1, physical.width / dpr);
     const height = Math.max(1, physical.height / dpr);
-    const layout = hudLayout(width, height);
+    const layout = hudLayout(width, height, this.lastData?.actions.length ?? 0);
     view.setDesignResolutionSize(width, height, ResolutionPolicy.SHOW_ALL);
     this.canvas.getComponent(UITransform)!.setContentSize(width, height);
     this.mapInput.getComponent(UITransform)!.setContentSize(layout.mapWidth, layout.mapHeight);
     this.mapInput.setPosition(-layout.right / 2, (layout.bottom - layout.top) / 2);
     const pw = layout.panelWidth;
-    panel(this.top, layout.summaryWidth, 80, PALETTE.paper);
-    this.top.setPosition(layout.summaryX, height / 2 - 48);
-    this.summary.node.getComponent(UITransform)!.setContentSize(layout.summaryWidth - 24, 72);
+    panel(this.top, layout.summaryWidth, 64, PALETTE.paper);
+    this.top.setPosition(layout.summaryX, height / 2 - 40);
+    this.summary.node.getComponent(UITransform)!.setContentSize(layout.summaryWidth - 24, 56);
     panel(this.bottom, pw, layout.panelHeight, PALETTE.paper);
     this.bottom.setPosition(layout.panelX, layout.panelY);
-    this.message.node.setPosition(0, 116);
-    this.message.node.getComponent(UITransform)!.setContentSize(pw - 24, 46);
-    this.detail.node.setPosition(0, 62);
-    this.detail.node.getComponent(UITransform)!.setContentSize(pw - 24, 54);
+    const half = layout.panelHeight / 2;
+    this.message.node.setPosition(0, half - 26);
+    this.message.node.getComponent(UITransform)!.setContentSize(pw - 24, 36);
+    this.detail.node.setPosition(0, half - 69);
+    this.detail.node.getComponent(UITransform)!.setContentSize(pw - 24, 44);
     const bw = (pw - 32) / 2;
     this.buttons.forEach((b, i) =>
-      b.layout(((i % 2 ? 1 : -1) * (bw + 8)) / 2, 4 - Math.floor(i / 2) * 56, bw),
+      b.layout(((i % 2 ? 1 : -1) * (bw + 8)) / 2, half - 120 - Math.floor(i / 2) * 56, bw),
     );
     const tw = (pw - 40) / 4;
-    this.tabs.forEach((b, i) => b.layout((i - 1.5) * (tw + 8), -116, tw));
-    if (this.lastData) this.render(this.lastData);
+    this.tabs.forEach((b, i) => b.layout((i - 1.5) * (tw + 8), -half + 32, tw));
     return layout;
   }
-  render(data: HudData): void {
+  render(data: HudData): boolean {
+    const changed =
+      Math.ceil((this.lastData?.actions.length ?? 0) / 2) !== Math.ceil(data.actions.length / 2);
     this.lastData = data;
     this.summary.string = data.summary;
     this.message.string = data.message;
@@ -116,5 +118,6 @@ export class TownHUD {
       const old = button.node.getComponentInChildren(Label);
       if (old) old.string = data.tab === id ? `• ${title}` : title;
     });
+    return changed;
   }
 }

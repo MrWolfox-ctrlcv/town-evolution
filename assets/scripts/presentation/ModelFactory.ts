@@ -53,6 +53,12 @@ export class ModelFactory {
     root.setPosition(b.x + w / 2, 0, b.z + d / 2);
     if (b.kind === 'farm') {
       this.shape(root, 'Soil', 0, 0.12, 0, w - 0.14, 0.16, d - 0.14, '#936F4C');
+      for (const side of [-1, 1]) {
+        this.shape(root, 'BedBorder', side * (w / 2 - 0.1), 0.2, 0, 0.09, 0.16, d - 0.1, '#BB996B');
+        this.shape(root, 'BedBorder', 0, 0.2, side * (d / 2 - 0.1), w - 0.1, 0.16, 0.09, '#BB996B');
+      }
+      for (let row = -1; row <= 1; row++)
+        this.shape(root, 'Furrow', row * 0.48, 0.215, 0, 0.08, 0.02, d - 0.3, '#775C42');
       for (let i = 0; i < 3; i++)
         for (let j = 0; j < 3; j++) {
           this.shape(
@@ -128,6 +134,23 @@ export class ModelFactory {
         this.shape(root, 'UpperStore', 0, 1.85, 0, w * 0.6, 0.55, d * 0.6, '#E5CB9E');
         this.shape(root, 'UpperRoof', 0, 2.16, 0, w * 0.7, 0.13, d * 0.7, '#BC7356');
       }
+      this.shape(root, 'Foundation', 0, 0.12, 0, w - 0.08, 0.15, d - 0.08, '#C7B99C');
+      this.shape(root, 'Doorstep', 0, 0.13, d / 2 - 0.02, 0.8, 0.12, 0.2, '#CEBEA3');
+      this.shape(root, 'SideWindow', w / 2 - 0.08, 0.82, 0, 0.06, 0.4, 0.48, '#6D9EA2');
+      this.shape(root, 'WindowSill', w / 2 - 0.04, 0.59, 0, 0.14, 0.08, 0.59, '#D8C5A4');
+      this.shape(root, 'RoofRidge', 0, 1.87, 0, 0.14, 0.12, d + 0.13, cold ? '#527F8B' : '#A5654C');
+      for (const side of [-1, 1])
+        this.shape(
+          root,
+          'CornerPost',
+          side * (w / 2 - 0.14),
+          0.7,
+          d / 2 - 0.08,
+          0.09,
+          1.12,
+          0.07,
+          '#D4BD96',
+        );
       this.shape(root, 'Crate', -w * 0.3, 0.24, d * 0.36, 0.4, 0.4, 0.4, '#BA935D');
     }
     return root;

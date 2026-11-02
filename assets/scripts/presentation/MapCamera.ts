@@ -1,12 +1,13 @@
 import { Node, Camera, Vec3, Rect, geometry, Layers, EventTouch } from 'cc';
 import { color } from './Palette';
+import { fittedOrthoHeight } from '../application/CameraFraming';
 import { TapGesture } from '../application/TapGesture';
 /** Orthographic camera, map-plane picking and one-finger pan. */
 export class MapCamera {
   private readonly camera: Camera;
   private readonly focus = new Vec3(6, 0, 6);
   private readonly gesture = new TapGesture();
-  private zoom = 8;
+  private zoom = 1;
   private aspect = 1;
   private mapHeight = 400;
   private input: Node;
@@ -69,16 +70,16 @@ export class MapCamera {
     this.update();
   }
   zoomBy(delta: number): void {
-    this.zoom = Math.max(4, Math.min(14, this.zoom + delta));
+    this.zoom = Math.max(0.45, Math.min(1.8, this.zoom + delta * 0.12));
     this.update();
   }
   reset(): void {
     this.focus.set(6, 0, 6);
-    this.zoom = 8;
+    this.zoom = 1;
     this.update();
   }
   private update(): void {
-    this.camera.orthoHeight = this.zoom / Math.min(1.5, Math.max(0.6, this.aspect));
+    this.camera.orthoHeight = fittedOrthoHeight(this.aspect) * this.zoom;
     this.camera.node.setPosition(this.focus.x + 15, 20, this.focus.z + 18);
     this.camera.node.lookAt(this.focus);
   }
