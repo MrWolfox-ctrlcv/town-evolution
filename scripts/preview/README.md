@@ -46,7 +46,7 @@ dependencies afresh. Engine source and preview tools are pinned; the entire
 transitive dependency graph is not yet reproducibly locked. Do not call this a
 release build or supply-chain-hardened pipeline.
 
-## Evolution coverage (pending next CI run)
+## Evolution coverage (verified)
 
 The extended test clicks through adjacent cooler placement with a preview that
 does not spend, confirmed construction, warehouse/cooler combination preserving
@@ -54,4 +54,13 @@ the warehouse ID, another real crop cycle, cold processing across reload, chille
 order payment and restored cold-warehouse state. A confirmed new-town flow then
 tests the alternative one-time expansion branch, 32-unit capacity and reload.
 Both mouse and touch paths run with no command calls, saved-state injection or
-clock acceleration. These new evolution checks are not yet verified.
+clock acceleration. All 11 evolution checks passed for both mouse and touch in
+[run 41551677432](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41551677432)
+on 2026-11-03, commit `ec7ed6f5edecd3a7784643d15f2fdde311d1ea80`.
+Together with the original ten checks, this is 21 real UI checks per input path.
+Cold-order results: 108 coins, two completed orders, two vegetables and the
+original warehouse ID retained as a cold warehouse. The separate reset/expansion
+branch restored 80 coins and 32-unit storage after reload. Both runs reported
+zero runtime errors and produced seedling, ready-crop, combined, cold-order and
+expanded screenshots using the real vertex-colored asset kit. Source validation
+also passed 55 unit tests and canonical 18-asset glTF checks for this commit.
