@@ -3,20 +3,245 @@
   "units": "1 unit = 1 game grid cell; Y up; front +Z",
   "assets": [
     {
-      "id": "warehouse-base",
-      "file": "warehouse-base.gltf",
-      "parts": 19,
-      "triangles": 220,
-      "vertices": 444,
+      "id": "farm-cell-bed",
+      "file": "farm-cell-bed.gltf",
+      "parts": 71,
+      "triangles": 776,
+      "vertices": 1590,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.92,
+          -1.005,
+          0.009999999999999995,
+          -1
+        ],
+        "max": [
+          1.005,
+          0.245,
+          1
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 98451
+    },
+    {
+      "id": "crop-cell-vegetable-seedling",
+      "file": "crop-cell-vegetable-seedling.gltf",
+      "parts": 12,
+      "triangles": 96,
+      "vertices": 288,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2049978394391114,
+          0.18702314442846438,
+          -0.24526279441628823
+        ],
+        "max": [
+          0.25239159353583024,
+          0.29297685557153563,
+          0.24526279441628823
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 18262
+    },
+    {
+      "id": "crop-cell-vegetable-ready",
+      "file": "crop-cell-vegetable-ready.gltf",
+      "parts": 16,
+      "triangles": 416,
+      "vertices": 1248,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2288365875343069,
+          0.15000000000000002,
+          -0.24526279441628823
+        ],
+        "max": [
+          0.25239159353583024,
+          0.44595371114307125,
+          0.24526279441628823
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 74585
+    },
+    {
+      "id": "crop-cell-wheat-seedling",
+      "file": "crop-cell-wheat-seedling.gltf",
+      "parts": 27,
+      "triangles": 252,
+      "vertices": 648,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.21630445132003923,
+          0.07907903217539501,
+          -0.23105184761728542
+        ],
+        "max": [
+          0.28540953277930925,
+          0.3643674244682021,
+          0.23105184761728542
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 39952
+    },
+    {
+      "id": "crop-cell-wheat-ready",
+      "file": "crop-cell-wheat-ready.gltf",
+      "parts": 27,
+      "triangles": 252,
+      "vertices": 648,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.24260890264007848,
+          0.17000000000000004,
+          -0.23105184761728542
+        ],
+        "max": [
+          0.28540953277930925,
+          0.7338808279052806,
+          0.23105184761728542
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 39946
+    },
+    {
+      "id": "crop-cell-lettuce-seedling",
+      "file": "crop-cell-lettuce-seedling.gltf",
+      "parts": 10,
+      "triangles": 224,
+      "vertices": 672,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.22636631832273837,
+          0.17923368167726164,
+          -0.22030000000000002
+        ],
+        "max": [
+          0.22636631832273837,
+          0.309,
+          0.22030000000000002
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 40775
+    },
+    {
+      "id": "crop-cell-lettuce-ready",
+      "file": "crop-cell-lettuce-ready.gltf",
+      "parts": 10,
+      "triangles": 224,
+      "vertices": 672,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.3189016593828151,
+          0.1676983406171849,
+          -0.31705
+        ],
+        "max": [
+          0.3189016593828151,
+          0.4365,
+          0.31705
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 40743
+    },
+    {
+      "id": "crop-cell-seedling",
+      "file": "crop-cell-seedling.gltf",
+      "parts": 12,
+      "triangles": 96,
+      "vertices": 288,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2049978394391114,
+          0.18702314442846438,
+          -0.24526279441628823
+        ],
+        "max": [
+          0.25239159353583024,
+          0.29297685557153563,
+          0.24526279441628823
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 18242
+    },
+    {
+      "id": "crop-cell-ready",
+      "file": "crop-cell-ready.gltf",
+      "parts": 16,
+      "triangles": 416,
+      "vertices": 1248,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2288365875343069,
+          0.15000000000000002,
+          -0.24526279441628823
+        ],
+        "max": [
+          0.25239159353583024,
+          0.44595371114307125,
+          0.24526279441628823
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 74565
+    },
+    {
+      "id": "shop",
+      "file": "shop.gltf",
+      "parts": 67,
+      "triangles": 796,
+      "vertices": 1596,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.9267667539473247,
           0,
           -0.82
         ],
         "max": [
-          0.42000000000000004,
+          0.7969999999999999,
           1.7349999999999999,
           0.99
         ]
@@ -25,18 +250,93 @@
         2,
         2
       ],
-      "bytes": 28486
+      "bytes": 99126
+    },
+    {
+      "id": "order-board",
+      "file": "order-board.gltf",
+      "parts": 15,
+      "triangles": 164,
+      "vertices": 354,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.465,
+          0,
+          -0.24
+        ],
+        "max": [
+          0.465,
+          1.45,
+          0.24
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 22712
+    },
+    {
+      "id": "dock",
+      "file": "dock.gltf",
+      "parts": 38,
+      "triangles": 452,
+      "vertices": 906,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.95,
+          0,
+          -0.95
+        ],
+        "max": [
+          0.95,
+          1.38,
+          0.95
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 56801
+    },
+    {
+      "id": "warehouse-base",
+      "file": "warehouse-base.gltf",
+      "parts": 52,
+      "triangles": 616,
+      "vertices": 1236,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.9267667539473247,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.42676675394732466,
+          1.7349999999999999,
+          0.99
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 77084
     },
     {
       "id": "warehouse-expanded",
       "file": "warehouse-expanded.gltf",
-      "parts": 23,
-      "triangles": 268,
-      "vertices": 540,
+      "parts": 56,
+      "triangles": 664,
+      "vertices": 1332,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.92,
+          -0.9267667539473247,
           0,
           -0.82
         ],
@@ -50,18 +350,18 @@
         2,
         2
       ],
-      "bytes": 34381
+      "bytes": 82979
     },
     {
       "id": "warehouse-cold",
       "file": "warehouse-cold.gltf",
-      "parts": 30,
-      "triangles": 348,
-      "vertices": 708,
+      "parts": 63,
+      "triangles": 744,
+      "vertices": 1500,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.92,
+          -0.9267667539473247,
           0,
           -0.82
         ],
@@ -75,7 +375,7 @@
         2,
         2
       ],
-      "bytes": 44615
+      "bytes": 93211
     },
     {
       "id": "cooler",
@@ -230,27 +530,27 @@
     {
       "id": "tree",
       "file": "tree.gltf",
-      "parts": 3,
-      "triangles": 28,
-      "vertices": 72,
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.575,
+          -0.5814839709875634,
           0,
-          -0.55
+          -0.49
         ],
         "max": [
-          0.575,
-          1.845,
-          0.55
+          0.576458044381283,
+          1.8964965047469653,
+          0.38241005117995364
         ]
       },
       "footprint": [
         1.2,
         1.2
       ],
-      "bytes": 5477
+      "bytes": 66541
     },
     {
       "id": "rock",
@@ -305,9 +605,9 @@
     {
       "id": "module-shell",
       "file": "module-shell.gltf",
-      "parts": 7,
-      "triangles": 80,
-      "vertices": 162,
+      "parts": 14,
+      "triangles": 164,
+      "vertices": 330,
       "drawCalls": 1,
       "bounds": {
         "min": [
@@ -316,41 +616,41 @@
           -0.76
         ],
         "max": [
-          0.36,
+          0.3775,
           1.5350000000000001,
-          0.6000000000000001
+          0.6345
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 11153
+      "bytes": 21450
     },
     {
       "id": "module-roof",
       "file": "module-roof.gltf",
-      "parts": 3,
-      "triangles": 32,
-      "vertices": 66,
+      "parts": 29,
+      "triangles": 344,
+      "vertices": 690,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.92,
+          -0.9267667539473247,
           1.18,
           -0.82
         ],
         "max": [
-          0.42000000000000004,
+          0.42676675394732466,
           1.7349999999999999,
-          0.685
+          0.6975
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 5261
+      "bytes": 43561
     },
     {
       "id": "module-door",
