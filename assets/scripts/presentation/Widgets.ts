@@ -64,6 +64,10 @@ export class ActionButton {
     this.title.color = color(PALETTE.paper);
     consumeTouches(this.node);
     this.node.on(Node.EventType.TOUCH_START, (event: EventTouch) => {
+      if (event.getAllTouches().length > 1) {
+        this.cancelGesture();
+        return;
+      }
       if (this.gesture.begin(event.getID() ?? 0, event.getUILocation())) this.pressed = this.action;
     });
     this.node.on(Node.EventType.TOUCH_MOVE, (event: EventTouch) => {

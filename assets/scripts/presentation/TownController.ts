@@ -1,38 +1,80 @@
 import { Node, geometry, sys } from 'cc';
-import { CONFIG, getCapacity, getUsedStorage } from '../domain/game';
+import { getCapacity, getUsedStorage } from '../domain/game';
 import type { Command } from '../domain/game';
+import type { TownProfile } from '../application/TownProfiles';
+import { bindCollections } from './CollectionBinding';
 import { GameSession } from '../application/GameSession';
 import { TownView } from './TownView';
 import { TownHUD } from './TownHUD';
 import type { HudTab } from './TownHUD';
+import { ToolRouter } from './ToolRouter';
+import { description } from './HudDescription';
+import { DeferredLayout } from '../application/DeferredLayout';
+import { nextQuantity, tradeItems } from '../application/CommerceSelection';
+import { ObjectDrag } from './ObjectDrag';
 import { MapCamera } from './MapCamera';
-import { actions } from './HudActions';
+import { actions, rotationAction } from './HudActions';
 import type { UiState, PlaceKind, UiHandlers } from './HudActions';
 /** Thin coordinator. Rules, save operations, UI widgets and model generation live elsewhere. */
 export class TownController {
-  private readonly session = new GameSession(sys.localStorage, () => Date.now());
+  private readonly session: GameSession;
   private readonly ui: UiState = {
+    profile: 'normal',
     tab: 'manage',
     selected: null,
     placing: null,
     preview: null,
     resetArmed: false,
+    cropShopOpen: false,
+    toolShopOpen: false,
+    selectedPile: null,
+    plantingTree: false,
+    repurposeId: null,
+    tradeItem: 'vegetable',
+    quantity: 1,
   };
   private readonly hud: TownHUD;
   private readonly map: MapCamera;
+  private readonly drag: ObjectDrag;
+  private readonly tools: ToolRouter;
   private readonly town: TownView;
   private readonly handlers: UiHandlers;
   private elapsed = 0;
-  constructor(parent: Node) {
+  private readonly deferredLayout = new DeferredLayout();
+  constructor(
+    parent: Node,
+    session = new GameSession(sys.localStorage, () => Date.now()),
+    profile: TownProfile = 'normal',
+    switchProfile?: (profile: TownProfile) => void,
+  ) {
+    this.session = session;
+    this.ui.profile = profile;
     this.hud = new TownHUD(
       parent,
       (text) => this.explain(text),
       (tab) => this.changeTab(tab),
     );
-    this.map = new MapCamera(parent, this.hud.mapInput, (point, ray) =>
-      this.pick(point.x, point.z, ray),
-    );
     this.town = new TownView(parent);
+    this.drag = new ObjectDrag(
+      parent,
+      this.session,
+      this.ui,
+      this.town,
+      () => this.refresh(),
+      this.hud,
+    );
+    this.map = new MapCamera(parent, this.hud.mapInput, {
+      covered: (point) => this.hud.coversMapPoint(point),
+      tap: (point, ray) => this.pick(point.x, point.z, ray),
+      candidate: (ray) => this.drag.candidate(ray),
+      drag: (id, point, ray, screen) => this.drag.move(id, point, ray, screen),
+      drop: (id, ray, screen) => this.drag.drop(id, ray, screen),
+      cancel: () => this.drag.clear(),
+    });
+    this.tools = new ToolRouter(parent, this.session, this.map, this.town, this.ui, () =>
+      this.refresh(),
+    );
+    this.hud.setToolHandlers(this.tools);
     this.handlers = {
       command: (command) => this.run(command),
       build: (kind) => this.beginBuild(kind),
@@ -45,15 +87,54 @@ export class TownController {
       },
       save: () => this.save(),
       reset: () => this.reset(),
+      switchTown: () => {
+        if (this.session.mode === 'normal' && !this.session.save()) {
+          this.refresh();
+          return;
+        }
+        switchProfile?.(this.ui.profile === 'demo' ? 'normal' : 'demo');
+      },
+      openToolShop: () => {
+        this.ui.toolShopOpen = true;
+        this.refresh();
+      },
+      plantTree: () => {
+        this.ui.plantingTree = true;
+        this.refresh();
+      },
+      openCropShop: () => {
+        this.ui.cropShopOpen = true;
+        this.refresh();
+      },
+      repurpose: () => this.repurpose(),
+      item: () => {
+        const items = tradeItems(this.session.state);
+        this.ui.tradeItem = items[(items.indexOf(this.ui.tradeItem) + 1) % items.length];
+        this.refresh();
+      },
+      quantity: () => {
+        this.ui.quantity = nextQuantity(this.ui.quantity);
+        this.refresh();
+      },
+      select: (id) => {
+        this.ui.selected = id;
+        this.ui.tab = 'manage';
+        this.refresh();
+      },
     };
     this.layout();
+    if (this.ui.profile === 'demo') this.map.overview();
     this.refresh(true);
+    bindCollections(this.session, this.map, this.hud, () => this.refresh());
   }
-  layout(): void {
+  layout(cancelTools = true): void {
+    this.deferredLayout.clear();
+    if (cancelTools) this.hud.cancelTools();
     const v = this.hud.layout();
-    this.map.layout(v.width, v.height, v.bottom, v.top, v.right);
+    this.map.layout(v.width, v.height, v.bottom, v.top, v.right, v.left);
   }
   tick(dt: number): void {
+    this.map.tick();
     this.elapsed += dt;
     if (this.elapsed >= 0.5) {
       this.elapsed = 0;
@@ -61,19 +142,27 @@ export class TownController {
     }
   }
   suspend(): void {
-    this.map.cancelGesture();
+    this.hud.cancelTools();
+    this.tools.cancel();
+    this.map.resetInput();
     this.hud.cancelGestures();
     this.session.suspend();
   }
   resume(): void {
-    this.map.cancelGesture();
+    this.ui.repurposeId = null;
+    this.hud.cancelTools();
+    this.map.resetInput();
     this.hud.cancelGestures();
     this.session.resume();
     this.ui.resetArmed = false;
     this.refresh(true);
   }
   dispose(): void {
+    this.session.setCollectionListener(null);
+    this.hud.dispose();
+    this.tools.dispose();
     this.map.dispose();
+    this.drag.dispose();
     this.town.dispose();
   }
   private explain(text: string): void {
@@ -83,44 +172,26 @@ export class TownController {
   }
   private refresh(_models = false): void {
     const state = this.session.state;
+    if (!tradeItems(state).includes(this.ui.tradeItem)) this.ui.tradeItem = 'vegetable';
     const layoutChanged = this.hud.render({
-      summary: `小镇进化 · 金币 ${state.coins}\n蔬菜 ${state.inventory.vegetable} · 冷藏菜 ${state.inventory.chilledVegetable} · 仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
-      message: this.session.message,
-      detail: this.description(),
+      inventory: state.inventory,
+      tools: state.tools,
+      summary: `${this.ui.profile === 'demo' ? '演示岛' : '我的小镇'} · 金币 ${state.coins}\n仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
+      message: this.session.statusMessage,
+      detail: description(this.session, this.ui),
       tab: this.ui.tab,
       actions: actions(this.session, this.ui, this.handlers),
+      rotation: rotationAction(this.session, this.ui, this.handlers),
     });
-    if (layoutChanged) this.layout();
+    if (this.deferredLayout.update(layoutChanged, this.tools.active)) this.layout(false);
     this.town.sync(state, this.ui.selected, this.ui.preview);
   }
-  private description(): string {
-    if (this.ui.resetArmed)
-      return '将开始新小镇。最近一次重置前的主存档会另存保留；不会永久累计所有历史。';
-    if (this.ui.placing) {
-      const cfg = CONFIG.buildings[this.ui.placing];
-      const p = this.ui.preview;
-      return `${cfg.label} · 占地 ${cfg.width}×${cfg.depth}\n${p ? `位置 (${p.x}, ${p.z}) · ${p.valid ? '可建造' : '不可建造'}` : '点地图显示预览框，再确认建造'}；拖动移动地图。`;
-    }
-    const b = this.session.state.buildings.find((item) => item.id === this.ui.selected);
-    if (this.ui.tab === 'manage' && b) {
-      const left = b.job
-        ? Math.max(
-            0,
-            Math.ceil((b.job.readyAt - Math.max(Date.now(), this.session.state.lastSeenAt)) / 1000),
-          )
-        : 0;
-      const job = b.job ? (left ? `生产中，剩余 ${left} 秒` : '生产完成，等待领取') : '空闲';
-      return `${CONFIG.buildings[b.kind].label} (${b.x}, ${b.z}) · ${job}\n${b.kind === 'coldWarehouse' ? `${CONFIG.coldInput}蔬菜加工成${CONFIG.coldInput}冷藏菜。` : b.kind === 'cooler' ? '选择相邻基础仓房，可组合为冷藏库。' : '点其他建筑切换，拖动地图移动视角。'}`;
-    }
-    if (this.ui.tab === 'orders')
-      return '提交指定货物即可获得金币。\n订单可重复完成，无需付费或观看广告。';
-    if (this.ui.tab === 'build')
-      return '选择建筑类型 → 点地图预览 → 确认建造。\n制冷设施应与基础仓房边缘相邻。';
-    if (this.ui.tab === 'tools')
-      return '进度保存在当前设备，尚不支持跨设备同步。\n放大查看建筑；重新开始需要再次确认。';
-    return '点菜地种植，收获后交订单。\n拖动地图移动视角。';
-  }
   private changeTab(tab: HudTab): void {
+    this.ui.plantingTree = false;
+    this.ui.cropShopOpen = false;
+    this.ui.toolShopOpen = false;
+    this.ui.selectedPile = null;
+    this.ui.repurposeId = null;
     this.ui.tab = tab;
     this.ui.resetArmed = false;
     this.ui.placing = null;
@@ -133,18 +204,24 @@ export class TownController {
     this.refresh(true);
   }
   private beginBuild(kind: PlaceKind): void {
+    this.ui.plantingTree = false;
     this.ui.placing = kind;
     this.ui.preview = null;
     this.ui.selected = null;
     this.ui.resetArmed = false;
-    this.session.message = '点地图选择位置，黄色边框可建造，红色表示冲突。';
+    this.session.message = '';
     this.refresh(true);
   }
   private cancel(): void {
+    this.ui.plantingTree = false;
+    this.ui.cropShopOpen = false;
+    this.ui.toolShopOpen = false;
+    this.ui.selectedPile = null;
+    this.ui.repurposeId = null;
     this.ui.resetArmed = false;
     this.ui.placing = null;
     this.ui.preview = null;
-    this.session.message = '已取消，进度未改变。';
+    this.session.message = '已取消';
     this.refresh(true);
   }
   private confirmPlacement(): void {
@@ -160,29 +237,46 @@ export class TownController {
     this.refresh(true);
   }
   private pick(x: number, z: number, ray: geometry.Ray): void {
+    this.ui.cropShopOpen = false;
+    this.ui.toolShopOpen = false;
+    this.ui.selectedPile = null;
+    this.ui.repurposeId = null;
     this.ui.resetArmed = false;
+    if (this.ui.plantingTree) {
+      if (this.session.run({ type: 'placeTree', x, z })) this.ui.plantingTree = false;
+      this.refresh();
+      return;
+    }
     if (this.ui.placing) {
       const reason = this.session.reason({ type: 'place', kind: this.ui.placing, x, z });
       this.ui.preview = { kind: this.ui.placing, x, z, valid: !reason };
-      this.session.message = reason ?? '位置可用，确认后才会扣除金币。';
+      this.session.message = reason ?? '可建造';
     } else {
       const picked = this.town.pickBuilding(ray);
       const b = this.session.state.buildings.find((item) => item.id === picked);
       this.ui.selected = b?.id ?? null;
+      const pile = this.town.pickStack(ray);
+      if (!b && pile) this.ui.selectedPile = { x: pile.x, z: pile.z };
       this.ui.tab = 'manage';
-      this.session.message = b
-        ? `已选择 ${CONFIG.buildings[b.kind].label}`
-        : '点选建筑，或切换建造页添加新设施。';
+      this.session.message = '';
     }
     this.refresh(true);
   }
   private save(): void {
     this.ui.resetArmed = false;
     if (this.session.mode === 'recovered') this.session.recover();
-    else if (this.session.save()) this.session.message = '进度已保存到当前设备。';
+    else if (this.session.save()) this.session.message = '已保存';
+    this.refresh();
+  }
+  private repurpose(): void {
+    if (this.ui.repurposeId) {
+      this.session.run({ type: 'repurposeToBoard', buildingId: this.ui.repurposeId });
+      this.ui.repurposeId = null;
+    } else this.ui.repurposeId = this.ui.selected;
     this.refresh();
   }
   private reset(): void {
+    this.ui.repurposeId = null;
     if (!this.ui.resetArmed) {
       this.ui.resetArmed = true;
       this.ui.placing = null;
@@ -192,9 +286,12 @@ export class TownController {
       return;
     }
     if (this.session.reset()) {
+      if (this.ui.profile === 'demo' && !this.session.message.includes('未保存'))
+        this.session.message = '演示岛已恢复模板';
       this.ui.selected = null;
       this.ui.tab = 'manage';
       this.map.reset();
+      if (this.ui.profile === 'demo') this.map.overview();
     }
     this.ui.resetArmed = false;
     this.refresh(true);
