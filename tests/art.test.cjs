@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { ASSETS, cropStage } = require('../.domain-build/art/AssetCatalog');
 const { compileAsset } = require('../.domain-build/art/MeshCompiler');
 test('all canonical assets compile into finite indexed vertex-colored meshes within budgets', () => {
-  assert.equal(Object.keys(ASSETS).length, 18);
+  assert.equal(Object.keys(ASSETS).length, 30);
   for (const asset of Object.values(ASSETS)) {
     const m = compileAsset(asset),
       n = m.positions.length / 3;
@@ -39,6 +39,9 @@ test('all canonical assets compile into finite indexed vertex-colored meshes wit
 });
 test('all gameplay assets fit existing occupied cell bounds without changing economic footprint', () => {
   for (const id of [
+    'shop',
+    'order-board',
+    'dock',
     'warehouse-base',
     'warehouse-expanded',
     'warehouse-cold',
@@ -100,8 +103,61 @@ test('exported glTF buffers and accessors are self-contained and agree with cano
           a.componentType === 5125
             ? bytes.readUInt32LE(view.byteOffset + j * 4)
             : bytes.readFloatLE(view.byteOffset + j * 4);
-        assert.ok(Math.abs(actual - expected[field][j]) < 1e-6, asset.id + '/' + field);
+        assert.ok(
+          Math.abs(
+            actual -
+              (field === 'colors' && j % 4 !== 3
+                ? expected[field][j] <= 0.04045
+                  ? expected[field][j] / 12.92
+                  : ((expected[field][j] + 0.055) / 1.055) ** 2.4
+                : expected[field][j]),
+          ) < 1e-6,
+          asset.id + '/' + field,
+        );
       }
     }
+  }
+});
+test('commerce silhouettes share the palette and retain the modular shop core', () => {
+  for (const name of ['cream-walls', 'terracotta-gable', 'roof-ridge', 'loading-deck'])
+    assert.deepEqual(
+      ASSETS.shop.parts.find((p) => p.name === name),
+      ASSETS['warehouse-base'].parts.find((p) => p.name === name),
+    );
+  assert.equal(ASSETS.shop.parts.filter((p) => p.name === 'awning-stripe').length, 5);
+  assert.equal(ASSETS['order-board'].parts.filter((p) => p.name === 'paper').length, 3);
+  assert.equal(ASSETS.dock.parts.filter((p) => p.name === 'bollard').length, 4);
+  assert.ok(compileAsset(ASSETS['order-board']).max[0] < 0.5);
+});
+test('rounded tree keeps the harvest footprint and hit box with one compact mesh', () => {
+  const tree = ASSETS.tree,
+    m = compileAsset(tree);
+  assert.deepEqual(tree.footprint, [1.2, 1.2]);
+  assert.ok(m.min[0] >= -0.6 && m.max[0] <= 0.6);
+  assert.ok(m.min[2] >= -0.6 && m.max[2] <= 0.6);
+  assert.ok(m.min[1] >= 0 && m.max[1] <= 2);
+  assert.ok(m.max[1] * 0.8 <= 1.6);
+  assert.ok(m.indices.length / 3 <= 400);
+  assert.equal(tree.parts.filter((p) => p.shape === 'crown').length, 4);
+  assert.equal(tree.parts.filter((p) => p.name.startsWith('branch-')).length, 2);
+});
+test('organic polyhedra face outward and have closed manifold topology', () => {
+  const { CROWN, TIMBER } = require('../.domain-build/art/OrganicShapes');
+  for (const shape of [CROWN, TIMBER]) {
+    const edges = new Map();
+    for (const face of shape.faces) {
+      const [a, b, c] = face.slice(0, 3).map((i) => shape.vertices[i]);
+      const u = b.map((v, i) => v - a[i]),
+        v = c.map((v, i) => v - a[i]);
+      const n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      assert.ok(n.reduce((sum, x, i) => sum + x * a[i], 0) > 0);
+      for (let i = 0; i < face.length; i++) {
+        const a = face[i],
+          b = face[(i + 1) % face.length],
+          key = [Math.min(a, b), Math.max(a, b)].join(':');
+        edges.set(key, (edges.get(key) || 0) + 1);
+      }
+    }
+    assert.ok([...edges.values()].every((n) => n === 2));
   }
 });

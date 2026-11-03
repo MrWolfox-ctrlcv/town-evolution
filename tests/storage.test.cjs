@@ -112,7 +112,7 @@ test('future-version primary never silently falls back to stale backup', () => {
     s = createGame(0);
   saveGame(m, s);
   saveGame(m, s);
-  m.setItem(SAVE_KEY, JSON.stringify({ ...s, schemaVersion: 2 }));
+  m.setItem(SAVE_KEY, JSON.stringify({ ...s, schemaVersion: 999 }));
   assert.equal(loadGame(m, 0).status, 'corrupt');
-  assert.equal(JSON.parse(m.getItem(SAVE_KEY)).schemaVersion, 2);
+  assert.equal(JSON.parse(m.getItem(SAVE_KEY)).schemaVersion, 999);
 });

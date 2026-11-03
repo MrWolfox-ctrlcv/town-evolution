@@ -20,8 +20,8 @@ test('session persists successful commands and recovers after restart', () => {
   fixture.setTime(15000);
   const restored = fixture.session();
   assert.equal(restored.run({ type: 'collect', buildingId: 'b2' }), true);
-  assert.equal(restored.state.inventory.vegetable, 4);
-  assert.equal(fixture.session().state.inventory.vegetable, 4);
+  assert.equal(restored.state.inventory.vegetable, 2);
+  assert.equal(fixture.session().state.inventory.vegetable, 2);
 });
 test('preview reason never spends money or allocates identifiers', () => {
   const f = setup(),
@@ -60,12 +60,46 @@ test('storage failure is visible while in-memory state remains usable', () => {
   };
   assert.equal(s.run({ type: 'start', buildingId: 'b2' }), true);
   assert.match(s.message, /保存失败/);
-  assert.ok(s.state.buildings[1].job);
+  assert.ok(s.state.buildings[1].cropJobs[0]);
 });
 test('future-version warning survives session initialization', () => {
   const f = setup();
-  f.storage.setItem(SAVE_KEY, JSON.stringify({ ...createGame(0), schemaVersion: 2 }));
+  f.storage.setItem(SAVE_KEY, JSON.stringify({ ...createGame(0), schemaVersion: 999 }));
   const s = f.session();
   assert.equal(s.mode, 'corrupt');
   assert.match(s.message, /版本不兼容/);
+});
+
+test('unsaved warning survives selection feedback and clears only after successful write', () => {
+  const f = setup(),
+    s = f.session();
+  const write = f.storage.setItem;
+  f.storage.setItem = () => {
+    throw Error('quota');
+  };
+  assert.ok(s.run({ type: 'start', buildingId: 'b2' }));
+  assert.equal(s.hasUnsavedChanges, true);
+  s.message = '';
+  assert.match(s.statusMessage, /保存失败/);
+  s.message = '已取消';
+  assert.match(s.statusMessage, /保存失败/);
+  assert.equal(s.save(), false);
+  assert.equal(s.hasUnsavedChanges, true);
+  f.storage.setItem = write;
+  assert.equal(s.save(), true);
+  assert.equal(s.hasUnsavedChanges, false);
+  assert.ok(f.session().state.buildings.find((b) => b.id === 'b2').cropJobs[0]);
+});
+
+test('successful retry removes the old raw failure message as well as the warning flag', () => {
+  const f = setup(),
+    s = f.session(),
+    write = f.storage.setItem;
+  f.storage.setItem = () => {
+    throw Error('quota');
+  };
+  s.run({ type: 'start', buildingId: 'b2' });
+  f.storage.setItem = write;
+  assert.ok(s.save());
+  assert.equal(s.statusMessage, '已保存');
 });
