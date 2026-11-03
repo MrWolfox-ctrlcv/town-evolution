@@ -55,6 +55,7 @@ async function capture(browser, width, height, name) {
     assert.deepEqual(errors, [], 'Runtime console errors');
     await page.screenshot({ path: path.join(evidence, `${name}.png`) });
     await require('./interactions.cjs')(page, evidence, name, name === 'mobile');
+    await require('./evolution-interactions.cjs')(page, evidence, name, name === 'mobile');
     assert.deepEqual(errors, [], 'Runtime errors after real interactions');
     fs.writeFileSync(
       path.join(evidence, `${name}.json`),

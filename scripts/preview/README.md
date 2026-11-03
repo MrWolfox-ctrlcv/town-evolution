@@ -21,12 +21,17 @@ Actual desktop (1280×800) and mobile-viewport (390×844) rendering passed on
 at commit `dea0850be727a0ee2fa3b1579b6cf4e4fb757ee8`: both captured visible
 buildings, terrain and Chinese HUD with zero runtime errors.
 
-The next validation extends that render smoke test with real mouse/touch input:
+The render smoke test is extended with real mouse/touch input:
 select farm, schedule crop, reject repeated early collection, reload during the
 real timer, harvest, sell, reject duplicate sale, cancel construction/reset and
 reload persistent progress. It reads rendered Cocos node coordinates and saved
 state but never calls game commands directly, mutates game state or warps time.
-Interaction verification is pending until its workflow passes.
+Interaction verification passed for both desktop mouse and mobile touch in
+[run 41549746130](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41549746130)
+on 2026-11-03 at commit `ee37cf7227b6fcff0f2b765741818bd037af8f46`.
+Both completed with 144 coins, one completed order, zero vegetables and no
+runtime console errors. The run also contains updated initial and after-play
+screenshots. Native Android and Creator serialized-scene import remain untested.
 
 For local development, set `COCOS_ENGINE` to that official engine checkout with
 its npm dependencies plus esbuild 0.28.2, systemjs 6.15.1, playwright 1.56.1 and
@@ -40,3 +45,13 @@ The upstream engine lock contains stale mirror downloads, so CI resolves engine
 dependencies afresh. Engine source and preview tools are pinned; the entire
 transitive dependency graph is not yet reproducibly locked. Do not call this a
 release build or supply-chain-hardened pipeline.
+
+## Evolution coverage (pending next CI run)
+
+The extended test clicks through adjacent cooler placement with a preview that
+does not spend, confirmed construction, warehouse/cooler combination preserving
+the warehouse ID, another real crop cycle, cold processing across reload, chilled
+order payment and restored cold-warehouse state. A confirmed new-town flow then
+tests the alternative one-time expansion branch, 32-unit capacity and reload.
+Both mouse and touch paths run with no command calls, saved-state injection or
+clock acceleration. These new evolution checks are not yet verified.

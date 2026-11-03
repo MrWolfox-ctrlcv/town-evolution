@@ -2,73 +2,9 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-async function inspect(page) {
-  return page.evaluate(async () => {
-    const cc = await System.import('cc');
-    const scene = cc.director.getScene();
-    const cameras = scene.getComponentsInChildren(cc.Camera);
-    const ui = cameras.find((camera) => camera.node.name === 'UICamera');
-    const world = cameras.find((camera) => camera.node.name === 'WorldCamera');
-    const canvas = document.querySelector('#GameCanvas');
-    const rect = canvas.getBoundingClientRect();
-    const project = (camera, position) => {
-      const point = camera.worldToScreen(position);
-      return {
-        x: rect.left + (point.x * rect.width) / canvas.width,
-        y: rect.top + ((canvas.height - point.y) * rect.height) / canvas.height,
-      };
-    };
-    const labels = scene
-      .getComponentsInChildren(cc.Label)
-      .filter((label) => label.node.activeInHierarchy)
-      .map((label) => ({
-        text: label.string,
-        action: label.node.parent.name === 'Action',
-        ...project(ui, label.node.worldPosition),
-      }));
-    const town = scene.getChildByName('Town').getChildByName('TownWorld');
-    const farm = town.children.find((node) => node.getChildByName('Soil'));
-    const position = farm?.getChildByName('Soil')?.worldPosition;
-    return {
-      labels,
-      farm: position ? project(world, position) : null,
-      save: JSON.parse(localStorage.getItem('town-evolution.save.v1') || 'null'),
-    };
-  });
-}
-async function until(page, predicate, message, timeout = 10000) {
-  const deadline = Date.now() + timeout;
-  while (Date.now() < deadline) {
-    const state = await inspect(page);
-    if (predicate(state)) return state;
-    await new Promise((resolve) => setTimeout(resolve, 150));
-  }
-  throw new Error(`UI verification timed out: ${message}; ${JSON.stringify(await inspect(page))}`);
-}
-async function ready(page) {
-  await page.waitForFunction(() => window.__townPreview?.ready === true, undefined, {
-    timeout: 45000,
-  });
-}
+const { inspect, until, ready, driver } = require('./ui-driver.cjs');
 module.exports = async function interactions(page, evidence, name, touch) {
-  const click = async (point) => {
-    assert.ok(
-      point && Number.isFinite(point.x) && Number.isFinite(point.y),
-      'Rendered target exists',
-    );
-    if (touch) await page.touchscreen.tap(point.x, point.y);
-    else await page.mouse.click(point.x, point.y);
-  };
-  const button = async (text) => {
-    const state = await until(
-      page,
-      (state) => state.labels.some((label) => label.action && label.text.includes(text)),
-      text,
-    );
-    const targets = state.labels.filter((label) => label.action && label.text.includes(text));
-    assert.equal(targets.length, 1, `Unique rendered button: ${text}`);
-    await click(targets[0]);
-  };
+  const { click, button } = driver(page, touch);
   const initial = await inspect(page);
   assert.ok(initial.labels.some((label) => label.text.includes('金币 120')));
   await click(initial.farm);
@@ -79,6 +15,7 @@ module.exports = async function interactions(page, evidence, name, touch) {
     'crop scheduled and saved',
   );
   const job = started.save.buildings.find((building) => building.kind === 'farm').job;
+  await page.screenshot({ path: path.join(evidence, `${name}-crop-seedling.png`) });
   await button('领取产物'); // early collection must not change the scheduled job
   await button('领取产物');
   assert.deepEqual(
@@ -94,6 +31,7 @@ module.exports = async function interactions(page, evidence, name, touch) {
     'real crop timer finishes after reload',
     25000,
   );
+  await page.screenshot({ path: path.join(evidence, `${name}-crop-ready.png`) });
   await button('领取产物');
   await until(page, (state) => state.save?.inventory.vegetable === 4, 'four vegetables collected');
   await button('订单');
