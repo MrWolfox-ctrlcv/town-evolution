@@ -4,7 +4,9 @@ async function inspect(page) {
   return page.evaluate(async () => {
     const cc = await System.import('cc');
     const scene = cc.director.getScene();
-    const cameras = scene.getComponentsInChildren(cc.Camera);
+    const cameras = scene
+      .getComponentsInChildren(cc.Camera)
+      .filter((camera) => camera.node.activeInHierarchy);
     const ui = cameras.find((camera) => camera.node.name === 'UICamera');
     const world = cameras.find((camera) => camera.node.name === 'WorldCamera');
     const canvas = document.querySelector('#GameCanvas');
@@ -24,11 +26,45 @@ async function inspect(page) {
         action: label.node.parent.name === 'Action',
         ...project(ui, label.node.worldPosition),
       }));
-    const town = scene.getChildByName('Town').getChildByName('TownWorld');
+    const find = (node, name) =>
+      node.name === name && node.activeInHierarchy
+        ? node
+        : node.children.map((child) => find(child, name)).find(Boolean);
+    const town = find(scene, 'TownWorld');
     const farm = town.children.find((node) => node.getChildByName('Soil'));
     const position = farm?.getChildByName('Soil')?.worldPosition;
     return {
       labels,
+      cropImages: scene
+        .getComponentsInChildren(cc.Sprite)
+        .filter(
+          (sprite) =>
+            sprite.node.name === 'CropImage' && sprite.node.activeInHierarchy && sprite.spriteFrame,
+        ).length,
+      cameraHeight: world.orthoHeight,
+      now: Date.now(),
+      tools: scene
+        .getComponentsInChildren(cc.UITransform)
+        .filter(
+          (component) =>
+            [
+              'HarvestTool',
+              'wateringCanTool',
+              'fertilizerTool',
+              'hammerTool',
+              'sawTool',
+              'axeTool',
+              'VegetableStock',
+              'WheatStock',
+              'LettuceStock',
+              'WoodStock',
+              'StoneStock',
+            ].includes(component.node.name) && component.node.activeInHierarchy,
+        )
+        .map((component) => ({
+          name: component.node.name,
+          ...project(ui, component.node.worldPosition),
+        })),
       buildings: town.children
         .filter((node) => /^b\d+$/.test(node.name))
         .map((node) => ({
@@ -39,7 +75,14 @@ async function inspect(page) {
           ),
         })),
       farm: position ? project(world, position) : null,
-      save: JSON.parse(localStorage.getItem('town-evolution.save.v1') || 'null'),
+      profile: localStorage.getItem('town-evolution.active-profile') || 'demo',
+      save: JSON.parse(
+        localStorage.getItem(
+          (localStorage.getItem('town-evolution.active-profile') === 'normal'
+            ? ''
+            : 'town-evolution.demo.') + 'town-evolution.save.v1',
+        ) || 'null',
+      ),
     };
   });
 }
@@ -63,7 +106,7 @@ async function worldPoint(page, point) {
     const camera = cc.director
       .getScene()
       .getComponentsInChildren(cc.Camera)
-      .find((c) => c.node.name === 'WorldCamera');
+      .find((c) => c.node.name === 'WorldCamera' && c.node.activeInHierarchy);
     const projected = camera.worldToScreen(new cc.Vec3(point.x, point.y || 0, point.z));
     const canvas = document.querySelector('#GameCanvas');
     const rect = canvas.getBoundingClientRect();
@@ -97,4 +140,13 @@ function driver(page, touch) {
   };
   return { click, button };
 }
-module.exports = { inspect, until, ready, worldPoint, driver };
+async function useTool(page, name, touch, buildingId) {
+  const state = await inspect(page);
+  const tool = state.tools.find((tool) => tool.name === name);
+  const target = buildingId
+    ? state.buildings.find((building) => building.id === buildingId)
+    : state.farm;
+  assert.ok(tool && target, `Rendered ${name} and farm target exist`);
+  await require('./pointer-input.cjs').drag(page, tool, target, touch);
+}
+module.exports = { inspect, until, ready, worldPoint, driver, useTool };

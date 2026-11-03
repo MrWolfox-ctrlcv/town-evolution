@@ -5,10 +5,16 @@ const http = require('node:http');
 const assert = require('node:assert/strict');
 const engine = path.resolve(process.env.COCOS_ENGINE || 'temp/cocos-engine');
 const out = path.resolve(process.env.PREVIEW_OUT || 'build/preview');
-const { chromium } = require(path.join(engine, 'node_modules/playwright'));
-const { PNG } = require(path.join(engine, 'node_modules/pngjs'));
+const tools = path.resolve(process.env.PREVIEW_TOOLS || engine);
+const { chromium } = require(path.join(tools, 'node_modules/playwright'));
+const { PNG } = require(path.join(tools, 'node_modules/pngjs'));
 const evidence = path.resolve('build/screenshots');
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'application/json' };
+const types = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+};
 const server = http.createServer((req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
   if (pathname === '/favicon.ico') {
@@ -54,8 +60,7 @@ async function capture(browser, width, height, name) {
     assert.ok(colors.size > 30, `Canvas looks blank: only ${colors.size} distinct sampled colors`);
     assert.deepEqual(errors, [], 'Runtime console errors');
     await page.screenshot({ path: path.join(evidence, `${name}.png`) });
-    await require('./interactions.cjs')(page, evidence, name, name === 'mobile');
-    await require('./evolution-interactions.cjs')(page, evidence, name, name === 'mobile');
+    await require('./demo-interactions.cjs')(page, evidence, name, name === 'mobile');
     assert.deepEqual(errors, [], 'Runtime errors after real interactions');
     fs.writeFileSync(
       path.join(evidence, `${name}.json`),
@@ -79,6 +84,9 @@ async function main() {
   try {
     browser = await chromium.launch({
       chromiumSandbox: true,
+      ...(process.env.CHROMIUM_EXECUTABLE
+        ? { executablePath: process.env.CHROMIUM_EXECUTABLE }
+        : {}),
       args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'],
     });
     await capture(browser, 1280, 800, 'desktop');

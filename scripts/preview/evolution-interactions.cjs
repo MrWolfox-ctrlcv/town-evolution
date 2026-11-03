@@ -2,7 +2,8 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const { inspect, until, ready, worldPoint, driver } = require('./ui-driver.cjs');
+const { inspect, until, ready, worldPoint, driver, useTool } = require('./ui-driver.cjs');
+const { drag, interruptDrag } = require('./pointer-input.cjs');
 module.exports = async function evolution(page, evidence, name, touch) {
   const { click, button } = driver(page, touch);
   const selected = async (id) => {
@@ -12,30 +13,50 @@ module.exports = async function evolution(page, evidence, name, touch) {
   const start = await inspect(page);
   const warehouse = start.save.buildings.find((building) => building.kind === 'warehouse');
   const farm = start.save.buildings.find((building) => building.kind === 'farm');
-  assert.equal(start.save.coins, 144);
+  assert.equal(start.save.coins, 176);
   await button('建造');
   await button('制冷设施 ·');
-  // Place beside the existing 2×2 warehouse, between it and the farm.
-  const tile = { x: warehouse.x + 2, z: warehouse.z };
+  // Build remotely: drag-combination must not require pre-existing adjacency.
+  const tile = { x: warehouse.x + 5, z: warehouse.z + 4 };
   await click(await worldPoint(page, { x: tile.x + 0.5, z: tile.z + 0.5 }));
   await until(
     page,
     (state) => state.labels.some((label) => label.text.includes('可建造')),
-    'valid adjacent ghost',
+    'valid remote placement ghost',
   );
-  assert.equal((await inspect(page)).save.coins, 144, 'Preview cannot spend coins');
+  assert.equal((await inspect(page)).save.coins, 176, 'Preview cannot spend coins');
   await button('确认建造');
   const placed = await until(
     page,
     (state) => state.save?.buildings.some((building) => building.kind === 'cooler'),
     'cooler confirmed',
   );
-  assert.equal(placed.save.coins, 104);
+  assert.equal(placed.save.coins, 136);
   const cooler = placed.save.buildings.find((building) => building.kind === 'cooler');
   assert.equal(cooler.x, tile.x);
   assert.equal(cooler.z, tile.z);
-  await selected(warehouse.id);
-  await button('组合冷库');
+  await selected(cooler.id);
+  const beforeDrag = await inspect(page);
+  const locate = (state, id) => state.buildings.find((building) => building.id === id);
+  await drag(page, locate(beforeDrag, cooler.id), locate(beforeDrag, farm.id), touch);
+  assert.deepEqual(
+    (await inspect(page)).save,
+    beforeDrag.save,
+    'Invalid building drop must cancel without spending or moving',
+  );
+  if (touch) {
+    await selected(cooler.id);
+    const state = await inspect(page);
+    await interruptDrag(page, locate(state, cooler.id), locate(state, warehouse.id));
+    assert.deepEqual(
+      (await inspect(page)).save,
+      beforeDrag.save,
+      'Second finger cancels drag without combining',
+    );
+  }
+  await selected(cooler.id);
+  const state = await inspect(page);
+  await drag(page, locate(state, cooler.id), locate(state, warehouse.id), touch);
   const combined = await until(
     page,
     (state) =>
@@ -44,19 +65,21 @@ module.exports = async function evolution(page, evidence, name, touch) {
       ),
     'warehouse identity retained on combine',
   );
-  assert.equal(combined.save.coins, 84);
-  assert.equal(combined.save.buildings.length, 2);
+  assert.equal(combined.save.coins, 116);
+  assert.equal(combined.save.buildings.length, 3);
   assert.ok(!combined.save.buildings.some((building) => building.id === cooler.id));
   await page.screenshot({ path: path.join(evidence, `${name}-combined.png`) });
   await selected(farm.id);
-  await button('开始种植');
+  await useTool(page, 'SeedTool', touch, farm.id);
   await until(
     page,
-    (state) => state.labels.some((label) => label.text.includes('生产完成')),
+    (state) =>
+      state.now >=
+      state.save.buildings.find((building) => building.id === farm.id).job.readyAt + 600,
     'real second crop timer',
     25000,
   );
-  await button('领取产物');
+  await useTool(page, 'HarvestTool', touch, farm.id);
   await until(page, (state) => state.save?.inventory.vegetable === 4, 'fresh processing inputs');
   await selected(warehouse.id);
   await button('加工 ·');
@@ -71,7 +94,7 @@ module.exports = async function evolution(page, evidence, name, touch) {
   await selected(warehouse.id);
   await until(
     page,
-    (state) => state.labels.some((label) => label.text.includes('生产完成')),
+    (state) => state.labels.some((label) => label.text.includes('可收获')),
     'real cold timer survives reload',
     20000,
   );
@@ -81,15 +104,31 @@ module.exports = async function evolution(page, evidence, name, touch) {
     (state) => state.save?.inventory.chilledVegetable === 2,
     'cold output collected',
   );
-  await button('订单');
-  await button('冷藏菜 2');
+  await selected(warehouse.id);
+  await button('加工 ·');
+  await until(
+    page,
+    (state) =>
+      state.now >=
+      state.save.buildings.find((building) => building.id === warehouse.id).job.readyAt + 600,
+    'second real cold batch',
+    20000,
+  );
+  await button('领取产物');
+  await until(
+    page,
+    (state) => state.save.inventory.chilledVegetable === 4,
+    'four cold goods for bulk order',
+  );
+  await selected(start.save.buildings.find((building) => building.kind === 'orderBoard').id);
+  await button('冷藏菜 4');
   const sold = await until(
     page,
-    (state) => state.save?.coins === 108 && state.save.completedOrders === 2,
+    (state) => state.save?.coins === 172 && state.save.completedOrders === 2,
     'chilled order paid',
   );
   assert.equal(sold.save.inventory.chilledVegetable, 0);
-  assert.equal(sold.save.inventory.vegetable, 2);
+  assert.equal(sold.save.inventory.vegetable, 0);
   await page.reload();
   await ready(page);
   assert.equal(
@@ -135,9 +174,10 @@ module.exports = async function evolution(page, evidence, name, touch) {
         passed: true,
         input: touch ? 'touch' : 'mouse',
         checks: [
-          'adjacent placement ghost does not spend',
+          'remote placement ghost does not spend',
           'confirm cooler spends once',
-          'combine preserves warehouse ID and consumes cooler',
+          'invalid drag target cancels without spending',
+          'drag combine preserves warehouse ID and consumes cooler',
           'crop inputs',
           'cold processing real timer',
           'cold reload and harvest',

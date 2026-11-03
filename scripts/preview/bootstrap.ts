@@ -8,10 +8,17 @@ import {
   EffectAsset,
   Material,
   builtinResMgr,
+  tween,
+  Tween,
+  TweenSystem,
 } from 'cc';
 import { effects } from 'cocos-preview-effects';
 import { TownBootstrap } from '../../assets/scripts/presentation/TownBootstrap';
+if (typeof tween !== 'function' || typeof Tween !== 'function' || typeof TweenSystem !== 'function')
+  throw new Error('Preview engine is missing required Cocos tween exports');
 game.on(Game.EVENT_POST_SUBSYSTEM_INIT, () => {
+  if (!TweenSystem.instance || director.getSystem(TweenSystem.ID) !== TweenSystem.instance)
+    throw new Error('Cocos TweenSystem was not registered with the director');
   for (const data of effects) {
     const e = Object.assign(new EffectAsset(), data);
     e.onLoaded();

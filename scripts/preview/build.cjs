@@ -33,6 +33,7 @@ async function main() {
       '2d',
       'ui',
       'graphics',
+      'tween',
       'primitive',
       'legacy-pipeline',
     ],
@@ -41,6 +42,7 @@ async function main() {
     flags: { DEBUG: true },
   });
   if (result.hasCriticalWarns) throw new Error('Engine emitted critical warnings');
+  require('./verify-engine.cjs')(path.join(out, 'engine/cc.js'), engine);
   const intermediate = path.join(out, 'app-esm.js');
   await dependency('esbuild').build({
     entryPoints: [path.join(__dirname, 'bootstrap.ts')],
@@ -59,6 +61,10 @@ async function main() {
   await bundle.close();
   fs.rmSync(intermediate);
   fs.copyFileSync(path.join(__dirname, 'index.html'), path.join(out, 'index.html'));
+  const icons = path.resolve('assets/resources/crop-icons');
+  fs.mkdirSync(path.join(out, 'crop-icons'), { recursive: true });
+  for (const file of fs.readdirSync(icons).filter((file) => file.endsWith('.png')))
+    fs.copyFileSync(path.join(icons, file), path.join(out, 'crop-icons', file));
   fs.copyFileSync(
     path.join(engine, 'node_modules/systemjs/dist/system.js'),
     path.join(out, 'system.js'),
