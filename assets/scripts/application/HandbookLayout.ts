@@ -1,5 +1,5 @@
 /** Small non-modal folder and movable paper. All coordinates use the canvas center. */
-export const RECIPE_PAPER = { width: 256, height: 258 };
+export const RECIPE_PAPER = { width: 320, height: 350 };
 export function handbookLayout(
   width: number,
   height: number,
@@ -21,13 +21,12 @@ export function handbookLayout(
   };
 }
 export function handbookLauncher(width: number, height: number, bottom = 0) {
+  // A short map uses the summary's reserved right pocket; its 52px row needs a smaller cover.
+  const compact = height - bottom - 52 < 132;
+  const size = compact ? 48 : 64;
   return {
-    x: Math.max(0, width / 2 - 38),
-    // Extremely short portrait maps cannot fit both a stock row and this pocket.
-    // The summary already reserves its rightmost 72 points, so use that empty pocket.
-    y:
-      height - bottom - 80 < 132
-        ? height / 2 - 38
-        : Math.min(height / 2 - 38, -height / 2 + bottom + 38),
+    size,
+    x: Math.max(0, width / 2 - (compact ? 38 : 40)),
+    y: compact ? height / 2 - 28 : -height / 2 + bottom + 40,
   };
 }

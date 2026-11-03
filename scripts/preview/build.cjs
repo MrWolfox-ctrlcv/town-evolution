@@ -65,15 +65,23 @@ async function main() {
   fs.mkdirSync(path.join(out, 'crop-icons'), { recursive: true });
   for (const file of fs.readdirSync(icons).filter((file) => file.endsWith('.png')))
     fs.copyFileSync(path.join(icons, file), path.join(out, 'crop-icons', file));
+  fs.mkdirSync(path.join(out, 'handbook'), { recursive: true });
+  const handbook = path.resolve('assets/resources/handbook');
+  for (const file of fs.readdirSync(handbook).filter((file) => file.endsWith('.png')))
+    fs.copyFileSync(path.join(handbook, file), path.join(out, 'handbook', file));
   fs.copyFileSync(
     path.join(engine, 'node_modules/systemjs/dist/system.js'),
     path.join(out, 'system.js'),
   );
   fs.copyFileSync(path.join(cli, 'LICENSE'), path.join(out, 'COCOS-CLI-LICENSE.txt'));
   fs.copyFileSync(path.join(engine, 'LICENSE.md'), path.join(out, 'COCOS-LICENSE.md'));
-  fs.cpSync(path.join(engine, 'licenses'), path.join(out, 'third-party-licenses'), {
-    recursive: true,
-  });
+  // Avoid Node's recursive copy native crash on Windows paths containing Unicode.
+  const notices = path.join(out, 'third-party-licenses');
+  fs.mkdirSync(notices, { recursive: true });
+  for (const entry of fs.readdirSync(path.join(engine, 'licenses'), { withFileTypes: true })) {
+    if (!entry.isFile()) throw new Error(`Unexpected license entry: ${entry.name}`);
+    fs.copyFileSync(path.join(engine, 'licenses', entry.name), path.join(notices, entry.name));
+  }
   fs.writeFileSync(
     path.join(out, 'provenance.json'),
     JSON.stringify({ engine: revision, standalonePreview: true }, null, 2),

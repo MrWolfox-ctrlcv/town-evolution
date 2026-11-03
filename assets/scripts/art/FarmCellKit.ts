@@ -1,11 +1,11 @@
+import { carrotGeometry, wheatGeometry } from './CropGeometry';
+import { growthStage } from './CropGrowth';
 import { ART as C, part } from './AssetTypes';
 import type { AssetRecipe, Part } from './AssetTypes';
 import type { Job, Crop } from '../domain/game';
 /** Nine visual stages remain independent and use the same monotonic time as gameplay. */
 export function farmStages(jobs: Array<Job | null> | undefined, now: number) {
-  return Array.from({ length: 9 }, (_, cell) =>
-    !jobs?.[cell] ? 'empty' : now >= jobs[cell]!.readyAt ? 'ready' : 'seedling',
-  );
+  return Array.from({ length: 9 }, (_, cell) => growthStage(jobs?.[cell], now));
 }
 export function farmBed(): AssetRecipe {
   const parts: Part[] = [];
@@ -55,64 +55,16 @@ export function farmVisuals(jobs: Array<Job | null> | undefined, now: number) {
     stage === 'empty' ? 'empty' : `${jobs?.[cell]?.crop ?? 'vegetable'}-${stage}`,
   );
 }
-export function cropCell(stage: 'seedling' | 'ready', crop: Crop = 'vegetable'): AssetRecipe {
+export function cropCell(
+  stage: 'seedling' | 'young' | 'ready',
+  crop: Crop = 'vegetable',
+): AssetRecipe {
   const ready = stage === 'ready';
   const parts: Part[] = [];
-  if (crop === 'vegetable') {
-    for (const x of [-0.15, 0.15])
-      for (const z of [-0.15, 0.15]) {
-        if (ready)
-          parts.push(part('carrot-root', 'crown', [x, 0.225, z], [0.15, 0.15, 0.15], '#E98A32'));
-        for (let leaf = 0; leaf < 3; leaf++) {
-          const angle = (leaf * Math.PI * 2) / 3;
-          parts.push(
-            part(
-              'carrot-frond',
-              'gem',
-              [x + Math.cos(angle) * 0.045, ready ? 0.34 : 0.24, z + Math.sin(angle) * 0.045],
-              [0.13, ready ? 0.24 : 0.12, 0.085],
-              leaf === 0 ? '#A4BB51' : '#6F963E',
-              [0, -leaf * 120, 28],
-            ),
-          );
-        }
-      }
-  } else if (crop === 'wheat') {
-    for (const x of [-0.19, 0, 0.19])
-      for (const z of [-0.19, 0, 0.19]) {
-        const top = ready ? 0.55 + (x === 0 ? 0.07 : 0) : 0.3;
-        parts.push(
-          part(
-            'wheat-stem',
-            'box',
-            [x, (top + 0.17) / 2, z],
-            [0.023, top - 0.17, 0.023],
-            ready ? '#B89938' : C.leaf,
-          ),
-        );
-        parts.push(
-          part(
-            ready ? 'wheat-ear' : 'wheat-shoot',
-            'gem',
-            [x, top, z],
-            [ready ? 0.11 : 0.055, ready ? 0.23 : 0.13, 0.085],
-            ready ? '#E7BD4A' : C.leafLight,
-            [0, 15, -8],
-          ),
-        );
-        parts.push(
-          part(
-            'wheat-leaf',
-            'gem',
-            [x + 0.04, top - 0.15, z],
-            [0.05, 0.18, 0.045],
-            ready ? '#C8AA49' : C.leaf,
-            [0, 0, -38],
-          ),
-        );
-      }
-  } else {
-    const size = ready ? 0.29 : 0.14;
+  if (crop === 'vegetable') parts.push(...carrotGeometry(stage));
+  else if (crop === 'wheat') parts.push(...wheatGeometry(stage));
+  else {
+    const size = ready ? 0.29 : stage === 'young' ? 0.22 : 0.11;
     for (const [x, z] of [
       [-0.14, -0.13],
       [0.14, 0.13],

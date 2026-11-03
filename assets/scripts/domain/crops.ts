@@ -1,4 +1,4 @@
-import type { Crop, Item } from './types';
+import type { Crop, Item, Job } from './types';
 /** vegetable is the historical save key for carrots, not a fourth generic crop. */
 export const CROP_KEYS: Crop[] = ['vegetable', 'wheat', 'lettuce'];
 export const ITEM_KEYS: Item[] = [...CROP_KEYS, 'chilledVegetable', 'wood', 'stone'];
@@ -13,3 +13,9 @@ export const CROPS: Record<
 export function isCrop(value: unknown): value is Crop {
   return typeof value === 'string' && CROP_KEYS.includes(value as Crop);
 }
+/** Existing jobs keep their promised output across balancing changes. */
+export function cropJobYield(job: Job | null | undefined): number {
+  return job?.yield ?? 2;
+}
+export const MAX_CROP_DURATION = 7 * 24 * 60 * 60 * 1000;
+export const MAX_CROP_YIELD = 1_000_000;

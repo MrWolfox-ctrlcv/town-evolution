@@ -1,7 +1,7 @@
 import type { ToolId, ToolState, GameState } from './types';
 import { requireRule, integer } from './guards';
 export const TOOL_IDS: ToolId[] = ['sickle', 'wateringCan', 'fertilizer', 'hammer', 'saw', 'axe'];
-export const ACTIVE_TOOLS: ToolId[] = ['sickle', 'saw', 'axe'];
+export const ACTIVE_TOOLS: ToolId[] = ['sickle', 'saw', 'axe', 'hammer'];
 export const TOOLS: Record<ToolId, { label: string; consumable: 'durability' | 'quantity' }> = {
   sickle: { label: '镰刀', consumable: 'durability' },
   wateringCan: { label: '水壶', consumable: 'durability' },

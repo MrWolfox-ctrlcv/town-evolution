@@ -1,5 +1,27 @@
 # Actual Cocos preview (experimental)
 
+## 2026-11-03 Windows checkpoint
+
+The fusion/handbook checkpoint has now been built and exercised locally on Windows
+using actual Cocos pixels: desktop mouse 1280×800 and emulated touch 390×844 each
+completed three rounds. See [the checkpoint record](../../docs/checkpoint-fusion-2026-11-03.md).
+The AF_UNIX restriction described below belongs to an earlier execution environment.
+This is still a standalone preview, not a Creator editor export or a physical-device test.
+
+`npm run preview:build` rebuilds with the pinned engine/compiler checkouts below;
+`npm run preview:serve` serves existing output at `http://127.0.0.1:4178`.
+The handbook atlas is copied with the crop images. Browser capture now includes
+`checkpoint-interactions.cjs`; a precise upstream non-cancelable touchcancel console
+intervention is preserved in `browserWarnings`, while other console errors and page
+exceptions still fail verification.
+
+`node scripts/preview/crop-visual.cjs` uses an isolated Edge session against the local
+preview server, buys wheat through the UI, sows all nine cells and waits for maturity.
+It saves real close-up screenshots to `build/screenshots/crops-wheat.png` and
+`crops-mixed.png`. `node scripts/preview/dock-visual.cjs` exercises the dock's rotation
+control and checks shoreline legality, matching mesh/pier rotation, cargo and persistence.
+These scripts do not edit the user's browser storage or inject game state.
+
 This compiles official Cocos 3.8.8 and the real TownBootstrap dependencies.
 It is not a mock renderer, Creator serialized-scene import, or Android build.
 The native Cocos scene is assembled programmatically. Shader effects are compiled
@@ -79,3 +101,13 @@ onUpdate, one completion callback, and cancellation. jsdom's missing canvas
 methods are recorded; this test does not create WebGL or claim visible animation.
 The helper needs jsdom 26.1.0 in PREVIEW_TOOLS (default COCOS_ENGINE). CI runs this
 before browser capture and preserves build/tween-smoke.json as evidence.
+
+### 地面物品与浮动详情卡验收
+
+构建预览并启动本地服务后运行 `node scripts/preview/ground-visual.cjs`。脚本在隔离Edge中实际打开/关闭工具卡、从库存拖出四种产品、形成三份堆叠、缩放检查模型并点击取回石料，验证菜单不改变地图视野。截图输出到 `build/screenshots/ground-products.png`，不会改写用户浏览器的存档。
+
+### 透明底部操作与警告验收
+
+`node scripts/preview/bottom-ui.cjs` 使用真实鼠标/触摸检查桌面、手机及小横屏的图标资源、弹出动画、关闭恢复和镜头稳定，截图为 `bottom-*-dock.png` / `bottom-*-tools.png`。测试按帧只读记录动画状态，不调用游戏内部操作。
+
+设置 `HARVEST_CHECK=1`、`HARVEST_TOUCH=1` 后运行 `node scripts/preview/crop-visual.cjs`，同时检查满仓停止收割、耐久不多扣、警告持续显示至少5秒及手机显示。截图为 `warehouse-full-warning.png` 和 `warehouse-full-warning-phone.png`。

@@ -1,4 +1,4 @@
-import { ITEM_KEYS } from './crops';
+import { ITEM_KEYS, CROPS } from './crops';
 import type { GameState, Building, CommerceState, Stock } from './types';
 export const COMMERCE = {
   shopCapacity: 28,
@@ -7,9 +7,27 @@ export const COMMERCE = {
   prices: {
     wood: { buy: 8, sell: 4, ship: 4 },
     stone: { buy: 8, sell: 4, ship: 4 },
-    vegetable: { buy: 8, sell: 5, ship: 6 },
-    wheat: { buy: 8, sell: 5, ship: 6 },
-    lettuce: { buy: 8, sell: 5, ship: 6 },
+    vegetable: {
+      get buy() {
+        return CROPS.vegetable.buy;
+      },
+      sell: 5,
+      ship: 6,
+    },
+    wheat: {
+      get buy() {
+        return CROPS.wheat.buy;
+      },
+      sell: 5,
+      ship: 6,
+    },
+    lettuce: {
+      get buy() {
+        return CROPS.lettuce.buy;
+      },
+      sell: 5,
+      ship: 6,
+    },
     chilledVegetable: { buy: 16, sell: 10, ship: 12 },
   },
   orders: {

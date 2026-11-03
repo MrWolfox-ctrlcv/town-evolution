@@ -1,4 +1,5 @@
-import { Node, UITransform, Label, Graphics, Layers, EventTouch } from 'cc';
+import { ActionArtwork, actionIcon } from './ActionArtwork';
+import { Node, UITransform, Label, Graphics, Layers, EventTouch, LabelOutline } from 'cc';
 import { PALETTE, color } from './Palette';
 import { TapGesture } from '../application/TapGesture';
 export function uiNode(name: string, parent: Node): Node {
@@ -49,19 +50,30 @@ export interface Action {
 export class ActionButton {
   readonly node: Node;
   private readonly title: Label;
+  private readonly icon: Node | null;
   private action: Action | null = null;
   private width = 100;
+  private height = 48;
+  private theme: 'default' | 'tab' | 'quiet' = 'default';
+  private selected = false;
   private visualKey = '';
   private readonly gesture = new TapGesture();
   private pressed: Action | null = null;
   constructor(
     parent: Node,
     private readonly explain: (text: string) => void,
+    private readonly artwork?: ActionArtwork,
   ) {
     this.node = uiNode('Action', parent);
     this.title = label(this.node, '', 17);
     this.title.horizontalAlign = Label.HorizontalAlign.CENTER;
     this.title.color = color(PALETTE.paper);
+    this.icon = artwork ? uiNode('ActionIcon', this.node) : null;
+    if (artwork) {
+      const outline = this.title.node.addComponent(LabelOutline);
+      outline.color = color('#344E3D');
+      outline.width = 2;
+    }
     consumeTouches(this.node);
     this.node.on(Node.EventType.TOUCH_START, (event: EventTouch) => {
       if (event.getAllTouches().length > 1) {
@@ -93,26 +105,85 @@ export class ActionButton {
     this.gesture.cancel();
     this.pressed = null;
   }
+  setSelected(selected: boolean): void {
+    if (this.selected === selected) return;
+    this.selected = selected;
+    this.set(this.action);
+  }
   set(action: Action | null): void {
     this.action = action;
     this.node.active = action !== null;
     if (!action) return;
     this.title.string = action.text;
-    const key = [this.width, action.enabled, action.caution].join(':');
+    if (this.icon && this.artwork) {
+      this.title.color = color(
+        action.enabled === false ? '#DADAC8' : action.caution ? '#FFD0A8' : '#FFF9E6',
+      );
+      this.title.node.setPosition(0, -this.height / 2 + 15);
+      this.title.node.getComponent(UITransform)!.setContentSize(this.width, 28);
+      this.icon.setPosition(0, 10);
+      this.artwork.bind(
+        this.icon,
+        actionIcon(action.text),
+        Math.min(60, this.width - 6, this.height - 22),
+        action.enabled !== false,
+      );
+      const g = this.node.getComponent(Graphics) ?? this.node.addComponent(Graphics);
+      g.clear();
+      this.node.getComponent(UITransform)!.setContentSize(this.width, this.height);
+      if (this.selected) {
+        g.lineWidth = 2;
+        g.strokeColor = color('#FFE08F');
+        g.ellipse(0, 6, 28, 23);
+        g.stroke();
+      }
+      return;
+    }
+    this.title.color = color(
+      this.theme === 'quiet' || (this.theme === 'tab' && !this.selected)
+        ? PALETTE.ink
+        : PALETTE.paper,
+    );
+    const key = [
+      this.width,
+      this.height,
+      this.theme,
+      this.selected,
+      action.enabled,
+      action.caution,
+    ].join(':');
     if (key === this.visualKey) return;
     this.visualKey = key;
     panel(
       this.node,
       this.width,
-      48,
-      action.enabled === false ? PALETTE.muted : action.caution ? PALETTE.danger : PALETTE.teal,
-      10,
+      this.height,
+      action.enabled === false
+        ? PALETTE.muted
+        : action.caution
+          ? PALETTE.danger
+          : this.theme === 'tab'
+            ? this.selected
+              ? '#D2994E'
+              : '#F8EBD4'
+            : this.theme === 'quiet'
+              ? '#E2DDC7'
+              : PALETTE.teal,
+      8,
     );
   }
-  layout(x: number, y: number, width: number): void {
+  layout(
+    x: number,
+    y: number,
+    width: number,
+    options: { height?: number; fontSize?: number; theme?: 'default' | 'tab' | 'quiet' } = {},
+  ): void {
     this.width = width;
+    this.height = options.height ?? 48;
+    this.theme = options.theme ?? 'default';
+    this.title.fontSize = options.fontSize ?? 17;
     this.node.setPosition(x, y);
-    this.title.node.getComponent(UITransform)!.setContentSize(width - 12, 42);
+    this.title.node.getComponent(UITransform)!.setContentSize(width - 12, this.height - 6);
     this.set(this.action);
   }
 }

@@ -3,13 +3,19 @@ const assert = require('node:assert/strict');
 const { ASSETS, cropStage } = require('../.domain-build/art/AssetCatalog');
 const { compileAsset } = require('../.domain-build/art/MeshCompiler');
 test('all canonical assets compile into finite indexed vertex-colored meshes within budgets', () => {
-  assert.equal(Object.keys(ASSETS).length, 30);
+  assert.equal(Object.keys(ASSETS).length, 63);
   for (const asset of Object.values(ASSETS)) {
     const m = compileAsset(asset),
       n = m.positions.length / 3;
     assert.equal(m.normals.length, n * 3);
     assert.equal(m.colors.length, n * 4);
-    assert.ok(m.indices.length / 3 < 1500, asset.id);
+    // A pile merges up to five harvested units into one cached draw call.
+    const budget = asset.id.startsWith('pile-')
+      ? 6000
+      : asset.id.startsWith('crop-cell-')
+        ? 6500
+        : 1500;
+    assert.ok(m.indices.length / 3 < budget, asset.id);
     assert.ok(n < 6000, asset.id);
     assert.ok([...m.positions, ...m.normals, ...m.colors].every(Number.isFinite), asset.id);
     assert.ok(

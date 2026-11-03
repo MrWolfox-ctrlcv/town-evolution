@@ -58,7 +58,10 @@ export function transferGround(
   if (pile.amount === 0) s.groundStacks = s.groundStacks.filter((p) => p !== pile);
   return ['已取回产品'];
 }
-export function applyTool(s: GameState, c: Extract<Command, { type: 'useTool' }>): string[] {
+export function applyTool(
+  s: GameState,
+  c: Extract<Command, { type: 'useTool'; tool: 'axe' | 'saw' }>,
+): string[] {
   if (c.tool === 'axe') {
     const tree = s.trees.find((t) => t.id === c.treeId);
     requireRule(tree, '此处没有树木');

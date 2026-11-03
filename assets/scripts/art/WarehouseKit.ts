@@ -67,7 +67,7 @@ export const deck = (): Part[] => [
   ...[-1, 1].map((s) =>
     part('deck-leg', 'box', [-0.25 + s * 0.48, 0.08, 0.82], [0.09, 0.16, 0.09], C.woodDark),
   ),
-  part('step', 'box', [-0.25, 0.09, 0.94], [0.44, 0.12, 0.1], C.wood),
+  part('step', 'box', [-0.25, 0.06, 0.94], [0.44, 0.12, 0.1], C.wood),
 ];
 export const wing = (): Part[] => [
   part('wing-base', 'box', [0.61, 0.1, -0.12], [0.56, 0.2, 1.3], C.stone),

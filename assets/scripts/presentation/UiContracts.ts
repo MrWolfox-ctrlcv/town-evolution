@@ -17,6 +17,7 @@ export interface UiState {
   repurposeId: string | null;
   tradeItem: Item;
   quantity: QuantityPreset;
+  moreBuildingActions: boolean;
 }
 export interface UiHandlers {
   command: (command: Command) => void;
@@ -33,5 +34,25 @@ export interface UiHandlers {
   repurpose: () => void;
   item: () => void;
   quantity: () => void;
+  toggleBuildingActions: () => void;
   select: (id: string) => void;
+}
+
+export function createUiState(): UiState {
+  return {
+    profile: 'normal',
+    tab: 'manage',
+    selected: null,
+    placing: null,
+    preview: null,
+    resetArmed: false,
+    cropShopOpen: false,
+    toolShopOpen: false,
+    selectedPile: null,
+    plantingTree: false,
+    repurposeId: null,
+    tradeItem: 'vegetable',
+    quantity: 1,
+    moreBuildingActions: false,
+  };
 }

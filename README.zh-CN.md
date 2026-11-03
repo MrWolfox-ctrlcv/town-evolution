@@ -1,5 +1,7 @@
 # 小镇进化 Town Evolution
 
+[本地检查点：堆叠融合与探索图鉴（2026-11-03）](docs/checkpoint-fusion-2026-11-03.md)：新增建筑材料挂载、锤子扩建、真实发现记录与 ImageGen 素材图鉴。已完成实际 Cocos 桌面及模拟触屏各3轮交互验证；本机运行 `npm run preview:serve` 可试玩准备好的预览。
+
 [演示岛与重复测试说明](docs/demo-island.md)：首次进入演示岛，可在工具页切换独立正常小镇。
 以 **Cocos Creator 3.8.8 + TypeScript** 实现的模块化建筑经营原型，目标是同一套业务规则支持网页与 Android 独立应用。
 

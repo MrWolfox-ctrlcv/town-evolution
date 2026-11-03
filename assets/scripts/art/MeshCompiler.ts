@@ -1,3 +1,5 @@
+import { BLADE } from './CropGeometry';
+import { PLANT_SHAPES } from './PlantShapes';
 import { CROWN, TIMBER } from './OrganicShapes';
 import type { AssetRecipe, MeshData, Part, V3 } from './AssetTypes';
 const BOX: V3[] = [
@@ -52,7 +54,15 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
     max: [-Infinity, -Infinity, -Infinity],
   };
   for (const p of recipe.parts) {
-    const organic = p.shape === 'crown' ? CROWN : p.shape === 'timber' ? TIMBER : undefined;
+    const organic =
+      PLANT_SHAPES[p.shape] ??
+      (p.shape === 'crown'
+        ? CROWN
+        : p.shape === 'timber'
+          ? TIMBER
+          : p.shape === 'blade'
+            ? BLADE
+            : undefined);
     const vertices =
       organic?.vertices ?? (p.shape === 'box' ? BOX : p.shape === 'gable' ? GABLE : GEM);
     const faces =
@@ -78,7 +88,41 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
               [5, 4, 1],
             ]);
     const points = vertices.map((v) => transform(v, p));
+    const smooth = PLANT_SHAPES[p.shape]?.smooth;
+    const normals = points.map(() => [0, 0, 0]);
+    if (smooth)
+      for (const face of faces) {
+        const a = points[face[0]!]!,
+          b = points[face[1]!]!,
+          c = points[face[2]!]!;
+        const u = b.map((v, i) => v - a[i]!),
+          v = c.map((v, i) => v - a[i]!);
+        const n = [
+          u[1]! * v[2]! - u[2]! * v[1]!,
+          u[2]! * v[0]! - u[0]! * v[2]!,
+          u[0]! * v[1]! - u[1]! * v[0]!,
+        ];
+        for (const index of face) n.forEach((v, i) => (normals[index]![i]! += v));
+      }
     const rgb = [1, 3, 5].map((i) => parseInt(p.color.slice(i, i + 2), 16) / 255);
+    if (smooth) {
+      const base = mesh.positions.length / 3;
+      points.forEach((pos, index) => {
+        const n = normals[index]!.map((v) => v / Math.hypot(...normals[index]!));
+        const shade = 0.77 + 0.23 * Math.max(0, n[0]! * -0.45 + n[1]! * 0.82 + n[2]! * 0.36);
+        mesh.positions.push(...pos);
+        mesh.normals.push(...n);
+        mesh.colors.push(...rgb.map((v) => v * shade), 1);
+        pos.forEach((v, i) => {
+          mesh.min[i] = Math.min(mesh.min[i]!, v);
+          mesh.max[i] = Math.max(mesh.max[i]!, v);
+        });
+      });
+      for (const face of faces)
+        for (let i = 1; i < face.length - 1; i++)
+          mesh.indices.push(base + face[0]!, base + face[i]!, base + face[i + 1]!);
+      continue;
+    }
     for (const face of faces) {
       const a = points[face[0]!]!,
         b = points[face[1]!]!,
@@ -99,9 +143,20 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
       const base = mesh.positions.length / 3;
       for (const index of face) {
         const pos = points[index]!;
+        const vertexNormal = smooth
+          ? normals[index]!.map((v) => v / Math.hypot(...normals[index]!))
+          : normal;
+        const light = smooth
+          ? 0.77 +
+            0.23 *
+              Math.max(
+                0,
+                vertexNormal[0]! * -0.45 + vertexNormal[1]! * 0.82 + vertexNormal[2]! * 0.36,
+              )
+          : shade;
         mesh.positions.push(...pos);
-        mesh.normals.push(...normal);
-        mesh.colors.push(...rgb.map((k) => k * shade), 1);
+        mesh.normals.push(...vertexNormal);
+        mesh.colors.push(...rgb.map((k) => k * light), 1);
         pos.forEach((value, i) => {
           mesh.min[i] = Math.min(mesh.min[i]!, value);
           mesh.max[i] = Math.max(mesh.max[i]!, value);

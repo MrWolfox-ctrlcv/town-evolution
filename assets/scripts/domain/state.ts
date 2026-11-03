@@ -1,4 +1,5 @@
 import { mapSeedFromTime, populateIslandTrees } from './island';
+import { emptyFusion, cloneFusion } from './fusion-state';
 import { initialTools, initialToolRecovery } from './foundation';
 import type { GameState, Building } from './types';
 import { emptyCommerce, cloneCommerce, stockTotal } from './commerce';
@@ -7,6 +8,7 @@ import { requireRule, time, integer } from './guards';
 export function clone(state: GameState): GameState {
   return {
     ...state,
+    fusion: cloneFusion(state.fusion),
     tools: { ...state.tools },
     toolRecoveryAvailable: { ...state.toolRecoveryAvailable },
     trees: state.trees.map((t) => ({ ...t })),
@@ -25,6 +27,7 @@ export function createGame(now: number, seed = mapSeedFromTime(now)): GameState 
   requireRule(integer(seed) && seed > 0, '地图种子无效');
   const state: GameState = {
     schemaVersion: 8,
+    fusion: emptyFusion(),
     mapSeed: seed,
     tools: initialTools(),
     toolRecoveryAvailable: initialToolRecovery(),

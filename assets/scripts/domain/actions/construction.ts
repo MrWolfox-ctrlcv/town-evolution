@@ -1,5 +1,6 @@
 import type { GameState, Command, Building } from '../types';
 import { isDockShore } from '../island';
+import { mergeAttachments } from '../fusion-state';
 import { initializeFacility, hasTradeFacility } from '../commerce';
 import { CONFIG } from '../config';
 import { requireRule } from '../guards';
@@ -25,6 +26,7 @@ export function place(
     rotation,
   };
   validatePlacement(s, b);
+  if (b.kind === 'dock' && command.rotation === undefined) orientDock(b, s.mapSeed);
   validateShore(b, s.mapSeed);
   spend(s, CONFIG.buildings[b.kind].cost);
   if (b.kind === 'farm') b.cropJobs = Array(9).fill(null);
@@ -82,11 +84,12 @@ export function dragMerge(
 function mergeWarehouse(s: GameState, warehouse: Building, cooler: Building): string[] {
   requireRule(!warehouse.job && !cooler.job, '生产中不能合体');
   spend(s, CONFIG.combineCost);
+  mergeAttachments(s, warehouse.id, cooler.id);
   warehouse.kind = 'coldWarehouse';
   s.buildings = s.buildings.filter((b) => b.id !== cooler.id);
   validatePlacement(s, warehouse);
   requireRule(getUsedStorage(s) <= getCapacity(s), '合体后容量不足');
-  return ['合体完成：冷藏库获得冷藏处理能力'];
+  return ['合体完成：冷藏库。当前版本不开放新的冷藏生产'];
 }
 
 /** Explicit legacy-town recovery, never an automatic save migration. */
@@ -117,6 +120,7 @@ export function moveBuilding(
   b.x = c.x;
   b.z = c.z;
   validatePlacement(s, b);
+  if (b.kind === 'dock') orientDock(b, s.mapSeed);
   validateShore(b, s.mapSeed);
   return ['已移动建筑'];
 }
@@ -127,10 +131,29 @@ export function rotateBuilding(
   c: Extract<Command, { type: 'rotateBuilding' }>,
 ): string[] {
   const b = find(s, c.buildingId);
-  b.rotation = ((b.rotation + 1) % 4) as Building['rotation'];
+  const original = b.rotation;
+  if (b.kind === 'dock') {
+    for (let step = 1; step < 4; step++) {
+      b.rotation = ((original + step) % 4) as Building['rotation'];
+      if (isDockShore(b, s.mapSeed)) {
+        validatePlacement(s, b);
+        return ['已转向建筑'];
+      }
+    }
+    throw new Error('此处只有一个临海朝向，请长按移动到其他岸边');
+  }
+  b.rotation = ((original + 1) % 4) as Building['rotation'];
   validatePlacement(s, b);
-  validateShore(b, s.mapSeed);
   return ['已转向建筑'];
+}
+
+function orientDock(b: Building, seed: number): void {
+  const initial = b.rotation;
+  for (let step = 0; step < 4; step++) {
+    b.rotation = ((initial + step) % 4) as Building['rotation'];
+    if (isDockShore(b, seed)) return;
+  }
+  b.rotation = initial;
 }
 
 function validateShore(b: Building, seed: number): void {

@@ -26,6 +26,7 @@ export class IslandView {
     const seed = state.mapSeed;
     const signature = JSON.stringify([
       seed,
+      state.groundStacks.map((p) => [p.x, p.z]),
       state.buildings.map((b) => [b.kind, b.x, b.z, b.rotation]),
       state.trees.map((t) => [t.x, t.z]),
     ]);
@@ -33,6 +34,15 @@ export class IslandView {
     this.signature = signature;
     const data = islandTerrain(this.size, seed, (x, z) => isLandCell(x, z, seed));
     const actors = [
+      ...state.groundStacks.map((p) => ({
+        x: p.x,
+        z: p.z,
+        width: 1,
+        depth: 1,
+        tree: false,
+        prop: true,
+        rotation: 0,
+      })),
       ...state.buildings.map((b) => ({
         x: b.x,
         z: b.z,

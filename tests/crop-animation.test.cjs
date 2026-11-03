@@ -19,8 +19,9 @@ test('growth remains bounded, ripening stretch expires and never replays for old
 });
 test('all animated crop vertices stay in their own soil cells throughout wind and ripening', () => {
   for (const crop of ['vegetable', 'wheat', 'lettuce'])
-    for (const ready of [false, true]) {
-      const mesh = compileAsset(cropCell(ready ? 'ready' : 'seedling', crop));
+    for (const stage of ['seedling', 'young', 'ready']) {
+      const ready = stage === 'ready';
+      const mesh = compileAsset(cropCell(stage, crop));
       for (let now = 1000; now < 35000; now += 157)
         for (const phase of [0, 1, 3, 5]) {
           const p = cropPose({ ...job, crop }, now, phase, ready);

@@ -1,4 +1,5 @@
-import { CONFIG, CROPS, hasTradeFacility, toolRefill } from '../domain/game';
+import { CONFIG, CROPS, ITEM_KEYS, hasTradeFacility, toolRefill } from '../domain/game';
+import { TRAY_LABELS } from './TrayIcons';
 import { commerceActions } from './CommercePanel';
 import type { Command } from '../domain/game';
 import type { Action } from './Widgets';
@@ -45,8 +46,8 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
   if (ui.plantingTree) return [{ text: '取消种树', run: handlers.cancel }];
   if (ui.toolShopOpen)
     return [
-      ...(['sickle', 'axe', 'saw'] as const).map((tool) => {
-        const label = { sickle: '镰刀', axe: '斧子', saw: '锯子' }[tool];
+      ...(['sickle', 'axe', 'saw', 'hammer'] as const).map((tool) => {
+        const label = { sickle: '镰刀', axe: '斧子', saw: '锯子', hammer: '锤子' }[tool];
         const rescue = !session.reason({ type: 'recoverTool', tool });
         return commandButton(
           session,
@@ -134,10 +135,26 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
       { text: ui.profile === 'demo' ? '进入正常小镇' : '进入演示岛', run: handlers.switchTown },
     ];
   const commerce = commerceActions(session, ui, handlers);
-  if (commerce) return commerce;
   const building = session.state.buildings.find((b) => b.id === ui.selected);
-  if (!building) return [];
+  if (!building) return commerce ?? [];
+  const attached = session.state.fusion.attachments[building.id];
   const result: Action[] = [];
+  const firstAttached = attached && ITEM_KEYS.find((item) => attached[item] > 0);
+  if (firstAttached)
+    result.push(
+      commandButton(
+        session,
+        `取回${TRAY_LABELS[firstAttached]} ×1`,
+        { type: 'detachMaterial', buildingId: building.id, item: firstAttached, quantity: 1 },
+        handlers,
+      ),
+    );
+  if (commerce) {
+    if (result.length + commerce.length <= 6) return [...result, ...commerce];
+    return ui.moreBuildingActions
+      ? [...result, ...commerce.slice(5), { text: '返回交易', run: handlers.toggleBuildingActions }]
+      : [...commerce.slice(0, 5), { text: '更多 / 材料', run: handlers.toggleBuildingActions }];
+  }
   if (building.kind === 'coldWarehouse' && building.job)
     result.push(
       commandButton(
@@ -151,7 +168,7 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
     result.push(
       commandButton(
         session,
-        `扩容 · ${CONFIG.expansionCost}币`,
+        `金币扩容 · ${CONFIG.expansionCost}币`,
         { type: 'upgrade', buildingId: building.id, target: 'expandedWarehouse' },
         handlers,
       ),

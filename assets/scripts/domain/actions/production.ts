@@ -1,6 +1,6 @@
 import type { GameState, Command, Item, Job } from '../types';
 import { useDurability } from '../foundation';
-import { CROPS, isCrop } from '../crops';
+import { CROPS, isCrop, cropJobYield, MAX_CROP_DURATION, MAX_CROP_YIELD } from '../crops';
 import { CONFIG, MAX_TIME } from '../config';
 import { requireRule, integer } from '../guards';
 import { find, nextId, getCapacity, getUsedStorage } from '../state';
@@ -50,11 +50,25 @@ export function plantCell(
   requireRule(!jobs[c.cell], '此小格已经种植');
   const crop = c.crop ?? 'vegetable';
   requireRule(isCrop(crop), '此作物不能种植');
+  requireRule(
+    integer(CROPS[crop].durationMs, MAX_CROP_DURATION) &&
+      CROPS[crop].durationMs > 0 &&
+      integer(CROPS[crop].yield, MAX_CROP_YIELD) &&
+      CROPS[crop].yield > 0,
+    '作物配置无效',
+  );
   requireRule(s.inventory[crop] >= 1, `${CROPS[crop].label}不足，可直接购买`);
   requireRule(now + CROPS[crop].durationMs <= MAX_TIME, '时间超出范围');
   const id = nextId(s, 'j');
   s.inventory[crop]--;
-  jobs[c.cell] = { id, startedAt: now, readyAt: now + CROPS[crop].durationMs, crop };
+  jobs[c.cell] = {
+    id,
+    startedAt: now,
+    readyAt: now + CROPS[crop].durationMs,
+    crop,
+    durationMs: CROPS[crop].durationMs,
+    yield: CROPS[crop].yield,
+  };
   return [`已种下1份${CROPS[crop].label}`];
 }
 export function harvestCell(
@@ -66,10 +80,14 @@ export function harvestCell(
     job = jobs[c.cell];
   requireRule(job, '此小格没有作物');
   requireRule(now >= job.readyAt, '此小格作物尚未成熟');
-  requireRule(getUsedStorage(s) + CONFIG.cropYield <= getCapacity(s), '仓库已满');
+  const amount = cropJobYield(job);
+  requireRule(
+    getUsedStorage(s) + amount <= getCapacity(s),
+    `仓储空间不足：剩${getCapacity(s) - getUsedStorage(s)}，收获需${amount}；请先出售或扩建`,
+  );
   useDurability(s, 'sickle');
   const crop = job.crop ?? 'vegetable';
-  s.inventory[crop] += CONFIG.cropYield;
+  s.inventory[crop] += amount;
   jobs[c.cell] = null;
-  return [`收获2份${CROPS[crop].label}`];
+  return [`收获${amount}份${CROPS[crop].label}`];
 }

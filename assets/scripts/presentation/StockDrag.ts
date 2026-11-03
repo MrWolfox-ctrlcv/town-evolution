@@ -28,7 +28,7 @@ export class StockDrag {
     this.pointer = id;
     this.item = item;
     for (const b of this.session.state.buildings) {
-      const command = stockDropCommand(this.session.state, item, b.id);
+      const command = this.buildingCommand(b.id);
       if (!command) continue;
       const f = footprint(b);
       const shade = this.session.reason(command) ? '#D87163' : '#EFD377';
@@ -61,7 +61,7 @@ export class StockDrag {
         );
       }
     }
-    this.session.message = isCrop(item) ? '拖到空田播种 · 消耗1份' : '拖到空地堆放 / 商店卖出';
+    this.session.message = isCrop(item) ? '拖到空田播种 · 消耗1份' : '拖到建筑挂载 / 空地堆放';
     this.refresh();
   }
   move(id: number, point: Point): void {
@@ -69,17 +69,19 @@ export class StockDrag {
     const b = this.target(point);
     this.previewDrop(point, b?.id ?? null);
     this.session.message =
-      b?.kind === 'farm'
-        ? isCrop(this.item)
-          ? '划过小格播种 · 每格1份'
-          : '此物品不可播种'
-        : b?.kind === 'shop'
-          ? `卖1份 · +${COMMERCE.prices[this.item].sell}币`
-          : b?.kind === 'dock'
-            ? '装货1份 · 不会卖出'
-            : isCrop(this.item)
-              ? '空田播种 / 空地堆放'
-              : '拖到空地堆放';
+      b && this.buildingCommand(b.id)?.type === 'attachMaterial'
+        ? '松手挂载1份材料'
+        : b?.kind === 'farm'
+          ? isCrop(this.item)
+            ? '划过小格播种 · 每格1份'
+            : '此物品不可播种'
+          : b?.kind === 'shop'
+            ? `卖1份 · +${COMMERCE.prices[this.item].sell}币`
+            : b?.kind === 'dock'
+              ? '装货1份 · 不会卖出'
+              : isCrop(this.item)
+                ? '空田播种 / 空地堆放'
+                : '拖到空地堆放';
     const command = this.dropCommand(point, b?.id ?? null);
     if (command) this.session.message = this.session.reason(command) ?? this.session.message;
     this.refresh();
@@ -118,7 +120,7 @@ export class StockDrag {
   private dropCommand(point: Point, buildingId: string | null) {
     if (!this.map.contains(point)) return null;
     if (this.town.pickTree(this.map.screenRay(point))) return null;
-    if (buildingId) return stockDropCommand(this.session.state, this.item, buildingId);
+    if (buildingId) return this.buildingCommand(buildingId);
     const pile = this.town.pickStack(this.map.screenRay(point));
     const ground = this.map.ground(point);
     return ground
@@ -129,6 +131,16 @@ export class StockDrag {
           z: pile?.z ?? Math.floor(ground.z),
         }
       : null;
+  }
+  private buildingCommand(buildingId: string) {
+    const building = this.session.state.buildings.find((b) => b.id === buildingId);
+    if (!building) return null;
+    if (this.item !== 'wood' && this.item !== 'stone') {
+      if (building.kind === 'farm' && isCrop(this.item)) return null;
+      if (building.kind === 'shop' || building.kind === 'dock')
+        return stockDropCommand(this.session.state, this.item, buildingId);
+    }
+    return { type: 'attachMaterial' as const, buildingId, item: this.item, quantity: 1 };
   }
   private target(point: Point) {
     if (!this.map.contains(point)) return undefined;

@@ -1,3 +1,4 @@
+import { PRODUCTS, productPile } from './ProductPileKit';
 import { farmBed, cropCell } from './FarmCellKit';
 import { shop, orderBoard, dock } from './TradeKit';
 import { warehouse, shell, roof, door, deck, wing, cooling } from './WarehouseKit';
@@ -6,8 +7,9 @@ import type { AssetRecipe } from './AssetTypes';
 export const ASSETS: Record<string, AssetRecipe> = Object.fromEntries(
   [
     farmBed(),
+    ...PRODUCTS.flatMap((item) => Array.from({ length: 5 }, (_, i) => productPile(item, i + 1))),
     ...(['vegetable', 'wheat', 'lettuce'] as const).flatMap((crop) =>
-      (['seedling', 'ready'] as const).map((stage) => cropCell(stage, crop)),
+      (['seedling', 'young', 'ready'] as const).map((stage) => cropCell(stage, crop)),
     ),
     // Retain canonical IDs used by earlier exported art packs.
     { ...cropCell('seedling'), id: 'crop-cell-seedling' },

@@ -1,3 +1,5 @@
+import { ASSETS } from '../art/AssetCatalog';
+import { compileAsset } from '../art/MeshCompiler';
 import { Node, geometry } from 'cc';
 import type { GameState } from '../domain/game';
 import { ModelFactory } from './ModelFactory';
@@ -36,18 +38,19 @@ export class GroundObjects {
       const node = pileModel(this.factory, pile, key);
       this.root.addChild(node);
       node.active = this.lifted !== key;
+      const bounds = compileAsset(ASSETS[`pile-${pile.item}-${pile.amount}`]!);
       this.piles.push({
         key,
         x: pile.x,
         z: pile.z,
         node,
         box: new geometry.AABB(
-          pile.x + 0.5,
-          (0.34 + Math.floor((pile.amount - 1) / 2) * 0.19) / 2,
-          pile.z + 0.5,
-          0.48,
-          (0.34 + Math.floor((pile.amount - 1) / 2) * 0.19) / 2,
-          0.48,
+          pile.x + 0.5 + (bounds.min[0]! + bounds.max[0]!) / 2,
+          0.024 + (bounds.min[1]! + bounds.max[1]!) / 2,
+          pile.z + 0.5 + (bounds.min[2]! + bounds.max[2]!) / 2,
+          Math.max(0.2, (bounds.max[0]! - bounds.min[0]!) / 2),
+          Math.max(0.1, (bounds.max[1]! - bounds.min[1]!) / 2),
+          Math.max(0.2, (bounds.max[2]! - bounds.min[2]!) / 2),
         ),
       });
     }

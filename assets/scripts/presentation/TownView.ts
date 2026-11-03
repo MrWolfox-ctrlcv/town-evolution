@@ -1,3 +1,5 @@
+import { attachmentModel } from './PileModel';
+import { TownFeedback } from './TownFeedback';
 import { IslandView } from './IslandView';
 import { Node, geometry } from 'cc';
 import { CONFIG, footprint } from '../domain/game';
@@ -5,6 +7,7 @@ import type { Building, GameState } from '../domain/game';
 import { GroundObjects } from './GroundObjects';
 import { ModelFactory } from './ModelFactory';
 import { farmVisuals } from '../art/FarmCellKit';
+import { pickFarmCrop } from '../application/FarmPicking';
 export interface PlacementPreview {
   kind: 'farm' | 'warehouse' | 'cooler' | 'shop' | 'orderBoard' | 'dock';
   x: number;
@@ -18,6 +21,8 @@ export class TownView {
   private readonly root: Node;
   private readonly resources: GroundObjects;
   private readonly buildings = new Map<string, { signature: string; node: Node }>();
+  private readonly feedback: TownFeedback;
+  private previous: GameState | null = null;
   private marker: Node | null = null;
   private markerKey = '';
   private lifted: string | null = null;
@@ -25,6 +30,8 @@ export class TownView {
   constructor(parent: Node) {
     this.root = new Node('TownWorld');
     parent.addChild(this.root);
+    this.feedback = this.root.addComponent(TownFeedback);
+    this.feedback.configure(this.factory);
     this.terrain();
     this.resources = new GroundObjects(this.root);
   }
@@ -34,6 +41,19 @@ export class TownView {
     preview: PlacementPreview | null,
     now = Date.now(),
   ): void {
+    const previous = this.previous;
+    if (previous && previous.mapSeed === state.mapSeed) {
+      const trees = new Set(state.trees.map((tree) => tree.id));
+      for (const tree of previous.trees)
+        if (!trees.has(tree.id)) this.feedback.chop(tree.x, tree.z);
+      for (const pile of state.groundStacks) {
+        const old = previous.groundStacks.find(
+          (p) => p.x === pile.x && p.z === pile.z && p.item === pile.item,
+        );
+        if (!old || old.amount !== pile.amount) this.feedback.stack(pile.x, pile.z);
+      }
+    } else if (previous) this.feedback.clear();
+    this.previous = state;
     this.island.sync(state);
     this.resources.sync(state);
     const effectiveNow = Math.max(now, state.lastSeenAt);
@@ -76,6 +96,7 @@ export class TownView {
         b.x,
         b.z,
         b.rotation,
+        JSON.stringify(state.fusion.attachments[b.id] ?? {}),
         b.kind === 'farm' ? farmVisuals(b.cropJobs, effectiveNow).join(',') : Boolean(b.job),
       ].join(':');
       const old = this.buildings.get(b.id);
@@ -83,6 +104,22 @@ export class TownView {
       old?.node.destroy();
       const node = this.factory.building(b, effectiveNow, state.mapSeed);
       this.root.addChild(node);
+      const stock = state.fusion.attachments[b.id];
+      if (stock) {
+        const materials = attachmentModel(this.factory, stock, b.kind);
+        materials.setRotationFromEuler(0, b.rotation * 90, 0);
+        node.addChild(materials);
+      }
+      const before = previous?.buildings.find((entry) => entry.id === b.id);
+      if (
+        previous &&
+        previous.mapSeed === state.mapSeed &&
+        (!before ||
+          before.kind !== b.kind ||
+          JSON.stringify(previous.fusion.attachments[b.id]) !==
+            JSON.stringify(state.fusion.attachments[b.id]))
+      )
+        this.feedback.construct(node, b);
       node.active = b.id !== this.lifted;
       this.buildings.set(b.id, { signature, node });
     }
@@ -117,6 +154,21 @@ export class TownView {
     const tree = this.resources.pickTree(ray);
     const pile = this.resources.pickStack(ray);
     return (tree && tree.distance < distance) || (pile && pile.distance < distance) ? null : id;
+  }
+  pickCrop(ray: geometry.Ray, state = this.previous) {
+    if (!state) return null;
+    const hit = pickFarmCrop(state.buildings, ray, Math.max(Date.now(), state.lastSeenAt));
+    if (!hit || hit.buildingId === this.lifted) return null;
+    for (const entry of this.pickBoxes) {
+      if (state.buildings.find((b) => b.id === entry.id)?.kind === 'farm') continue;
+      const distance = geometry.intersect.rayAABB(ray, entry.bounds);
+      if (distance > 0 && distance < hit.distance) return null;
+    }
+    const tree = this.resources.pickTree(ray),
+      pile = this.resources.pickStack(ray);
+    if ((tree && tree.distance < hit.distance) || (pile && pile.distance < hit.distance))
+      return null;
+    return hit;
   }
   private outline(
     b: Pick<Building, 'kind' | 'x' | 'z'> & { rotation?: Building['rotation'] },
@@ -164,6 +216,8 @@ export class TownView {
     return tree.id;
   }
   dispose(): void {
+    this.feedback.clear();
+    this.previous = null;
     this.resources.dispose();
     this.island.dispose();
     this.root.active = false;

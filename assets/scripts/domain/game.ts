@@ -1,5 +1,8 @@
 /** Public business-layer facade. Rendering and storage depend on this layer, never the reverse. */
 export * from './types';
+export { RECIPE_DEFINITIONS, FUSION } from './recipes';
+import { recordRecipe } from './fusion-state';
+import { transferMaterial, hammerBuilding } from './actions/fusion';
 export { createDemoGame, DEMO_SEED } from './demo';
 export { COMMERCE, hasTradeFacility } from './commerce';
 export { TOOLS, TOOL_IDS, ACTIVE_TOOLS, FOUNDATION, toolRefill } from './foundation';
@@ -38,6 +41,10 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
     const effectiveNow = Math.max(state.lastSeenAt, now);
     let events: string[];
     switch (command.type) {
+      case 'attachMaterial':
+      case 'detachMaterial':
+        events = transferMaterial(next, command);
+        break;
       case 'buyTool':
       case 'recoverTool':
         events = replenishTool(next, command.tool, command.type === 'recoverTool');
@@ -50,7 +57,10 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
         events = transferGround(next, command);
         break;
       case 'useTool':
-        events = applyTool(next, command);
+        events =
+          command.tool === 'hammer'
+            ? hammerBuilding(next, command.buildingId)
+            : applyTool(next, command);
         break;
       case 'repurposeToBoard':
         events = repurposeToBoard(next, command);
@@ -119,6 +129,8 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
         throw new Error('未知操作');
     }
     next.lastSeenAt = effectiveNow;
+    const discovered = recordRecipe(next, command, effectiveNow);
+    if (discovered) events.push(`图鉴新发现：${discovered}`);
     return { ok: true, state: next, events };
   } catch (error) {
     return { ok: false, state, error: error instanceof Error ? error.message : '操作失败' };

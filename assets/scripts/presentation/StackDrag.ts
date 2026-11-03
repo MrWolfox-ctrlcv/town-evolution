@@ -52,7 +52,7 @@ export class StackDrag {
       this.parent.addChild(this.ghost);
       this.town.setLiftedStack(id);
     }
-    this.ghost!.setPosition(point.x + this.offset.x, 0.45, point.z + this.offset.z);
+    this.ghost!.setPosition(point.x + this.offset.x, 0.12, point.z + this.offset.z);
     const command = this.command(ray, screen),
       reason = command ? this.session.reason(command) : '位置不可用';
     this.products.highlightProductDrop(

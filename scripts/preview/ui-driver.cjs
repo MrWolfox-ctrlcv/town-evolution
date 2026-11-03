@@ -24,7 +24,12 @@ async function inspect(page) {
       .map((label) => ({
         text: label.string,
         action: label.node.parent.name === 'Action',
-        ...project(ui, label.node.worldPosition),
+        ...project(
+          ui,
+          label.node.parent.name === 'Action'
+            ? label.node.parent.worldPosition
+            : label.node.worldPosition,
+        ),
       }));
     const find = (node, name) =>
       node.name === name && node.activeInHierarchy

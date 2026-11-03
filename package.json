@@ -4,6 +4,8 @@
   "private": true,
   "description": "Cocos Creator and TypeScript modular-building town MVP",
   "scripts": {
+    "preview:build": "node scripts/preview/build.cjs",
+    "preview:serve": "node scripts/preview/serve.cjs",
     "typecheck": "tsc -p tsconfig.domain.json --noEmit",
     "build:domain": "tsc -p tsconfig.domain.json",
     "test": "npm run build:domain && node --test tests/*.test.cjs",

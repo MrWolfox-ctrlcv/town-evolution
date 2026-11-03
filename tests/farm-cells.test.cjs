@@ -52,7 +52,7 @@ test('canonical soil cells align with input centers and fit individual crop mesh
     assert.equal(farmCellAt({ ...farm, x: -1, z: -1 }, { x: p[0], z: p[2] }), cell);
     assert.ok(Math.abs(soils[cell].position[1] + soils[cell].size[1] / 2 - 0.17) < 1e-9);
   }
-  for (const stage of ['seedling', 'ready'])
+  for (const stage of ['seedling', 'young', 'ready'])
     for (const part of cropCell(stage).parts)
       assert.ok(
         Math.abs(part.position[0]) + part.size[0] / 2 < 1 / 3,
@@ -76,7 +76,7 @@ test('crop identity is independently represented and old jobs remain carrots', (
 test('all crop stages have distinct canonical meshes inside their soil cell', () => {
   const readyShapes = new Set();
   for (const crop of ['vegetable', 'wheat', 'lettuce']) {
-    for (const stage of ['seedling', 'ready']) {
+    for (const stage of ['seedling', 'young', 'ready']) {
       const recipe = cropCell(stage, crop);
       assert.deepEqual(ASSETS[recipe.id], recipe);
       for (const part of recipe.parts) {
@@ -96,13 +96,17 @@ test('all crop stages have distinct canonical meshes inside their soil cell', ()
 const { compileAsset } = require('../.domain-build/art/MeshCompiler');
 test('full crop meshes including rotated leaves stay inside each independent cell', () => {
   for (const crop of ['vegetable', 'wheat', 'lettuce'])
-    for (const stage of ['seedling', 'ready']) {
+    for (const stage of ['seedling', 'young', 'ready']) {
       const mesh = compileAsset(cropCell(stage, crop));
       for (const axis of [0, 2]) {
         assert.ok(mesh.min[axis] >= -1 / 3, `${crop}-${stage} minimum`);
         assert.ok(mesh.max[axis] <= 1 / 3, `${crop}-${stage} maximum`);
       }
-      assert.ok(mesh.indices.length / 3 < 500);
+      const budget = crop === 'vegetable' ? 3000 : crop === 'wheat' ? 6500 : 500;
+      assert.ok(
+        mesh.indices.length / 3 <= budget,
+        `${crop}-${stage} stays under explicit crop mesh budget`,
+      );
     }
   assert.equal(farmBed().parts.filter((p) => p.name === 'soft-soil-ridge').length, 27);
   assert.ok(!farmBed().parts.some((p) => p.name.startsWith('cell-grid')));

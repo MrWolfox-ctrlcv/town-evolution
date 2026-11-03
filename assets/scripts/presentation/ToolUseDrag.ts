@@ -20,6 +20,7 @@ export class ToolUseDrag {
     private readonly refresh: () => void,
   ) {}
   begin(tool: Tool, id: number): void {
+    this.cancel();
     this.map.cancelGesture();
     this.pointer = id;
     this.tool = tool;
@@ -31,7 +32,14 @@ export class ToolUseDrag {
     const command = this.command(point);
     const reason = command ? this.session.reason(command) : null;
     this.mark(command, !reason);
-    this.session.message = command ? (reason ?? '松手使用') : '选择可用目标';
+    this.session.message = command
+      ? (reason ??
+        (command.type === 'useTool' && command.tool === 'hammer'
+          ? this.session.state.fusion.discoveries['expand-warehouse']
+            ? '松手改造为扩建仓库 · 消耗2木材'
+            : '松手尝试改造'
+          : '松手使用'))
+      : '选择可用目标';
     this.refresh();
   }
   end(id: number, point: Point): void {
@@ -65,7 +73,9 @@ export class ToolUseDrag {
         ? this.session.state.trees.find((tree) => tree.id === command.treeId)
         : command?.type === 'useTool' && command.tool === 'saw'
           ? command
-          : null;
+          : command?.type === 'useTool' && command.tool === 'hammer'
+            ? this.session.state.buildings.find((building) => building.id === command.buildingId)
+            : null;
     const key = target ? `${target.x}:${target.z}:${valid}` : '';
     if (key === this.markerKey) return;
     this.clearMarker();
@@ -85,6 +95,10 @@ export class ToolUseDrag {
     if (this.tool === 'axe') {
       const treeId = this.town.pickTree(this.map.screenRay(point));
       return treeId ? { type: 'useTool', tool: 'axe', treeId } : null;
+    }
+    if (this.tool === 'hammer') {
+      const buildingId = this.town.pickBuilding(this.map.screenRay(point));
+      return buildingId ? { type: 'useTool', tool: 'hammer', buildingId } : null;
     }
     if (
       this.town.pickBuilding(this.map.screenRay(point)) ||

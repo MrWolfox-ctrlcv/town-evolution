@@ -1,6 +1,7 @@
 import type { Building, BuildingKind, Crop, GameState, Item } from './types';
 import { createGame } from './state';
 import { CONFIG } from './config';
+import { CROPS } from './crops';
 import { emptyStock, initializeFacility, shippingReward } from './commerce';
 import { isDockShore, populateIslandTrees } from './island';
 import { validatePlacement } from './geometry';
@@ -62,12 +63,14 @@ export function createDemoGame(now: number): GameState {
   const crops: Crop[] = ['vegetable', 'wheat', 'lettuce'];
   for (let cell = 0; cell < 6; cell++) {
     const crop = crops[cell % 3]!;
-    const startedAt = cell < 3 ? Math.max(0, now - CONFIG.cropDurationMs) : now;
+    const startedAt = cell < 3 ? Math.max(0, now - CROPS[crop].durationMs) : now;
     farm.cropJobs![cell] = {
       id: `j${s.nextId++}`,
       crop,
       startedAt,
-      readyAt: startedAt + CONFIG.cropDurationMs,
+      readyAt: startedAt + CROPS[crop].durationMs,
+      durationMs: CROPS[crop].durationMs,
+      yield: CROPS[crop].yield,
     };
     s.inventory[crop]--;
   }

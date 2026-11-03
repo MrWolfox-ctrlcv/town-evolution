@@ -36,7 +36,7 @@ export class ToolRouter implements ToolHandlers {
     }
     if (kind in this.session.state.tools) {
       const tool = kind as Tool;
-      if (!['sickle', 'axe', 'saw'].includes(tool)) {
+      if (!['sickle', 'axe', 'saw', 'hammer'].includes(tool)) {
         this.session.message = '此工具用途尚未开放';
         this.refresh();
         return false;
@@ -69,6 +69,9 @@ export class ToolRouter implements ToolHandlers {
     this.tool.move(id, point);
     if (this.farm.hasActed) this.stock.cancel(true);
     else this.stock.move(id, point);
+  }
+  updateHint(): void {
+    this.farm.updateHint();
   }
   end(id: number, point: Vec2): void {
     const planted = this.farm.end(id, point);

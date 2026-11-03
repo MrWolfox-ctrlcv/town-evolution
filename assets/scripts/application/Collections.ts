@@ -32,8 +32,10 @@ export function collectionOrigin(
     return { x: c.x + 0.5, y: 0.4, z: c.z + 0.5 };
   if (c.type === 'useTool') {
     if (c.tool === 'saw') return { x: c.x + 0.5, y: 0.4, z: c.z + 0.5 };
-    const tree = before.trees.find((t) => t.id === c.treeId);
-    return tree ? { x: tree.x + 0.5, y: 1, z: tree.z + 0.5 } : null;
+    if (c.tool === 'axe') {
+      const tree = before.trees.find((t) => t.id === c.treeId);
+      return tree ? { x: tree.x + 0.5, y: 1, z: tree.z + 0.5 } : null;
+    }
   }
   if ('buildingId' in c) {
     const b = before.buildings.find((item) => item.id === c.buildingId);

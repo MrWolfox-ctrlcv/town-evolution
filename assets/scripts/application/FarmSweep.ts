@@ -16,6 +16,7 @@ export class FarmSweep {
     if (this.visited.has(key)) return null;
     const b = state.buildings.find((item) => item.id === buildingId);
     if (!b || b.kind !== 'farm') return null;
+    if (this.tool === 'harvest' && !b.cropJobs?.[cell]) return null;
     this.visited.add(key);
     return this.tool === 'plant'
       ? { type: 'plantCell', buildingId, cell, crop: this.crop }

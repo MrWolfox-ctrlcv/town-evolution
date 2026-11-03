@@ -1,6 +1,5 @@
 import { Node, geometry, sys } from 'cc';
-import { getCapacity, getUsedStorage } from '../domain/game';
-import type { Command } from '../domain/game';
+import { getCapacity, getUsedStorage, type Command } from '../domain/game';
 import type { TownProfile } from '../application/TownProfiles';
 import { bindCollections } from './CollectionBinding';
 import { GameSession } from '../application/GameSession';
@@ -14,25 +13,12 @@ import { nextQuantity, tradeItems } from '../application/CommerceSelection';
 import { ObjectDrag } from './ObjectDrag';
 import { MapCamera } from './MapCamera';
 import { actions, rotationAction } from './HudActions';
-import type { UiState, PlaceKind, UiHandlers } from './HudActions';
+import type { PlaceKind, UiHandlers } from './HudActions';
+import { createUiState } from './UiContracts';
 /** Thin coordinator. Rules, save operations, UI widgets and model generation live elsewhere. */
 export class TownController {
   private readonly session: GameSession;
-  private readonly ui: UiState = {
-    profile: 'normal',
-    tab: 'manage',
-    selected: null,
-    placing: null,
-    preview: null,
-    resetArmed: false,
-    cropShopOpen: false,
-    toolShopOpen: false,
-    selectedPile: null,
-    plantingTree: false,
-    repurposeId: null,
-    tradeItem: 'vegetable',
-    quantity: 1,
-  };
+  private readonly ui = createUiState();
   private readonly hud: TownHUD;
   private readonly map: MapCamera;
   private readonly drag: ObjectDrag;
@@ -116,7 +102,13 @@ export class TownController {
         this.ui.quantity = nextQuantity(this.ui.quantity);
         this.refresh();
       },
+      toggleBuildingActions: () => {
+        this.ui.moreBuildingActions = !this.ui.moreBuildingActions;
+        this.refresh();
+      },
       select: (id) => {
+        this.hud.openDetails();
+        this.ui.moreBuildingActions = false;
         this.ui.selected = id;
         this.ui.tab = 'manage';
         this.refresh();
@@ -131,13 +123,14 @@ export class TownController {
     this.deferredLayout.clear();
     if (cancelTools) this.hud.cancelTools();
     const v = this.hud.layout();
-    this.map.layout(v.width, v.height, v.bottom, v.top, v.right, v.left);
+    this.map.layout(v.width, v.height, v.bottom, 0, v.right, v.left);
   }
   tick(dt: number): void {
     this.map.tick();
     this.elapsed += dt;
     if (this.elapsed >= 0.5) {
       this.elapsed = 0;
+      this.tools.updateHint();
       this.refresh();
     }
   }
@@ -174,6 +167,7 @@ export class TownController {
     const state = this.session.state;
     if (!tradeItems(state).includes(this.ui.tradeItem)) this.ui.tradeItem = 'vegetable';
     const layoutChanged = this.hud.render({
+      state,
       inventory: state.inventory,
       tools: state.tools,
       summary: `${this.ui.profile === 'demo' ? '演示岛' : '我的小镇'} · 金币 ${state.coins}\n仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
@@ -192,6 +186,7 @@ export class TownController {
     this.ui.toolShopOpen = false;
     this.ui.selectedPile = null;
     this.ui.repurposeId = null;
+    this.ui.moreBuildingActions = false;
     this.ui.tab = tab;
     this.ui.resetArmed = false;
     this.ui.placing = null;
@@ -237,6 +232,7 @@ export class TownController {
     this.refresh(true);
   }
   private pick(x: number, z: number, ray: geometry.Ray): void {
+    this.hud.openDetails();
     this.ui.cropShopOpen = false;
     this.ui.toolShopOpen = false;
     this.ui.selectedPile = null;
@@ -255,6 +251,7 @@ export class TownController {
       const picked = this.town.pickBuilding(ray);
       const b = this.session.state.buildings.find((item) => item.id === picked);
       this.ui.selected = b?.id ?? null;
+      this.ui.moreBuildingActions = false;
       const pile = this.town.pickStack(ray);
       if (!b && pile) this.ui.selectedPile = { x: pile.x, z: pile.z };
       this.ui.tab = 'manage';

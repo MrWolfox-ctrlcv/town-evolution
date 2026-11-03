@@ -28,6 +28,17 @@ export interface Job {
   startedAt: number;
   readyAt: number;
   crop?: Crop;
+  durationMs?: number;
+  yield?: number;
+}
+export type RecipeId = 'gather-wood' | 'build-warehouse' | 'expand-warehouse' | 'merge-cold';
+export interface Discovery {
+  count: number;
+  firstDiscoveredAt: number;
+}
+export interface FusionState {
+  attachments: Record<string, Stock>;
+  discoveries: Partial<Record<RecipeId, Discovery>>;
 }
 export interface Building {
   id: string;
@@ -55,6 +66,7 @@ export interface CommerceState {
 }
 export interface GameState {
   schemaVersion: 8;
+  fusion: FusionState;
   mapSeed: number;
   tools: ToolState;
   toolRecoveryAvailable: Record<ToolId, boolean>;
@@ -71,6 +83,8 @@ export interface GameState {
   completedOrders: number;
 }
 export type Command =
+  | { type: 'attachMaterial' | 'detachMaterial'; buildingId: string; item: Item; quantity: number }
+  | { type: 'useTool'; tool: 'hammer'; buildingId: string }
   | { type: 'recoverCrop' }
   | { type: 'buyTool'; tool: ToolId }
   | { type: 'recoverTool'; tool: ToolId }

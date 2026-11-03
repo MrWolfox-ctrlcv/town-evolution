@@ -1,6 +1,7 @@
 import type { GameState, Building, BuildingKind, Job } from './types';
 import { importFoundation } from './foundation-save';
-import { isCrop } from './crops';
+import { importFusion } from './fusion-state';
+import { isCrop, MAX_CROP_DURATION, MAX_CROP_YIELD } from './crops';
 import { importCommerce } from './commerce-save';
 import { CONFIG, MAX_TIME } from './config';
 import { requireRule, integer, time } from './guards';
@@ -97,8 +98,21 @@ export function importSave(text: string, now: number): GameState {
       );
       b.cropJobs = raw.cropJobs.map((value) => {
         if (value === null) return null;
-        const job = parseJob(value, CONFIG.cropDurationMs);
         requireRule(record(value) && isCrop(value.crop), '作物类型无效');
+        const snapshot = value.durationMs !== undefined || value.yield !== undefined;
+        if (snapshot)
+          requireRule(
+            integer(value.durationMs, MAX_CROP_DURATION) &&
+              value.durationMs > 0 &&
+              integer(value.yield, MAX_CROP_YIELD) &&
+              value.yield > 0,
+            '作物任务配置无效',
+          );
+        const job = parseJob(value, snapshot ? (value.durationMs as number) : 15_000);
+        if (snapshot) {
+          job.durationMs = value.durationMs as number;
+          job.yield = value.yield as number;
+        }
         return { ...job, crop: value.crop };
       });
     } else {
@@ -113,6 +127,7 @@ export function importSave(text: string, now: number): GameState {
   requireRule(data.nextId > maxId, '存档编号顺序无效');
   const state: GameState = {
     schemaVersion: 8,
+    fusion: importFusion(data.fusion, buildings, savedTime),
     mapSeed: data.mapSeed,
     ...importFoundation(data, false, CONFIG.gridSize, data.mapSeed),
     cropRecoveryAvailable: data.cropRecoveryAvailable,

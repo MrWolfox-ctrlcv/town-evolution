@@ -76,6 +76,10 @@ export class ToolTray {
     graphics.roundRect(-29, -29, 58, 58, 12);
     graphics.stroke();
   }
+  setObscured(hidden: boolean): void {
+    this.left.root.active = !hidden;
+    this.right.root.active = !hidden;
+  }
   setHandlers(handlers: ToolHandlers): void {
     this.handlers = handlers;
   }

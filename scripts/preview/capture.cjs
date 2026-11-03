@@ -38,12 +38,22 @@ const server = http.createServer((req, res) => {
 async function capture(browser, width, height, name) {
   const page = await browser.newPage({ viewport: { width, height }, hasTouch: name === 'mobile' });
   const errors = [];
+  const browserWarnings = [];
   page.on('pageerror', (error) => {
     errors.push(error.message);
     console.error(error.stack);
   });
   page.on('console', (message) => {
     if (message.type() === 'error') {
+      // Official 3.8.8 TouchInputSource calls preventDefault even for a non-cancelable
+      // touchcancel. Keep Chromium's intervention in evidence; cancellation state is tested.
+      if (
+        message.text() ===
+        'Ignored attempt to cancel a touchcancel event with cancelable=false, for example because scrolling is in progress and cannot be interrupted.'
+      ) {
+        browserWarnings.push(message.text());
+        return;
+      }
       errors.push(message.text());
       console.error(message.text());
     }
@@ -61,10 +71,27 @@ async function capture(browser, width, height, name) {
     assert.deepEqual(errors, [], 'Runtime console errors');
     await page.screenshot({ path: path.join(evidence, `${name}.png`) });
     await require('./demo-interactions.cjs')(page, evidence, name, name === 'mobile');
+    const checkpoint = [];
+    for (let cycle = 0; cycle < 3; cycle++) {
+      if (cycle) {
+        const { button } = require('./ui-driver.cjs').driver(page, name === 'mobile');
+        await button('工具');
+        await button('重置演示岛');
+        await button('确认重置演示岛');
+      }
+      checkpoint.push(
+        await require('./checkpoint-interactions.cjs')(
+          page,
+          evidence,
+          `${name}-round${cycle + 1}`,
+          name === 'mobile',
+        ),
+      );
+    }
     assert.deepEqual(errors, [], 'Runtime errors after real interactions');
     fs.writeFileSync(
       path.join(evidence, `${name}.json`),
-      JSON.stringify({ width, height, colors: colors.size, errors }),
+      JSON.stringify({ width, height, colors: colors.size, errors, browserWarnings, checkpoint }),
     );
   } catch (error) {
     await page.screenshot({ path: path.join(evidence, `${name}-FAILED.png`) });

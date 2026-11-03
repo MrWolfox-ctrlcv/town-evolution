@@ -5,6 +5,7 @@ export interface GroundActor {
   width: number;
   depth: number;
   tree: boolean;
+  prop?: boolean;
   rotation: number;
 }
 export function sceneGroundArt(
@@ -23,13 +24,13 @@ export function sceneGroundArt(
   };
   const key = (x: number, z: number) => `${x},${z}`;
   const occupied = new Set<string>();
-  for (const a of actors)
+  for (const a of actors.filter((actor) => !actor.prop))
     for (let x = a.x; x < a.x + a.width; x++)
       for (let z = a.z; z < a.z + a.depth; z++) occupied.add(key(x, z));
   const roads = new Set<string>();
   const walk = (x: number, z: number) =>
     x >= 0 && z >= 0 && x < size && z < size && land(x, z) && !occupied.has(key(x, z));
-  const buildings = actors.filter((a) => !a.tree);
+  const buildings = actors.filter((a) => !a.tree && !a.prop);
   function entrance(a: GroundActor): [number, number] | null {
     const ends: [[number, number], [number, number], [number, number], [number, number]] = [
       [Math.floor(a.x + a.width / 2), a.z + a.depth],
@@ -116,10 +117,10 @@ export function sceneGroundArt(
         paving(x + col * 0.5 + 0.012, z + row * 0.5 + 0.012, 0.476, 0.022, [0.8, 0.69, 0.46]);
   }
   for (const actor of actors) {
-    const cx = actor.x + actor.width / 2 + 0.22,
-      cz = actor.z + actor.depth / 2 + 0.23;
-    const rx = actor.tree ? 0.61 : actor.width * 0.61,
-      rz = actor.tree ? 0.47 : actor.depth * 0.58;
+    const cx = actor.x + actor.width / 2 + 0.035,
+      cz = actor.z + actor.depth / 2 + 0.035;
+    const rx = actor.tree ? 0.28 : actor.prop ? 0.43 : actor.width * 0.53,
+      rz = actor.tree ? 0.24 : actor.prop ? 0.4 : actor.depth * 0.52;
     const segments = 16;
     for (let i = 0; i < segments; i++) {
       const a = (i * Math.PI * 2) / segments,

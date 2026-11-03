@@ -1,6 +1,21 @@
 /** Engine-independent source of truth for every exported and in-game mesh. */
 export type V3 = readonly [number, number, number];
-export type Shape = 'box' | 'gable' | 'gem' | 'crown' | 'timber';
+export type Shape =
+  | 'box'
+  | 'gable'
+  | 'gem'
+  | 'crown'
+  | 'timber'
+  | 'blade'
+  | 'grain'
+  | 'kernel'
+  | 'cerealLeaf'
+  | 'straw'
+  | 'ribbon'
+  | 'frond'
+  | 'log'
+  | 'root'
+  | 'binding';
 export interface Part {
   name: string;
   shape: Shape;

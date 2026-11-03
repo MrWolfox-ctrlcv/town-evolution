@@ -1,6 +1,5 @@
 import { Node } from 'cc';
 import type { Crop } from '../domain/game';
-import { CONFIG, getCapacity, getUsedStorage } from '../domain/game';
 import type { Point } from '../application/MapGesture';
 import { farmCellAt, farmCellCenter } from '../application/FarmCells';
 import { sampleStroke } from '../application/StrokeSampling';
@@ -16,6 +15,18 @@ export class FarmTools {
   private acted = false;
   private kind: FarmTool = 'harvest';
   private crop: Crop = 'vegetable';
+  private waiting: { buildingId: string; cell: number; readyAt: number } | null = null;
+  updateHint(): void {
+    if (!this.waiting) return;
+    const { buildingId, cell, readyAt } = this.waiting;
+    const job = this.session.state.buildings.find((b) => b.id === buildingId)?.cropJobs?.[cell];
+    if (this.session.message !== '此小格作物尚未成熟' || job?.readyAt !== readyAt)
+      this.waiting = null;
+    else if (Date.now() >= readyAt) {
+      this.session.message = '作物已成熟，可以收割';
+      this.waiting = null;
+    }
+  }
   get hasActed(): boolean {
     return this.acted;
   }
@@ -76,22 +87,24 @@ export class FarmTools {
     let changed = false;
     for (const sample of samples) {
       if (!this.map.contains(sample)) continue;
-      const hit = this.town.pickBuilding(this.map.screenRay(sample));
+      const cropHit =
+        this.kind === 'harvest'
+          ? this.town.pickCrop(this.map.screenRay(sample), this.session.state)
+          : null;
+      const hit = cropHit?.buildingId ?? this.town.pickBuilding(this.map.screenRay(sample));
       const building = this.session.state.buildings.find((b) => b.id === hit);
       const ground = this.map.ground(sample, 0.17);
-      const cell = building && ground ? farmCellAt(building, ground) : null;
+      const cell = cropHit?.cell ?? (building && ground ? farmCellAt(building, ground) : null);
       if (cell === null) continue;
       const command = this.sweep.command(this.session.state, hit, cell);
       if (!command) continue;
       if (this.session.run(command)) this.acted = true;
+      else if (this.session.message === '此小格作物尚未成熟' && building?.cropJobs?.[cell])
+        this.waiting = { buildingId: building.id, cell, readyAt: building.cropJobs[cell]!.readyAt };
       if (hit) this.highlights?.getChildByName(`${hit}:${cell}`)?.destroy();
       changed = true;
     }
-    if (
-      (this.kind === 'plant' && this.session.state.inventory[this.crop] < 1) ||
-      (this.kind === 'harvest' &&
-        getUsedStorage(this.session.state) + CONFIG.cropYield > getCapacity(this.session.state))
-    ) {
+    if (this.kind === 'plant' && this.session.state.inventory[this.crop] < 1) {
       this.highlights?.destroy();
       this.highlights = null;
     }

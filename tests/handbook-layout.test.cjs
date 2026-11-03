@@ -24,28 +24,28 @@ for (const [width, height] of [
       }
     }
   });
-  test(`closed folder occupies only a lower-right pocket on ${width}x${height}`, () => {
+  test(`closed folder fits its normal or compact pocket on ${width}x${height}`, () => {
     const bottom = width > height ? 8 : 180;
     const box = handbookLauncher(width, height, bottom);
-    assert.equal(box.x, width / 2 - 38);
-    assert.ok(box.x + 30 <= width / 2 - 8);
-    assert.ok(box.y - 24 >= -height / 2 + bottom);
-    assert.ok(box.y + 29 < height / 2);
+    assert.equal(box.size, height - bottom - 52 < 132 ? 48 : 64);
+    assert.ok(box.x + box.size / 2 <= width / 2 - 8);
+    assert.ok(box.y - box.size / 2 >= -height / 2 + bottom);
+    assert.ok(box.y + box.size / 2 <= height / 2 - 4);
   });
 }
 test('paper position is preserved on refresh and clamped after rotation', () => {
-  const point = { x: 180, y: 90 };
+  const point = { x: 180, y: 60 };
   const box = handbookLayout(1000, 700, point, 1.2);
   assert.equal(box.x, 180);
-  assert.equal(box.y, 90);
+  assert.equal(box.y, 60);
   assert.equal(box.scale, 1.2);
   const rotated = handbookLayout(320, 568, point, 1.2);
   assert.ok(rotated.x + rotated.width / 2 <= 152);
 });
-test('default paper is compact rather than a screen-wide book', () => {
+test('default paper gives readable detail space and fits phone width', () => {
   const box = handbookLayout(390, 844);
-  assert.equal(box.width, 256);
-  assert.equal(box.height, 258);
+  assert.equal(box.width, 320);
+  assert.equal(box.height, 350);
   assert.equal(box.scale, 1);
 });
 
@@ -61,8 +61,11 @@ test('right stock entries and pager clear the folder on narrow phone and landsca
       const hud = hudLayout(width, height, actions);
       const folder = handbookLauncher(width, height, hud.bottom);
       if (height - hud.top - hud.bottom < 132) {
-        assert.equal(folder.y, height / 2 - 38, 'Short map uses empty summary-side pocket');
-        assert.ok(folder.x - 30 > hud.summaryX + hud.summaryWidth / 2, 'Pocket clears summary');
+        assert.equal(folder.y, height / 2 - 28, 'Short map uses empty summary-side pocket');
+        assert.ok(
+          folder.x - folder.size / 2 > hud.summaryX + hud.summaryWidth / 2,
+          'Pocket clears summary',
+        );
       }
       const available = Math.max(56, height - hud.top - hud.bottom);
       // Match ToolTray's reserved pocket and TrayColumn's compact/paging geometry.
@@ -72,7 +75,8 @@ test('right stock entries and pager clear the folder on narrow phone and landsca
       const trayX = width / 2 - 36,
         trayY = height / 2 - hud.top - 30;
       const separated = (x, y, w, h) =>
-        Math.abs(x - folder.x) >= (w + 60) / 2 || Math.abs(y - folder.y) >= (h + 60) / 2;
+        Math.abs(x - folder.x) >= (w + folder.size) / 2 ||
+        Math.abs(y - folder.y) >= (h + folder.size) / 2;
       for (let i = 0; i < Math.min(6, slots); i++)
         assert.ok(
           separated(trayX, trayY - i * 60, 56, 56),
@@ -99,4 +103,17 @@ test('paper hit-test boundary uses physical positions while dragging uses logica
   assert.match(source, /hitTest\(touch\.getLocation\(\)\)/);
   assert.doesNotMatch(source, /hitTest\((?:event|touch)\.getUILocation\(\)\)/);
   assert.match(source, /const point = event\.getUILocation\(\)/);
+});
+
+test('directory and paper share drag placement and contain no zoom button controls', () => {
+  const fs = require('node:fs');
+  const source = fs.readFileSync(
+    require('node:path').join(__dirname, '../assets/scripts/presentation/RecipeHandbook.ts'),
+    'utf8',
+  );
+  assert.match(source, /for \(const sheet of \[this.directory, this.paper\]\)/);
+  assert.match(source, /sheet.on\(Node.EventType.TOUCH_MOVE, this.move, this\)/);
+  assert.match(source, /sheet.setPosition\(box.x, box.y\)/);
+  assert.match(source, /point \?\? this.position \?\? initial/);
+  assert.doesNotMatch(source, /RecipeZoom(?:In|Out)/);
 });
