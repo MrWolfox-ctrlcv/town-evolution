@@ -1,0 +1,456 @@
+{
+  "schemaVersion": 1,
+  "units": "1 unit = 1 game grid cell; Y up; front +Z",
+  "assets": [
+    {
+      "id": "warehouse-base",
+      "file": "warehouse-base.gltf",
+      "parts": 19,
+      "triangles": 220,
+      "vertices": 444,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.92,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.42000000000000004,
+          1.7349999999999999,
+          0.99
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 28486
+    },
+    {
+      "id": "warehouse-expanded",
+      "file": "warehouse-expanded.gltf",
+      "parts": 23,
+      "triangles": 268,
+      "vertices": 540,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.92,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.9401875083986142,
+          1.7349999999999999,
+          0.99
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 34381
+    },
+    {
+      "id": "warehouse-cold",
+      "file": "warehouse-cold.gltf",
+      "parts": 30,
+      "triangles": 348,
+      "vertices": 708,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.92,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.9339999999999999,
+          1.7349999999999999,
+          0.99
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 44615
+    },
+    {
+      "id": "cooler",
+      "file": "cooler.gltf",
+      "parts": 9,
+      "triangles": 104,
+      "vertices": 216,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.31,
+          0,
+          -0.32
+        ],
+        "max": [
+          0.40499999999999997,
+          0.8075,
+          0.34
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 14395
+    },
+    {
+      "id": "farm-empty",
+      "file": "farm-empty.gltf",
+      "parts": 8,
+      "triangles": 96,
+      "vertices": 192,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.9600000000000001,
+          0.009999999999999995,
+          -0.97
+        ],
+        "max": [
+          0.9600000000000001,
+          0.25,
+          0.97
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 13025
+    },
+    {
+      "id": "farm-seedling",
+      "file": "farm-seedling.gltf",
+      "parts": 35,
+      "triangles": 312,
+      "vertices": 840,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.9600000000000001,
+          0.009999999999999995,
+          -0.97
+        ],
+        "max": [
+          0.9600000000000001,
+          0.33691801729842147,
+          0.97
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 51069
+    },
+    {
+      "id": "farm-ready",
+      "file": "farm-ready.gltf",
+      "parts": 35,
+      "triangles": 312,
+      "vertices": 840,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.9600000000000001,
+          0.009999999999999995,
+          -0.97
+        ],
+        "max": [
+          0.9600000000000001,
+          0.5060520386670597,
+          0.97
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 51062
+    },
+    {
+      "id": "crate",
+      "file": "crate.gltf",
+      "parts": 6,
+      "triangles": 72,
+      "vertices": 144,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.22,
+          0,
+          -0.21
+        ],
+        "max": [
+          0.22,
+          0.44,
+          0.2675
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 10025
+    },
+    {
+      "id": "fence",
+      "file": "fence.gltf",
+      "parts": 4,
+      "triangles": 48,
+      "vertices": 96,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.48,
+          0,
+          -0.06
+        ],
+        "max": [
+          0.48,
+          0.8,
+          0.06
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 7075
+    },
+    {
+      "id": "tree",
+      "file": "tree.gltf",
+      "parts": 3,
+      "triangles": 28,
+      "vertices": 72,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.575,
+          0,
+          -0.55
+        ],
+        "max": [
+          0.575,
+          1.845,
+          0.55
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 5477
+    },
+    {
+      "id": "rock",
+      "file": "rock.gltf",
+      "parts": 1,
+      "triangles": 8,
+      "vertices": 24,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.36276906511345003,
+          -0.07431837619078951,
+          -0.3013347527342059
+        ],
+        "max": [
+          0.36276906511345003,
+          0.4343183761907895,
+          0.3013347527342059
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 2677
+    },
+    {
+      "id": "path",
+      "file": "path.gltf",
+      "parts": 5,
+      "triangles": 48,
+      "vertices": 120,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          0.11750000000000001,
+          0.5
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 8368
+    },
+    {
+      "id": "module-shell",
+      "file": "module-shell.gltf",
+      "parts": 7,
+      "triangles": 80,
+      "vertices": 162,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.86,
+          0,
+          -0.76
+        ],
+        "max": [
+          0.36,
+          1.5350000000000001,
+          0.6000000000000001
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 11153
+    },
+    {
+      "id": "module-roof",
+      "file": "module-roof.gltf",
+      "parts": 3,
+      "triangles": 32,
+      "vertices": 66,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.92,
+          1.18,
+          -0.82
+        ],
+        "max": [
+          0.42000000000000004,
+          1.7349999999999999,
+          0.685
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 5261
+    },
+    {
+      "id": "module-door",
+      "file": "module-door.gltf",
+      "parts": 5,
+      "triangles": 60,
+      "vertices": 120,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5800000000000001,
+          0.22000000000000003,
+          0.515
+        ],
+        "max": [
+          0.08000000000000002,
+          1.08,
+          0.6625
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 8612
+    },
+    {
+      "id": "module-deck",
+      "file": "module-deck.gltf",
+      "parts": 4,
+      "triangles": 48,
+      "vertices": 96,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.87,
+          0,
+          0.55
+        ],
+        "max": [
+          0.37,
+          0.26,
+          0.99
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 7087
+    },
+    {
+      "id": "module-wing",
+      "file": "module-wing.gltf",
+      "parts": 4,
+      "triangles": 48,
+      "vertices": 96,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          0.2798124916013857,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.9401875083986142,
+          1.0446473419365154,
+          0.58
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 7129
+    },
+    {
+      "id": "module-cooling",
+      "file": "module-cooling.gltf",
+      "parts": 9,
+      "triangles": 104,
+      "vertices": 216,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.31,
+          0,
+          -0.32
+        ],
+        "max": [
+          0.40499999999999997,
+          0.8075,
+          0.34
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 14411
+    }
+  ]
+}
