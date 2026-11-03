@@ -15,5 +15,9 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["assets/scripts/domain/**/*.ts", "assets/scripts/application/**/*.ts"]
+  "include": [
+    "assets/scripts/domain/**/*.ts",
+    "assets/scripts/application/**/*.ts",
+    "assets/scripts/art/**/*.ts"
+  ]
 }

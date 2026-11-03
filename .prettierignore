@@ -8,3 +8,4 @@ profiles
 assets/scenes
 *.meta
 package-lock.json
+art/exports
