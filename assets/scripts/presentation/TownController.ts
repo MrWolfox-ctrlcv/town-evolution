@@ -81,7 +81,7 @@ export class TownController {
     this.ui.resetArmed = false;
     this.refresh();
   }
-  private refresh(models = false): void {
+  private refresh(_models = false): void {
     const state = this.session.state;
     const layoutChanged = this.hud.render({
       summary: `小镇进化 · 金币 ${state.coins}\n蔬菜 ${state.inventory.vegetable} · 冷藏菜 ${state.inventory.chilledVegetable} · 仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
@@ -91,7 +91,7 @@ export class TownController {
       actions: actions(this.session, this.ui, this.handlers),
     });
     if (layoutChanged) this.layout();
-    if (models) this.town.sync(state, this.ui.selected, this.ui.preview);
+    this.town.sync(state, this.ui.selected, this.ui.preview);
   }
   private description(): string {
     if (this.ui.resetArmed)

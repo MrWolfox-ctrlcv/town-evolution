@@ -2,6 +2,7 @@ import { Node, geometry } from 'cc';
 import { CONFIG, footprint } from '../domain/game';
 import type { Building, GameState } from '../domain/game';
 import { ModelFactory } from './ModelFactory';
+import { cropStage } from '../art/AssetCatalog';
 export interface PlacementPreview {
   kind: 'farm' | 'warehouse' | 'cooler';
   x: number;
@@ -21,7 +22,12 @@ export class TownView {
     parent.addChild(this.root);
     this.terrain();
   }
-  sync(state: GameState, selection: string | null, preview: PlacementPreview | null): void {
+  sync(
+    state: GameState,
+    selection: string | null,
+    preview: PlacementPreview | null,
+    now = Date.now(),
+  ): void {
     this.pickBoxes = state.buildings.map((b) => {
       const f = footprint(b);
       const h =
@@ -51,11 +57,17 @@ export class TownView {
         this.buildings.delete(id);
       }
     for (const b of state.buildings) {
-      const signature = [b.kind, b.x, b.z, b.rotation, Boolean(b.job)].join(':');
+      const signature = [
+        b.kind,
+        b.x,
+        b.z,
+        b.rotation,
+        b.kind === 'farm' ? cropStage(b.job, now) : Boolean(b.job),
+      ].join(':');
       const old = this.buildings.get(b.id);
       if (old?.signature === signature) continue;
       old?.node.destroy();
-      const node = this.factory.building(b);
+      const node = this.factory.building(b, now);
       this.root.addChild(node);
       this.buildings.set(b.id, { signature, node });
     }
@@ -111,27 +123,21 @@ export class TownView {
       [10, -0.25, 1.1],
       [12.25, 9, 0.85],
     ]) {
-      f.shape(this.root, 'TreeTrunk', x!, 0.32, z!, 0.14, 0.6, 0.14, '#92734E');
-      f.shape(this.root, 'TreeCrown', x!, 0.95, z!, size!, size! * 1.2, size!, '#567E59', 'sphere');
-      f.shape(
-        this.root,
-        'TreeCrownLight',
-        x! - 0.14,
-        1.1,
-        z! - 0.12,
-        size! * 0.72,
-        size! * 0.8,
-        size! * 0.72,
-        '#74975D',
-        'sphere',
-      );
+      const tree = f.asset('tree', 'BorderTree');
+      tree.setPosition(x!, 0, z!);
+      tree.setScale(size!, size!, size!);
+      this.root.addChild(tree);
     }
     for (const [x, z] of [
       [-0.25, 5],
       [5, 12.25],
       [11, 12.25],
-    ])
-      f.shape(this.root, 'BankStone', x!, 0.1, z!, 0.45, 0.24, 0.35, '#C5C2A4', 'sphere');
+    ]) {
+      const rock = f.asset('rock', 'BankStone');
+      rock.setPosition(x!, 0, z!);
+      rock.setScale(0.6, 0.6, 0.6);
+      this.root.addChild(rock);
+    }
     for (let i = 0; i <= CONFIG.gridSize; i++) {
       f.shape(this.root, 'GridX', i, 0.025, 6, 0.016, 0.012, 12, '#9CB782');
       f.shape(this.root, 'GridZ', 6, 0.025, i, 12, 0.012, 0.016, '#9CB782');

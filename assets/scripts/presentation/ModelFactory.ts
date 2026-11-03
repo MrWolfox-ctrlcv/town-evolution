@@ -2,8 +2,11 @@ import { Node, Mesh, MeshRenderer, Material, primitives, utils } from 'cc';
 import { CONFIG } from '../domain/game';
 import type { Building } from '../domain/game';
 import { color } from './Palette';
-/** Reusable geometry and materials; each building is a modular node hierarchy. */
+import { AssetRenderer } from './AssetRenderer';
+import { cropStage } from '../art/AssetCatalog';
+/** Reusable geometry and materials; buildings use merged meshes from modular recipes. */
 export class ModelFactory {
+  private readonly assets = new AssetRenderer();
   private readonly materials = new Map<string, Material>();
   private readonly meshes = new Map<string, Mesh>();
   shape(
@@ -42,117 +45,32 @@ export class ModelFactory {
     return node;
   }
   dispose(): void {
+    this.assets.dispose();
     for (const m of this.materials.values()) m.destroy();
     for (const m of this.meshes.values()) m.destroy();
   }
-  building(b: Building): Node {
+  asset(id: string, name = id): Node {
+    return this.assets.create(id, name);
+  }
+  building(b: Building, now: number): Node {
     const cfg = CONFIG.buildings[b.kind];
-    const w = b.rotation ? cfg.depth : cfg.width;
-    const d = b.rotation ? cfg.width : cfg.depth;
+    const w = b.rotation ? cfg.depth : cfg.width,
+      d = b.rotation ? cfg.width : cfg.depth;
     const root = new Node(b.id);
     root.setPosition(b.x + w / 2, 0, b.z + d / 2);
-    if (b.kind === 'farm') {
-      this.shape(root, 'Soil', 0, 0.12, 0, w - 0.14, 0.16, d - 0.14, '#936F4C');
-      for (const side of [-1, 1]) {
-        this.shape(root, 'BedBorder', side * (w / 2 - 0.1), 0.2, 0, 0.09, 0.16, d - 0.1, '#BB996B');
-        this.shape(root, 'BedBorder', 0, 0.2, side * (d / 2 - 0.1), w - 0.1, 0.16, 0.09, '#BB996B');
-      }
-      for (let row = -1; row <= 1; row++)
-        this.shape(root, 'Furrow', row * 0.48, 0.215, 0, 0.08, 0.02, d - 0.3, '#775C42');
-      for (let i = 0; i < 3; i++)
-        for (let j = 0; j < 3; j++) {
-          this.shape(
-            root,
-            'Crop',
-            (i - 1) * 0.48,
-            0.32,
-            (j - 1) * 0.48,
-            0.34,
-            b.job ? 0.35 : 0.16,
-            0.34,
-            b.job ? '#D5C65C' : '#5D924D',
-            'sphere',
-          );
-        }
-    } else if (b.kind === 'cooler') {
-      this.shape(root, 'Unit', 0, 0.48, 0, w * 0.75, 0.9, d * 0.75, '#BCD3D3');
-      this.shape(root, 'Fan', 0, 0.55, d * 0.39, 0.5, 0.5, 0.06, '#467C80', 'sphere');
-    } else {
-      const cold = b.kind === 'coldWarehouse';
-      const expanded = b.kind === 'expandedWarehouse';
-      this.shape(root, 'Walls', 0, 0.67, 0, w - 0.2, 1.2, d - 0.2, '#F1DEC1');
-      this.shape(root, 'Roof', 0, 1.36, 0, w + 0.02, 0.24, d + 0.02, cold ? '#679EAD' : '#BC7356');
-      const leftRoof = this.shape(
-        root,
-        'RoofSlopeL',
-        -w * 0.24,
-        1.63,
-        0,
-        w * 0.57,
-        0.12,
-        d + 0.08,
-        cold ? '#81B0BB' : '#D78A64',
-      );
-      leftRoof.setRotationFromEuler(0, 0, 24);
-      const rightRoof = this.shape(
-        root,
-        'RoofSlopeR',
-        w * 0.24,
-        1.63,
-        0,
-        w * 0.57,
-        0.12,
-        d + 0.08,
-        cold ? '#679EAD' : '#BC7356',
-      );
-      rightRoof.setRotationFromEuler(0, 0, -24);
-      this.shape(
-        root,
-        'Door',
-        0,
-        0.48,
-        d / 2 - 0.07,
-        0.65,
-        0.8,
-        0.06,
-        cold ? '#B7DAE2' : '#8D6549',
-      );
-      this.shape(root, 'Window', w * 0.28, 0.87, d / 2 - 0.065, 0.35, 0.35, 0.07, '#79AFB5');
-      if (cold)
-        this.shape(
-          root,
-          'RefrigerationAttachment',
-          -w * 0.34,
-          0.47,
-          d * 0.33,
-          0.5,
-          0.7,
-          0.5,
-          '#6C929C',
-        );
-      if (expanded) {
-        this.shape(root, 'UpperStore', 0, 1.85, 0, w * 0.6, 0.55, d * 0.6, '#E5CB9E');
-        this.shape(root, 'UpperRoof', 0, 2.16, 0, w * 0.7, 0.13, d * 0.7, '#BC7356');
-      }
-      this.shape(root, 'Foundation', 0, 0.12, 0, w - 0.08, 0.15, d - 0.08, '#C7B99C');
-      this.shape(root, 'Doorstep', 0, 0.13, d / 2 - 0.02, 0.8, 0.12, 0.2, '#CEBEA3');
-      this.shape(root, 'SideWindow', w / 2 - 0.08, 0.82, 0, 0.06, 0.4, 0.48, '#6D9EA2');
-      this.shape(root, 'WindowSill', w / 2 - 0.04, 0.59, 0, 0.14, 0.08, 0.59, '#D8C5A4');
-      this.shape(root, 'RoofRidge', 0, 1.87, 0, 0.14, 0.12, d + 0.13, cold ? '#527F8B' : '#A5654C');
-      for (const side of [-1, 1])
-        this.shape(
-          root,
-          'CornerPost',
-          side * (w / 2 - 0.14),
-          0.7,
-          d / 2 - 0.08,
-          0.09,
-          1.12,
-          0.07,
-          '#D4BD96',
-        );
-      this.shape(root, 'Crate', -w * 0.3, 0.24, d * 0.36, 0.4, 0.4, 0.4, '#BA935D');
-    }
+    const id =
+      b.kind === 'farm'
+        ? `farm-${cropStage(b.job, now)}`
+        : b.kind === 'cooler'
+          ? 'cooler'
+          : b.kind === 'expandedWarehouse'
+            ? 'warehouse-expanded'
+            : b.kind === 'coldWarehouse'
+              ? 'warehouse-cold'
+              : 'warehouse-base';
+    const visual = this.assets.create(id, b.kind === 'farm' ? 'Soil' : 'BuildingMesh');
+    visual.setRotationFromEuler(0, b.rotation ? 90 : 0, 0);
+    root.addChild(visual);
     return root;
   }
 }
