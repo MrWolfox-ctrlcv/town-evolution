@@ -9,11 +9,44 @@ export const shell = (): Part[] => [
   ),
   part('side-window-frame', 'box', [0.325, 0.84, -0.06], [0.04, 0.32, 0.34], C.wood),
   part('side-window', 'box', [0.35, 0.84, -0.06], [0.02, 0.23, 0.24], C.glass),
+  part('window-mullion-v', 'box', [0.365, 0.84, -0.06], [0.025, 0.24, 0.025], C.woodDark),
+  part('window-mullion-h', 'box', [0.365, 0.84, -0.06], [0.025, 0.025, 0.24], C.woodDark),
+  ...[-2, -1, 0, 1, 2].map((i) =>
+    part(
+      'foundation-block',
+      'box',
+      [-0.25 + i * 0.235, 0.11, 0.612],
+      [0.22, 0.17, 0.045],
+      i % 2 ? '#D6C29D' : C.stone,
+    ),
+  ),
 ];
 export const roof = (): Part[] => [
   part('terracotta-gable', 'gable', [-0.25, 1.45, -0.08], [1.34, 0.47, 1.44], C.roof),
   part('roof-ridge', 'box', [-0.25, 1.7, -0.08], [0.09, 0.07, 1.48], C.roofDark),
   part('front-ridge-beam', 'box', [-0.25, 1.22, 0.65], [1.3, 0.08, 0.07], C.woodDark),
+  ...[-1, 1].map((side) =>
+    part('gable-trim', 'box', [-0.25 + side * 0.32, 1.46, 0.665], [0.78, 0.055, 0.065], C.wood, [
+      0,
+      0,
+      -side * 35,
+    ]),
+  ),
+  ...[-1, 1].flatMap((side) =>
+    Array.from({ length: 3 }, (_, row) =>
+      Array.from({ length: 4 }, (_, col) => {
+        const x = 0.12 + row * 0.215;
+        return part(
+          'roof-tile',
+          'box',
+          [-0.25 + side * x, 1.685 - x * 0.701 + 0.024, -0.62 + col * 0.36],
+          [0.285, 0.035, 0.35],
+          (row + col) % 3 === 0 ? '#DC7546' : C.roof,
+          [0, 0, -side * 35],
+        );
+      }),
+    ).flat(),
+  ),
 ];
 export const door = (cold = false): Part[] => [
   part('door-frame', 'box', [-0.25, 0.65, 0.55], [0.66, 0.86, 0.07], C.wood),

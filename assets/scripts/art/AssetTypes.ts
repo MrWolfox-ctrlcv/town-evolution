@@ -1,6 +1,6 @@
 /** Engine-independent source of truth for every exported and in-game mesh. */
 export type V3 = readonly [number, number, number];
-export type Shape = 'box' | 'gable' | 'gem';
+export type Shape = 'box' | 'gable' | 'gem' | 'crown' | 'timber';
 export interface Part {
   name: string;
   shape: Shape;

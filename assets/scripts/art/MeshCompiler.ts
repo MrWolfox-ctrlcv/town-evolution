@@ -1,3 +1,4 @@
+import { CROWN, TIMBER } from './OrganicShapes';
 import type { AssetRecipe, MeshData, Part, V3 } from './AssetTypes';
 const BOX: V3[] = [
   [-0.5, -0.5, -0.5],
@@ -51,9 +52,12 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
     max: [-Infinity, -Infinity, -Infinity],
   };
   for (const p of recipe.parts) {
-    const vertices = p.shape === 'box' ? BOX : p.shape === 'gable' ? GABLE : GEM;
+    const organic = p.shape === 'crown' ? CROWN : p.shape === 'timber' ? TIMBER : undefined;
+    const vertices =
+      organic?.vertices ?? (p.shape === 'box' ? BOX : p.shape === 'gable' ? GABLE : GEM);
     const faces =
-      p.shape === 'box'
+      organic?.faces ??
+      (p.shape === 'box'
         ? BOX_FACES
         : p.shape === 'gable'
           ? [
@@ -72,7 +76,7 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
               [5, 2, 3],
               [5, 3, 4],
               [5, 4, 1],
-            ];
+            ]);
     const points = vertices.map((v) => transform(v, p));
     const rgb = [1, 3, 5].map((i) => parseInt(p.color.slice(i, i + 2), 16) / 255);
     for (const face of faces) {
@@ -91,7 +95,7 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
       const normal = n.map((k) => k / length);
       // Baked directional value keeps faceted shapes readable with the shared unlit material.
       const shade =
-        0.76 + 0.24 * Math.max(0, normal[0]! * -0.35 + normal[1]! * 0.85 + normal[2]! * 0.4);
+        0.6 + 0.4 * Math.max(0, normal[0]! * -0.45 + normal[1]! * 0.82 + normal[2]! * 0.36);
       const base = mesh.positions.length / 3;
       for (const index of face) {
         const pos = points[index]!;

@@ -1,3 +1,4 @@
+import { treeParts } from './TreeKit';
 import { ART as C, part } from './AssetTypes';
 import type { AssetRecipe, Part } from './AssetTypes';
 export function farm(stage: 'empty' | 'seedling' | 'ready'): AssetRecipe {
@@ -47,12 +48,7 @@ export function environment(id: 'crate' | 'fence' | 'tree' | 'rock' | 'path'): A
         part('rail', 'box', [0, 0.43 + s * 0.15, 0], [0.88, 0.09, 0.08], C.woodLight),
       ),
     ];
-  else if (id === 'tree')
-    parts = [
-      part('trunk', 'box', [0, 0.45, 0], [0.17, 0.9, 0.17], C.trunk),
-      part('crown', 'gem', [0, 1.22, 0], [1.15, 1.25, 1.1], C.leaf),
-      part('crown-light', 'gem', [-0.18, 1.48, 0.1], [0.7, 0.7, 0.75], C.leafLight),
-    ];
+  else if (id === 'tree') parts = treeParts();
   else if (id === 'rock')
     parts = [part('stone', 'gem', [0, 0.18, 0], [0.8, 0.52, 0.65], C.rock, [0, 22, 12])];
   else
