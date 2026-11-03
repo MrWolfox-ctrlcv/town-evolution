@@ -47,7 +47,14 @@ for (const recipe of Object.values(ASSETS)) {
   const attributes = {
     POSITION: attribute(m.positions, 3, 'VEC3', 5126, m.min, m.max),
     NORMAL: attribute(m.normals, 3, 'VEC3', 5126),
-    COLOR_0: attribute(m.colors, 4, 'VEC4', 5126),
+    COLOR_0: attribute(
+      m.colors.map((c, i) =>
+        i % 4 === 3 ? c : c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4,
+      ),
+      4,
+      'VEC4',
+      5126,
+    ),
   };
   const indices = attribute(m.indices, 1, 'SCALAR', 5125);
   const gltf = {
