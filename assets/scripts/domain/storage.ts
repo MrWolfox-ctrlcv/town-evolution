@@ -10,9 +10,34 @@ export type LoadResult =
   | { status: 'loaded' | 'recovered'; state: GameState; warning?: string };
 export const SAVE_KEY = 'town-evolution.save.v1';
 export const BACKUP_KEY = `${SAVE_KEY}.backup`;
+export const GAME_SAVE_KEYS = [
+  SAVE_KEY,
+  BACKUP_KEY,
+  `${SAVE_KEY}.before-reset`,
+  `${SAVE_KEY}.unreadable`,
+] as const;
+/** User-authorized reset of the old prototype only; never clear unrelated site storage. */
+export function clearLegacyTests(storage: KeyValueStorage): boolean {
+  const version = (raw: string | null): number | null => {
+    try {
+      const v: unknown = raw === null ? null : JSON.parse(raw).schemaVersion;
+      return typeof v === 'number' && Number.isInteger(v) ? v : null;
+    } catch {
+      return null;
+    }
+  };
+  const primary = storage.getItem(SAVE_KEY);
+  const old = version(primary ?? storage.getItem(BACKUP_KEY));
+  if (old === null || old < 1 || old > 7) return false;
+  if (GAME_SAVE_KEYS.some((key) => (version(storage.getItem(key)) ?? 0) > 8)) return false;
+  for (const key of GAME_SAVE_KEYS)
+    if ((version(storage.getItem(key)) ?? 0) < 8) storage.removeItem(key);
+  return true;
+}
 /** Both web/native use this adapter via Cocos sys.localStorage. Storage errors are surfaced. */
 export function loadGame(storage: KeyValueStorage, now: number): LoadResult {
   try {
+    const cleared = clearLegacyTests(storage);
     const primary = storage.getItem(SAVE_KEY);
     if (primary !== null) {
       try {
@@ -27,7 +52,10 @@ export function loadGame(storage: KeyValueStorage, now: number): LoadResult {
       }
     }
     const backup = storage.getItem(BACKUP_KEY);
-    if (primary === null && backup === null) return { status: 'empty', state: null };
+    if (primary === null && backup === null)
+      return cleared
+        ? { status: 'empty', state: null, warning: '旧测试进度已清除，已创建新海岛。' }
+        : { status: 'empty', state: null };
     if (backup !== null) {
       try {
         return {
