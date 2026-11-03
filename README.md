@@ -4,11 +4,21 @@
 
 A code-first **Cocos Creator 3.8.8 + TypeScript** town-building MVP: grow vegetables, fulfill orders, place modular buildings, expand warehouses, and combine a warehouse with cooling equipment.
 
-## Current verification boundary
+## Verified status
 
-This repository is source code plus an engine-independent tested business layer. **A passing GitHub workflow is not a passing Cocos editor import or playable game build.** The development workspace is Linux without Cocos Creator. Official Creator installation documentation supplies Windows/macOS workflows; the editor, Web export, Android package, visuals and device performance have not yet been run here.
+At commit [`ec7ed6f5`](https://github.com/MrWolfox-ctrlcv/town-evolution/commit/ec7ed6f5edecd3a7784643d15f2fdde311d1ea80),
+[source CI](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41551677460)
+passed 55 unit tests, strict official Cocos API checks and canonical 18-asset export checks.
+[Runtime CI](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41551677432)
+rendered the **actual Cocos 3.8.8 engine** at desktop and mobile viewport sizes and
+passed 21 real UI checks per mouse/touch path. Screenshots include crop stages,
+warehouse combination, cold orders and expansion; see [verification details](docs/verification.md).
 
-No replacement HTML/Three.js demo or fake `cc` type declarations are used to conceal that boundary.
+This is an experimental standalone browser preview, assembled from the real game
+bootstrap and pinned official engine source—not a replacement HTML/Three.js renderer.
+It does **not** establish Creator serialized-scene import, Creator Web export,
+Android packaging or physical-phone performance. Those remain untested.
+[Preview setup and limitations](scripts/preview/README.md) are separate from the Creator workflow below.
 
 ## Automated source checks
 
@@ -26,7 +36,7 @@ npm run demo:domain
 - `check`: domain and official engine-API checks plus Cocos project file/scene structure checks. Structure checks are not engine compilation.
 - `demo:domain`: deterministic command-line walkthrough of the shared gameplay rules, without rendering.
 
-GitHub Actions runs the same commands on pushes and pull requests. It intentionally does not display a green “Cocos build” job without an installed editor.
+GitHub Actions runs these source checks separately from the actual Cocos browser-preview workflow. Neither workflow claims to run the Creator editor or build an APK.
 
 ## Open and play in Cocos Creator
 
@@ -57,6 +67,8 @@ TapTap distribution, platform credentials, SDK integration, release signing, lis
 - `assets/scripts/domain/storage.ts`: versioned saves, backup and explicit recovery.
 - `assets/scripts/application/`: engine-independent session orchestration and responsive HUD layout math.
 - `assets/scripts/presentation/`: small Cocos scene/controller, camera, HUD, widgets and model modules.
+- `assets/scripts/art/`: canonical mesh recipes shared by runtime rendering and glTF export.
+- `art/exports/`: 18 standalone glTF assets and their manifest.
 - `assets/scenes/Main.scene`: engine bootstrap scene.
 - `tests/`: automated domain/persistence tests.
 - `docs/architecture.md`: authoritative MVP rules and boundaries.
@@ -64,4 +76,6 @@ TapTap distribution, platform credentials, SDK integration, release signing, lis
 
 ## Asset policy
 
-Prototype geometry is generated from basic meshes in code. No third-party model pack, paid asset, AI concept image, commercial brand or credential is bundled. The earlier concept illustration is aesthetic context, not a model extraction or a promise of visual equivalence.
+The low-poly kit uses editable TypeScript recipes and actual indexed meshes, shared by Cocos rendering and 18 standalone glTF exports. `npm run art:export` regenerates them; `npm run art:check` verifies exact agreement with canonical recipes. All 18 exports also passed independent Khronos glTF validation with zero reported issues. See the [asset specification](docs/art/README.md).
+
+No third-party model pack, paid asset, commercial brand or credential is bundled. The generated concept illustration is art direction, not a model extraction or a promise of visual equivalence.

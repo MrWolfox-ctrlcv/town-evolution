@@ -4,17 +4,23 @@
 
 **玩法闭环**：种植蔬菜 → 收获入库 → 交付订单 → 建造或改造仓房 → 与制冷设施组合，解锁冷藏加工。
 
-## 当前能验证什么
+## 当前验证状态
 
-| 项目                             | 当前状态                      |
-| -------------------------------- | ----------------------------- |
-| 经营规则、事务与存档             | 已通过自动化测试              |
-| Cocos 脚本 API 类型              | 已通过官方 3.8.8 类型声明检查 |
-| 项目结构、场景脚本引用、模块依赖 | 已通过静态检查                |
-| 编辑器预览、网页与 Android 构建  | 待安装 Creator 的环境验证     |
-| 真机画面、触屏、性能             | 待实测                        |
+以下结果对应提交 [`ec7ed6f5`](https://github.com/MrWolfox-ctrlcv/town-evolution/commit/ec7ed6f5edecd3a7784643d15f2fdde311d1ea80)，不是对后续任意提交的保证。
 
-GitHub Actions 运行源码检查，不把静态通过冒充实际游戏构建通过。工程没有用其他网页引擎替换 Cocos，也没有伪造 `cc` 类型。
+| 项目                                        | 当前状态                                         |
+| ------------------------------------------- | ------------------------------------------------ |
+| 经营规则、存档、布局与美术数据              | 55 项单元测试通过                                |
+| Cocos API、场景引用与模块依赖               | 官方 3.8.8 类型声明及静态检查通过                |
+| 实际 Cocos 浏览器渲染                       | 桌面 1280×800、手机视口 390×844 已渲染并检查截图 |
+| 鼠标与模拟触屏操作                          | 每种输入 21 项实际 UI 检查通过，无运行时错误     |
+| 18 个 glTF 模型                             | 与规范配方一致；独立 Khronos 格式校验无报告问题  |
+| Creator 导入、编辑器 Web 导出、Android 构建 | 未验证                                           |
+| 真实手机触感、帧率、内存与发热              | 未验证                                           |
+
+[源码 CI](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41551677460) · [实际渲染与交互 CI](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41551677432) · [完整验收记录](docs/verification.md)
+
+实际预览由官方 Cocos 引擎与本项目启动代码构建，**不是其他网页引擎替代品**。它是独立的实验性浏览器预览，不等同于 Creator 对序列化场景的导入或正式发布构建。复现方式见 [预览说明](scripts/preview/README.md)。
 
 ## 快速检查源码
 
@@ -47,13 +53,19 @@ npm run demo:domain
 - `assets/scripts/domain/actions/`：建造改造、生产领取、订单三个独立业务模块。
 - `assets/scripts/application/`：可独立测试的会话管理、时钟与存储注入、横竖屏布局计算。
 - `assets/scripts/presentation/`：Cocos 启动协调、UI、镜头输入、低模模型与增量场景同步。
+- `assets/scripts/art/`：运行时与导出共用的规范模型配方、调色板和网格编译器。
+- `art/exports/`：18 个独立 glTF 模型及尺寸、三角形数量等清单。
 - `assets/scenes/Main.scene`：启动场景。
 - `tests/`：正常流程、失败不改状态、重复操作、离线返回、损坏存档与随机操作测试。
 - `scripts/`：项目结构与架构检查、命令行规则演示。
 - `docs/architecture.md`：规则与边界。
-- `docs/verification.md`：后续编辑器、构建和真机验收表。
+- `docs/verification.md`：已完成的源码与浏览器验证，以及待完成的编辑器、构建和真机验收表。
 
 建筑家族通过共用主体和附件表达差异；首版只做明确配方，不做任意两两融合。初版是本地单机存档，不接账号、广告、支付、服务器经济或跨设备同步。
+
+## 模型资产
+
+仓房三种形态、制冷设施、三种菜地阶段、环境道具与建筑模块共 18 个 glTF 资产，由可编辑 TypeScript 配方生成。运行时直接使用同一配方，不依赖未验证的 glTF 加载流程。`npm run art:export` 重新导出，`npm run art:check` 检查导出与规范配方完全一致；模型范围与复用方式见[美术说明](docs/art/README.md)。
 
 ## 网页与 Android
 
