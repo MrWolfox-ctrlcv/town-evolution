@@ -8,7 +8,7 @@ reference, not a promise to reproduce every roof tile or painted shadow.
 ## Files and reproducibility
 
 - `assets/scripts/art/`: canonical editable TypeScript recipes, palette and mesh compiler.
-- `art/exports/`: 18 standalone glTF 2.0 files with embedded buffers; no external textures.
+- `art/exports/`: 24 standalone glTF 2.0 files with embedded buffers; no external textures.
 - `art/exports/manifest.json`: per-model bounds, footprint, parts, triangle and byte counts.
 - `npm run art:export`: compile recipes and regenerate all glTF files.
 - `npm run check`: also verifies exports exactly match their source.
@@ -57,7 +57,7 @@ and one render primitive; this is not a claim that the whole scene is one draw
 call. Meshes are cached per recipe. Transparent surfaces and realtime shadows
 are deliberately absent. glTF materials use `KHR_materials_unlit`.
 
-Current maximum is 348 triangles per asset; automated ceilings are 1,500 triangles
+Current maximum is 796 triangles per asset; automated ceilings are 1,500 triangles
 and 6,000 vertices. Bounds, indices, finite values, nondegenerate triangles,
 unit normals, palette range, stable core geometry and crop stages are tested.
 Primitive shells are closed individually; overlapping modular shells are not
@@ -75,6 +75,44 @@ stage changes, side-wing/cooler silhouette, placement preview and selection, and
 unchanged mouse/touch gameplay. Android packaging and physical-device profiling
 remain separate from this asset delivery.
 
-Independent export validation: Khronos `gltf-validator` 2.0.0-dev.3.10 checked all 18
+Independent export validation: Khronos `gltf-validator` 2.0.0-dev.3.10 checked the original 18
 exports with zero errors, warnings, infos or hints. This validates the interchange
 format, not gameplay rendering.
+
+## Trade and logistics extension
+
+Three additional models follow the second concept reference while retaining the
+same grid, palette, vertex-color compiler and single-primitive export convention:
+
+| Model         | Footprint | Distinct silhouette                                                              |
+| ------------- | --------- | -------------------------------------------------------------------------------- |
+| `shop`        | 2×2       | Original house shell/roof/deck, open counter, five cream/teal canopy stripes     |
+| `order-board` | 1×1       | Exposed timber posts, roofed notice panel and three pale paper cards             |
+| `dock`        | 2×2       | Low plank quay, four rope-banded bollards, rear dispatch kiosk and stacked cargo |
+
+The dock is an on-grid cargo staging facility, not a water simulation. Its
+assembled geometry stays inside the existing occupancy footprint; no boat,
+shoreline collision or terrain editing is introduced. Cargo stacks are visual
+set dressing, not a live item-count display. `shop` shares the warehouse core;
+no residential or expanded-shop gameplay is implied. Domain `orderBoard` maps to
+the export ID `order-board`; all other commerce IDs match their export names.
+
+Shop counter socket is `[-0.25, 0.55, 0.71]`; dock cargo socket is
+`[0.42, 0.29, 0]`, dispatch socket `[-0.37, 0.29, -0.45]`. The three new exports
+are independently checked with Khronos glTF Validator in addition to the shared
+geometry/bounds/buffer tests. Real Cocos screenshots remain a separate review gate.
+
+## Independent nine-cell runtime farms
+
+`FarmCellKit.ts` adds `farm-cell-bed`, `crop-cell-seedling` and `crop-cell-ready`.
+The runtime uses one shared bed mesh plus zero to nine independently placed crop
+meshes. It does not use the legacy whole-farm stage models to represent cell state.
+Cell index is row × 3 + column, with centers at `(column + 0.5) × 2/3 - 1`
+and `(row + 0.5) × 2/3 - 1`. The soil top and input hit plane are both Y=0.17.
+The FarmGrid parent applies building rotation; each cell keeps its own stage.
+
+Recipes, indexed geometry, per-cell stage changes and input-center alignment pass
+local tests. The three new glTF meshes were imported and assembled in Blender;
+a mixed-stage bed and the same bed after harvesting one cell were rendered and
+visually inspected. This verifies actual mesh composition, not Cocos browser input.
+A full farm can use ten mesh primitives, sharing three cached meshes and one material.
