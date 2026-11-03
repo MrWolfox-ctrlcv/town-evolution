@@ -25,3 +25,32 @@ for (const [width, height] of [
     else assert.equal(l.right, 0);
   });
 }
+
+test('contextual sheet reserves only the action rows in use', () => {
+  const idle = hudLayout(390, 844, 0);
+  const selected = hudLayout(390, 844, 1);
+  const tools = hudLayout(390, 844, 4);
+  assert.equal(idle.panelHeight, 168);
+  assert.equal(selected.panelHeight, 224);
+  assert.equal(tools.panelHeight, 280);
+  assert.ok(idle.mapHeight > selected.mapHeight);
+  assert.ok(selected.mapHeight > tools.mapHeight);
+});
+
+const { fittedOrthoHeight } = require('../.domain-build/application/CameraFraming.js');
+for (const [width, height] of [
+  [390, 844],
+  [320, 568],
+  [1280, 800],
+  [800, 360],
+]) {
+  test(`initial camera contains island projected bounds at ${width}x${height}`, () => {
+    for (const actions of [0, 1, 4]) {
+      const layout = hudLayout(width, height, actions);
+      const aspect = layout.mapWidth / layout.mapHeight;
+      const halfHeight = fittedOrthoHeight(aspect);
+      assert.ok(halfHeight >= 8.3);
+      assert.ok(halfHeight * aspect >= 10.4 - 1e-9);
+    }
+  });
+}
