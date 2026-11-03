@@ -30,7 +30,7 @@ const server = http.createServer((req, res) => {
   });
 });
 async function capture(browser, width, height, name) {
-  const page = await browser.newPage({ viewport: { width, height } });
+  const page = await browser.newPage({ viewport: { width, height }, hasTouch: name === 'mobile' });
   const errors = [];
   page.on('pageerror', (error) => {
     errors.push(error.message);
@@ -54,6 +54,8 @@ async function capture(browser, width, height, name) {
     assert.ok(colors.size > 30, `Canvas looks blank: only ${colors.size} distinct sampled colors`);
     assert.deepEqual(errors, [], 'Runtime console errors');
     await page.screenshot({ path: path.join(evidence, `${name}.png`) });
+    await require('./interactions.cjs')(page, evidence, name, name === 'mobile');
+    assert.deepEqual(errors, [], 'Runtime errors after real interactions');
     fs.writeFileSync(
       path.join(evidence, `${name}.json`),
       JSON.stringify({ width, height, colors: colors.size, errors }),

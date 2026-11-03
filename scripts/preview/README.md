@@ -16,7 +16,17 @@ Android/device test. Engine and third-party license notices accompany artifacts.
 
 The cloud browser lacked WebGL. The first CI run revealed shader metadata fixtures
 contain no GLSL, so this now uses the official shader compiler instead.
-**Rendering has not yet been verified.** Further runtime fixes may be needed.
+Actual desktop (1280×800) and mobile-viewport (390×844) rendering passed on
+2026-11-02 in [run 41548595739](https://github.com/MrWolfox-ctrlcv/town-evolution/actions/runs/41548595739)
+at commit `dea0850be727a0ee2fa3b1579b6cf4e4fb757ee8`: both captured visible
+buildings, terrain and Chinese HUD with zero runtime errors.
+
+The next validation extends that render smoke test with real mouse/touch input:
+select farm, schedule crop, reject repeated early collection, reload during the
+real timer, harvest, sell, reject duplicate sale, cancel construction/reset and
+reload persistent progress. It reads rendered Cocos node coordinates and saved
+state but never calls game commands directly, mutates game state or warps time.
+Interaction verification is pending until its workflow passes.
 
 For local development, set `COCOS_ENGINE` to that official engine checkout with
 its npm dependencies plus esbuild 0.28.2, systemjs 6.15.1, playwright 1.56.1 and
