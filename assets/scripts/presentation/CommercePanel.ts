@@ -1,4 +1,4 @@
-import { COMMERCE, CROPS, isCrop } from '../domain/game';
+import { COMMERCE, CROPS, isCrop, isTradableItem, hasDockExit } from '../domain/game';
 import { isDockShore } from '../domain/island';
 import type { Command } from '../domain/game';
 import type { GameSession } from '../application/GameSession';
@@ -8,11 +8,19 @@ import type { Action } from './Widgets';
 function itemLabel(item: import('../domain/game').Item): string {
   return isCrop(item)
     ? CROPS[item].label
-    : item === 'wood'
-      ? '木材'
-      : item === 'stone'
-        ? '石材'
-        : '旧存冷藏菜';
+    : {
+        wood: '木材',
+        stone: '石材',
+        soil: '土壤',
+        mud: '泥土',
+        treeSeed: '树种',
+        sapling: '树苗',
+        milledRice: '大米',
+        flour: '面粉',
+        bread: '面包',
+        roastedCarrot: '烤胡萝卜',
+        chilledVegetable: '旧存冷藏菜',
+      }[item];
 }
 export function commerceActions(
   session: GameSession,
@@ -24,6 +32,7 @@ export function commerceActions(
   if (!b || !['shop', 'orderBoard', 'dock'].includes(b.kind)) return null;
   const item = ui.tradeItem,
     title = itemLabel(item);
+  if (!isTradableItem(item)) return [{ text: `${title}暂不可交易`, enabled: false, run: () => {} }];
   const button = (text: string, command: Command): Action => {
     const reason = session.reason(command);
     return {
@@ -54,7 +63,7 @@ export function commerceActions(
   if (b.kind === 'shop')
     return [
       ...selectors,
-      ...(item === 'chilledVegetable'
+      ...(item === 'chilledVegetable' || item === 'soil'
         ? []
         : [
             button(`买${quantity('shop')} · ${quantity('shop') * COMMERCE.prices[item].buy}币`, {
@@ -117,6 +126,7 @@ export function commerceDescription(session: GameSession, ui: UiState): string |
     const stock = session.state.commerce.shopStock[b.id];
     const item = ui.tradeItem;
     const title = itemLabel(item);
+    if (!isTradableItem(item)) return `商店 · ${title}暂不可交易`;
     return `商店 · ${title}在售${stock?.[item] ?? 0} / 库存${session.state.inventory[item]}`;
   }
   if (b.kind === 'orderBoard') return '订单板 · 批量交付';
@@ -129,10 +139,22 @@ export function commerceDescription(session: GameSession, ui: UiState): string |
           Math.ceil((ship.completeAt - Math.max(Date.now(), session.state.lastSeenAt)) / 1000),
         )
       : 0;
-    if (!isDockShore(b, session.state.mapSeed)) return '船坞 · 长按搬到临水海岸';
+    if (
+      !(b.dockStyle === 'simple'
+        ? hasDockExit(session.state, b)
+        : isDockShore(
+            b,
+            session.state.mapSeed,
+            session.state.terrainVersion,
+            session.state.landExtensions,
+          ))
+    )
+      return b.dockStyle === 'simple'
+        ? '简易码头 · 长按搬到连续两格海面出口'
+        : '船坞 · 长按搬到临水海岸';
     const total = Object.values(cargo ?? {}).reduce((sum, amount) => sum + amount, 0);
     const staged = `${total}/${COMMERCE.dockCapacity}`;
-    return `船坞 · 待发 ${staged}${ship ? ` · ${left ? `${left}秒` : '可领取'}` : ''}`;
+    return `${b.dockStyle === 'simple' ? '简易码头' : '船坞'} · 待发 ${staged}${ship ? ` · ${left ? `${left}秒` : '可领取'}` : ''}`;
   }
   return null;
 }

@@ -1,11 +1,19 @@
-import { CONFIG, CROPS, ITEM_KEYS, hasTradeFacility, toolRefill } from '../domain/game';
+import { productionActions, transportActions } from './RouteActions';
+import {
+  CONFIG,
+  CROPS,
+  ITEM_KEYS,
+  hasTradeFacility,
+  toolRefill,
+  UNLIMITED_TOOL_DURABILITY,
+} from '../domain/game';
 import { TRAY_LABELS } from './TrayIcons';
 import { commerceActions } from './CommercePanel';
 import type { Command } from '../domain/game';
 import type { Action } from './Widgets';
 import type { GameSession } from '../application/GameSession';
-import type { UiState, UiHandlers, PlaceKind } from './UiContracts';
-export type { UiState, UiHandlers, PlaceKind } from './UiContracts';
+import type { UiState, UiHandlers } from './UiContracts';
+export type { UiState, UiHandlers } from './UiContracts';
 function commandButton(
   session: GameSession,
   text: string,
@@ -20,7 +28,7 @@ function commandButton(
     run: () => handlers.command(command),
   };
 }
-/** Maps current context to at most four actions. Rendering and commands remain separate. */
+/** Maps current context to the existing paged set of actions. Rendering and commands remain separate. */
 export function actions(session: GameSession, ui: UiState, handlers: UiHandlers): Action[] {
   if (ui.repurposeId)
     return [
@@ -30,20 +38,28 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
   if (ui.resetArmed)
     return [
       {
-        text: ui.profile === 'demo' ? '确认重置演示岛' : '确认重置进度',
+        text:
+          ui.profile === 'v5-bridge-demo'
+            ? '确认重置木桥演示'
+            : ui.profile === 'v5-preview'
+              ? '确认重置 v5 预览岛'
+              : ui.profile === 'demo'
+                ? '确认重置演示岛'
+                : '确认重置进度',
         caution: true,
         run: handlers.reset,
       },
       { text: '取消', run: handlers.cancel },
     ];
   const switchTown = {
-    text: ui.profile === 'demo' ? '进入正常小镇' : '进入演示岛',
+    text: ui.profile === 'normal' ? '进入演示岛' : '进入正常小镇',
     run: handlers.switchTown,
   };
   if (session.mode === 'corrupt')
     return [{ text: '重新开始…', caution: true, run: handlers.reset }, switchTown];
   if (session.mode === 'recovered') return [{ text: '采用备份', run: handlers.save }, switchTown];
   if (ui.plantingTree) return [{ text: '取消种树', run: handlers.cancel }];
+  if (ui.toolShopOpen && UNLIMITED_TOOL_DURABILITY) return [{ text: '关闭', run: handlers.cancel }];
   if (ui.toolShopOpen)
     return [
       ...(['sickle', 'axe', 'saw', 'hammer'] as const).map((tool) => {
@@ -58,6 +74,60 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
       }),
       { text: '关闭', run: handlers.cancel },
     ];
+  // A tray purchase must not inherit the previously selected object's actions.
+  if (ui.cropShopOpen)
+    return [
+      ...(['vegetable', 'wheat', 'lettuce', 'rice'] as const).map((item) =>
+        commandButton(
+          session,
+          `${CROPS[item].label} ×1 · ${CROPS[item].buy}币`,
+          { type: 'buyCrop', item, quantity: 1 },
+          handlers,
+        ),
+      ),
+      ...(session.state.cropRecoveryAvailable
+        ? [commandButton(session, '应急种苗', { type: 'recoverCrop' }, handlers)]
+        : []),
+      { text: '关闭', run: handlers.cancel },
+    ];
+  if (ui.selectedResource && ui.tab === 'manage' && !ui.selected && !ui.selectedPile) {
+    const target = ui.selectedResource;
+    if (target.kind === 'tree' && session.state.trees.some((t) => t.id === target.id))
+      return [
+        {
+          ...commandButton(
+            session,
+            '砍树',
+            { type: 'useTool', tool: 'axe', treeId: target.id },
+            handlers,
+          ),
+          icon: 'axe',
+        },
+      ];
+    const drop = target.kind === 'drop' && session.state.looseDrops.find((d) => d.id === target.id);
+    if (drop)
+      return [
+        commandButton(
+          session,
+          `拾取 ${TRAY_LABELS[drop.item]} ×${drop.amount}`,
+          { type: 'pickupDrop', dropId: drop.id },
+          handlers,
+        ),
+      ];
+    const resource = session.state.naturalResources.find((r) => r.id === target.id);
+    if (target.kind === 'natural' && resource)
+      return [
+        {
+          ...commandButton(
+            session,
+            resource.kind === 'stone' ? '采石' : '挖土',
+            { type: 'gatherNatural', resourceId: target.id },
+            handlers,
+          ),
+          icon: resource.kind === 'stone' ? 'digging-pickaxe' : 'digging-tool',
+        },
+      ];
+  }
   if (ui.selectedPile && ui.tab === 'manage') {
     const pile = session.state.groundStacks.find(
       (p) => p.x === ui.selectedPile!.x && p.z === ui.selectedPile!.z,
@@ -78,65 +148,51 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
         ),
       ];
   }
-  if (ui.cropShopOpen)
-    return [
-      ...(['vegetable', 'wheat', 'lettuce'] as const).map((item) =>
-        commandButton(
-          session,
-          `${CROPS[item].label} ×1 · ${CROPS[item].buy}币`,
-          { type: 'buyCrop', item, quantity: 1 },
-          handlers,
-        ),
-      ),
-      ...(session.state.cropRecoveryAvailable
-        ? [commandButton(session, '应急种苗', { type: 'recoverCrop' }, handlers)]
-        : []),
-      { text: '关闭', run: handlers.cancel },
-    ];
-  if (ui.placing)
-    return [
-      {
-        text: `确认建造 · ${CONFIG.buildings[ui.placing].cost}`,
-        enabled: Boolean(ui.preview?.valid),
-        reason: ui.preview ? '位置不可用，请移动预览框' : '先点地图选择位置',
-        run: handlers.confirm,
-      },
-      { text: '取消建造', run: handlers.cancel },
-    ];
-  if (ui.tab === 'build')
-    return (['farm', 'shop', 'orderBoard', 'dock'] as PlaceKind[]).map((kind) => ({
-      text: `${CONFIG.buildings[kind].label} · ${CONFIG.buildings[kind].cost}`,
-      enabled: session.state.coins >= CONFIG.buildings[kind].cost,
-      reason: '金币不足，先完成订单',
-      run: () => handlers.build(kind),
-    }));
   if (ui.tab === 'orders') {
     const board = session.state.buildings.find((b) => b.kind === 'orderBoard');
     return board
       ? [{ text: '打开订单板', run: () => handlers.select(board.id) }]
       : [
           {
-            text: `建造订单板 · ${CONFIG.buildings.orderBoard.cost === 0 ? '免费' : CONFIG.buildings.orderBoard.cost}`,
-            run: () => handlers.build('orderBoard'),
+            text: '暂无订单板',
+            enabled: false,
+            reason: '还没有订单板，可在配方手册中查看已发现的合成',
+            run: () => {},
           },
         ];
   }
   if (ui.tab === 'tools')
     return [
-      { text: '工具补给', run: handlers.openToolShop },
+      ...(!UNLIMITED_TOOL_DURABILITY ? [{ text: '工具补给', run: handlers.openToolShop }] : []),
       { text: '种树苗 · 5币', run: handlers.plantTree },
-      { text: '保存进度', run: handlers.save },
+      { text: '存档', run: handlers.openSaves ?? handlers.save },
       { text: '购买作物', run: handlers.openCropShop },
-      {
-        text: ui.profile === 'demo' ? '重置演示岛…' : '重新开始…',
-        caution: true,
-        run: handlers.reset,
-      },
-      { text: ui.profile === 'demo' ? '进入正常小镇' : '进入演示岛', run: handlers.switchTown },
+      ...(handlers.overview ? [{ text: '查看全岛', run: handlers.overview }] : []),
+      ...(!handlers.openSaves
+        ? [
+            {
+              text:
+                ui.profile === 'v5-bridge-demo'
+                  ? '重置木桥演示…'
+                  : ui.profile === 'v5-preview'
+                    ? '重置 v5 预览岛…'
+                    : ui.profile === 'demo'
+                      ? '重置演示岛…'
+                      : '重新开始…',
+              caution: true,
+              run: handlers.reset,
+            },
+          ]
+        : []),
+      { text: ui.profile === 'normal' ? '进入演示岛' : '进入正常小镇', run: handlers.switchTown },
+      ...(handlers.exitToTitle ? [{ text: '退出到标题', run: handlers.exitToTitle }] : []),
     ];
   const commerce = commerceActions(session, ui, handlers);
   const building = session.state.buildings.find((b) => b.id === ui.selected);
   if (!building) return commerce ?? [];
+  const routeActions =
+    productionActions(session, building, handlers, ui) ??
+    transportActions(session, building, ui, handlers);
   const attached = session.state.fusion.attachments[building.id];
   const result: Action[] = [];
   const firstAttached = attached && ITEM_KEYS.find((item) => attached[item] > 0);
@@ -149,6 +205,7 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
         handlers,
       ),
     );
+  if (routeActions) return [...result, ...routeActions];
   if (commerce) {
     if (result.length + commerce.length <= 6) return [...result, ...commerce];
     return ui.moreBuildingActions
@@ -164,16 +221,6 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
         handlers,
       ),
     );
-  if (building.kind === 'warehouse') {
-    result.push(
-      commandButton(
-        session,
-        `金币扩容 · ${CONFIG.expansionCost}币`,
-        { type: 'upgrade', buildingId: building.id, target: 'expandedWarehouse' },
-        handlers,
-      ),
-    );
-  }
   if (
     !hasTradeFacility(session.state) &&
     !building.job &&
@@ -191,10 +238,11 @@ export function rotationAction(
 ): Action | null {
   if (
     !ui.selected ||
-    ui.placing ||
     ui.plantingTree ||
     ui.resetArmed ||
     ui.repurposeId ||
+    ui.cropShopOpen ||
+    ui.toolShopOpen ||
     ui.tab !== 'manage'
   )
     return null;

@@ -1,16 +1,19 @@
-import { Node, UITransform, EventTouch, Vec2, Graphics } from 'cc';
+import { Node, UITransform, EventTouch, Vec2, Graphics, input } from 'cc';
 import { color } from './Palette';
+import { isTouchEvent, hasMultipleContacts, inputOwner } from './InputProvenance';
 import { uiNode } from './Widgets';
 import type { Stock, Tool } from '../domain/game';
+import { hasUnlimitedDurability } from '../domain/game';
 import { TrayIcons, TRAY_LABELS } from './TrayIcons';
-import type { TrayKind } from './TrayIcons';
+import type { TrayKind, TrayAppearance } from './TrayIcons';
 import { TrayColumn } from './TrayColumn';
 export type ToolKind = TrayKind;
 export interface ToolHandlers {
   begin(kind: ToolKind, id: number, point: Vec2): void | boolean;
-  move(id: number, point: Vec2): void;
-  end(id: number, point: Vec2): void;
+  move(id: number, point: Vec2, returning: boolean): void;
+  end(id: number, point: Vec2, returning: boolean): void;
   cancel(): void;
+  appearance?(kind: ToolKind, point: Vec2): TrayAppearance;
 }
 /** Floating tools and products retain native pointer capture beyond their source tile. */
 export class ToolTray {
@@ -22,12 +25,23 @@ export class ToolTray {
   private returnValid: boolean | null = null;
   private handlers: ToolHandlers | null = null;
   private active: number | null = null;
+  private owner: string | null = null;
+  private held: ToolKind | null = null;
+  private ghostAppearance: TrayAppearance | null = null;
   private width = 1;
   private height = 1;
   constructor(private readonly parent: Node) {
     this.left = new TrayColumn(parent, 'ToolsLeft', () => this.cancel());
     this.right = new TrayColumn(parent, 'ProductsRight', () => this.cancel());
-    for (const kind of ['sickle', 'wateringCan', 'fertilizer', 'hammer', 'saw', 'axe'] as const)
+    for (const kind of [
+      'sickle',
+      'diggingTool',
+      'wateringCan',
+      'fertilizer',
+      'hammer',
+      'saw',
+      'axe',
+    ] as const)
       this.tile(this.left, kind, kind === 'sickle' ? 'HarvestTool' : `${kind}Tool`);
     for (const kind of [
       'vegetable',
@@ -35,6 +49,15 @@ export class ToolTray {
       'lettuce',
       'wood',
       'stone',
+      'soil',
+      'mud',
+      'treeSeed',
+      'rice',
+      'sapling',
+      'milledRice',
+      'flour',
+      'bread',
+      'roastedCarrot',
       'chilledVegetable',
     ] as const)
       this.tile(this.right, kind, `${kind[0]!.toUpperCase()}${kind.slice(1)}Stock`);
@@ -48,8 +71,14 @@ export class ToolTray {
     this.ghost.active = false;
     parent.on(Node.EventType.TOUCH_START, this.otherTouch, this, true);
   }
+  canShow(kind: ToolKind): boolean {
+    return this.left.canShow(kind) || this.right.canShow(kind);
+  }
   destination(kind: ToolKind): Node | null {
     return this.left.destination(kind) ?? this.right.destination(kind);
+  }
+  regions(): UITransform[] {
+    return [...this.left.regions(), ...this.right.regions()];
   }
   covers(point: { x: number; y: number }): boolean {
     return [...this.left.regions(), ...this.right.regions()].some((region) =>
@@ -57,10 +86,14 @@ export class ToolTray {
     );
   }
   acceptsProductDrop(point: { x: number; y: number }): boolean {
-    return this.right.regions().some((region) => region.hitTest(new Vec2(point.x, point.y)));
+    return this.covers(point);
   }
   highlightProductDrop(point: { x: number; y: number } | null, valid: boolean): void {
-    const region = point && this.right.regions().find((r) => r.hitTest(new Vec2(point.x, point.y)));
+    const region =
+      point &&
+      [...this.left.regions(), ...this.right.regions()].find((r) =>
+        r.hitTest(new Vec2(point.x, point.y)),
+      );
     this.returnTarget.active = !!region;
     if (!region) {
       this.returnValid = null;
@@ -77,6 +110,7 @@ export class ToolTray {
     graphics.stroke();
   }
   setObscured(hidden: boolean): void {
+    if (hidden) this.cancel();
     this.left.root.active = !hidden;
     this.right.root.active = !hidden;
   }
@@ -93,7 +127,8 @@ export class ToolTray {
   }
   setQuantity(stock: Stock, tools: Record<Tool, number>): void {
     for (const entry of this.left.entries) {
-      const count = tools[entry.kind as Tool];
+      const tool = entry.kind as Tool;
+      const count = hasUnlimitedDurability(tool) ? '∞' : tools[tool];
       entry.text.string = `${TRAY_LABELS[entry.kind]}${entry.kind === 'fertilizer' ? '×' : '·'}${count}`;
     }
     for (const entry of this.right.entries)
@@ -105,7 +140,10 @@ export class ToolTray {
     this.right.cancelGesture();
     if (this.active !== null) this.handlers?.cancel();
     this.active = null;
+    this.owner = null;
+    this.held = this.ghostAppearance = null;
     this.ghost.active = false;
+    this.highlightProductDrop(null, false);
   }
   dispose(): void {
     this.cancel();
@@ -117,54 +155,99 @@ export class ToolTray {
     this.returnTarget.destroy();
   }
   private otherTouch(event: EventTouch): void {
-    if (event.getAllTouches().length > 1 || (this.active !== null && event.getID() !== this.active))
+    if (
+      hasMultipleContacts(event, input) ||
+      (this.active !== null && event.getID() !== this.active)
+    )
       this.cancel();
   }
   private tile(column: TrayColumn, kind: ToolKind, name: string): void {
     const { node: tile } = column.add(kind, name);
     const icon = uiNode(`${name}Icon`, tile);
     icon.setPosition(0, 7);
-    this.icons.draw(icon, kind);
+    // The static category shows both tools; the held tool still follows the target material.
+    this.icons.draw(icon, kind === 'diggingTool' ? 'diggingCategory' : kind);
     tile.on(Node.EventType.TOUCH_START, (event: EventTouch) => {
       event.propagationStopped = true;
-      if (this.active !== null || event.getAllTouches().length > 1) {
+      if (this.active !== null || hasMultipleContacts(event, input)) {
         this.cancel();
         return;
       }
       const id = event.getID() ?? 0;
-      if (this.handlers?.begin(kind, id, event.getLocation()) === false) return;
+      if (
+        this.handlers?.begin(
+          kind,
+          id,
+          Object.assign(event.getLocation(), { touch: isTouchEvent(event) }),
+        ) === false
+      )
+        return;
       this.active = id;
-      this.icons.draw(this.ghost, kind, 48);
+      this.owner = inputOwner(event);
+      this.held = kind;
+      this.ghostAppearance = null;
       this.moveGhost(event);
     });
     tile.on(Node.EventType.TOUCH_MOVE, (event: EventTouch) => {
       event.propagationStopped = true;
-      if (this.active === null || (event.getID() ?? 0) !== this.active) return;
+      if (!this.accepts(event)) return;
       this.moveGhost(event);
-      this.handlers?.move(this.active, event.getLocation());
+      const point = Object.assign(event.getLocation(), { touch: isTouchEvent(event) });
+      const returning = this.acceptsProductDrop(point);
+      this.highlightProductDrop(returning ? point : null, true);
+      this.handlers?.move(this.active!, point, returning);
     });
     tile.on(Node.EventType.TOUCH_END, (event: EventTouch) => {
       event.propagationStopped = true;
-      if (this.active === null || (event.getID() ?? 0) !== this.active) return;
-      const id = this.active;
-      this.active = null;
-      this.ghost.active = false;
-      this.handlers?.end(id, event.getLocation());
+      if (!this.accepts(event)) return;
+      this.release(event);
     });
     tile.on(Node.EventType.TOUCH_CANCEL, (event: EventTouch) => {
       event.propagationStopped = true;
-      if (this.active === null || event.getID() !== this.active) return;
+      if (!this.accepts(event)) return;
       // Creator 3.8.8 rewrites normal releases outside the source tile to CANCEL.
       // This deprecated but public API retains the original hardware event code.
       if (event.getEventCode() === Node.EventType.TOUCH_END) {
-        const id = this.active;
-        this.active = null;
-        this.ghost.active = false;
-        this.handlers?.end(id, event.getLocation());
+        this.release(event);
       } else this.cancel();
     });
   }
+  private accepts(event: EventTouch): boolean {
+    if (this.active === null || (event.getID() ?? 0) !== this.active) return false;
+    if (this.owner === inputOwner(event)) return true;
+    // Cocos aliases every mouse button and a real finger ID 0. A foreign
+    // release (including a mouse pressed outside the canvas) must never commit.
+    this.cancel();
+    return false;
+  }
+  private release(event: EventTouch): void {
+    const id = this.active;
+    if (id === null) return;
+    const ui = event.getUILocation();
+    // Do not synthesize a final farming stroke from an off-screen release.
+    if (ui.x < 0 || ui.y < 0 || ui.x > this.width || ui.y > this.height) {
+      this.cancel();
+      return;
+    }
+    this.active = null;
+    this.owner = null;
+    this.held = this.ghostAppearance = null;
+    this.ghost.active = false;
+    this.highlightProductDrop(null, false);
+    const point = Object.assign(event.getLocation(), { touch: isTouchEvent(event) });
+    this.handlers?.end(id, point, this.acceptsProductDrop(point));
+  }
   private moveGhost(event: EventTouch): void {
+    if (this.held) {
+      const point = Object.assign(event.getLocation(), { touch: isTouchEvent(event) });
+      const appearance = this.acceptsProductDrop(point)
+        ? this.held
+        : (this.handlers?.appearance?.(this.held, point) ?? this.held);
+      if (appearance !== this.ghostAppearance) {
+        this.icons.draw(this.ghost, appearance, 48);
+        this.ghostAppearance = appearance;
+      }
+    }
     const point = event.getUILocation();
     this.ghost.setPosition(point.x - this.width / 2, point.y - this.height / 2 + 22);
     this.ghost.active = true;

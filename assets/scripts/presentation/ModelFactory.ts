@@ -1,7 +1,14 @@
+import { bridgeFootings } from '../art/BridgeFootings';
+import { BRIDGE_ROOT_HEIGHT } from '../art/WoodenBridgeKit';
+import { V5_PIER_FOOT_UNIT, v5PierFootings } from '../art/V5PierFootings';
+import { farmCollectionBoxAssetId, farmBoxLocalCenter } from '../art/FarmBoxKit';
+import { buildingAssetId } from '../art/BuildingAssets';
+import type { TerrainVersion } from '../domain/world';
 import { Node, Mesh, MeshRenderer, Material, primitives, utils } from 'cc';
+import { worldMaterial, worldShadows } from './WorldMaterial';
 import { isDockShore } from '../domain/island';
-import { CONFIG } from '../domain/game';
-import type { Building } from '../domain/game';
+import { CONFIG, footprint, farmGridSize, hasDockExit } from '../domain/game';
+import type { Building, LandCell } from '../domain/game';
 import { color } from './Palette';
 import { AssetRenderer } from './AssetRenderer';
 import { CropMotion } from './CropMotion';
@@ -43,12 +50,12 @@ export class ModelFactory {
     }
     let material = this.materials.get(hex);
     if (!material) {
-      material = new Material();
-      material.initialize({ effectName: 'builtin-unlit' });
+      material = worldMaterial(false);
       material.setProperty('mainColor', color(hex));
       this.materials.set(hex, material);
     }
     renderer.mesh = mesh;
+    worldShadows(renderer);
     renderer.setMaterial(material, 0);
     return node;
   }
@@ -72,24 +79,32 @@ export class ModelFactory {
         this.shape(root, 'MooringRope', x, 0.43, z, 0.17, 0.065, 0.17, '#F5E2BE');
       }
   }
-  building(b: Building, now: number, mapSeed = 1): Node {
+  building(
+    b: Building,
+    now: number,
+    mapSeed = 1,
+    terrainVersion: TerrainVersion = 3,
+    landExtensions: readonly LandCell[] = [],
+  ): Node {
     const cfg = CONFIG.buildings[b.kind];
-    const w = b.rotation % 2 ? cfg.depth : cfg.width,
-      d = b.rotation % 2 ? cfg.width : cfg.depth;
+    const { width: w, depth: d } = footprint(b);
     const root = new Node(b.id);
-    root.setPosition(b.x + w / 2, 0, b.z + d / 2);
+    root.setPosition(b.x + w / 2, b.kind === 'woodenBridge' ? BRIDGE_ROOT_HEIGHT : 0, b.z + d / 2);
     if (b.kind === 'farm') {
       const grid = new Node('FarmGrid');
       grid.setRotationFromEuler(0, b.rotation * 90, 0);
       root.addChild(grid);
-      grid.addChild(this.assets.create('farm-cell-bed', 'Soil'));
+      const size = farmGridSize(b);
+      const span = (size * 2) / 3;
+      const bed = b.farmSize === 6 ? 'farm-large-bed' : 'farm-cell-bed';
+      grid.addChild(this.assets.create(`${bed}${b.irrigated ? '-water' : ''}`, 'Soil'));
       const moving: MovingCrop[] = [];
       farmVisuals(b.cropJobs, now).forEach((stage, cell) => {
         const node = new Node(`Cell${cell}`);
         node.setPosition(
-          (((cell % 3) + 0.5) * 2) / 3 - 1,
+          (((cell % size) + 0.5) * 2) / 3 - span / 2,
           0,
-          ((Math.floor(cell / 3) + 0.5) * 2) / 3 - 1,
+          ((Math.floor(cell / size) + 0.5) * 2) / 3 - span / 2,
         );
         const job = b.cropJobs?.[cell];
         if (stage !== 'empty' && job) {
@@ -108,26 +123,64 @@ export class ModelFactory {
         }
         grid.addChild(node);
       });
+      if (b.collectionBox) {
+        const box = this.assets.create(
+          farmCollectionBoxAssetId(b.collectionBox.stock),
+          'FarmCollectionBox',
+        );
+        box.setPosition(...farmBoxLocalCenter(b.farmSize === 6 ? 6 : 3));
+        grid.addChild(box);
+      }
       if (moving.length) grid.addComponent(CropMotion).configure(moving, now);
       return root;
     }
-    const assetIds: Record<Exclude<Building['kind'], 'farm'>, string> = {
-      warehouse: 'warehouse-base',
-      expandedWarehouse: 'warehouse-expanded',
-      coldWarehouse: 'warehouse-cold',
-      cooler: 'cooler',
-      shop: 'shop',
-      orderBoard: 'order-board',
-      dock: 'dock',
-    };
-    const id = assetIds[b.kind];
+    const id = buildingAssetId(b, now);
     const visual = this.assets.create(id, 'BuildingMesh');
     visual.setRotationFromEuler(0, b.rotation * 90, 0);
-    if (b.kind === 'dock' && isDockShore(b, mapSeed)) {
+    if (b.kind === 'woodenBridge' && terrainVersion === 5) {
+      const supports = new Node('BridgeSupports');
+      supports.setRotationFromEuler(0, b.rotation * 90, 0);
+      root.addChild(supports);
+      for (const [index, foot] of bridgeFootings(b, mapSeed).entries()) {
+        const node = this.assets.createRecipe(V5_PIER_FOOT_UNIT, `BridgeFooting${index}`);
+        node.setPosition(foot.x, foot.y, foot.z);
+        node.setScale(foot.width, foot.height, foot.width);
+        supports.addChild(node);
+      }
+    }
+    if (
+      b.kind === 'dock' &&
+      (b.dockStyle === 'simple'
+        ? hasDockExit({ mapSeed, terrainVersion, landExtensions: [...landExtensions] }, b)
+        : isDockShore(b, mapSeed, terrainVersion, landExtensions))
+    ) {
       const pier = new Node('RotatedPier');
       root.addChild(pier);
       pier.setRotationFromEuler(0, b.rotation * 90, 0);
-      this.pier(pier, cfg.depth);
+      if (b.dockStyle === 'simple')
+        pier.addChild(this.assets.create('dock-pier-extension', 'PierExtension'));
+      else this.pier(pier, cfg.depth);
+      if (terrainVersion === 5)
+        for (const [index, foot] of v5PierFootings(b.dockStyle === 'simple', cfg.depth).entries()) {
+          const name = `V5PierFooting${index}`;
+          if (b.dockStyle === 'simple') {
+            const node = this.assets.createRecipe(V5_PIER_FOOT_UNIT, name);
+            node.setPosition(foot.x, foot.y, foot.z);
+            node.setScale(foot.width, foot.height, foot.width);
+            pier.addChild(node);
+          } else
+            this.shape(
+              pier,
+              name,
+              foot.x,
+              foot.y,
+              foot.z,
+              foot.width,
+              foot.height,
+              foot.width,
+              '#765039',
+            );
+        }
     }
     root.addChild(visual);
     return root;

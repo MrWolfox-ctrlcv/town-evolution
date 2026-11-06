@@ -8,8 +8,10 @@ import {
   Graphics,
   UITransform,
   isValid,
+  Rect,
 } from 'cc';
 import { uiNode } from './Widgets';
+import { PRODUCT_ICON_REGIONS } from './ProductIconRegions';
 /** One shared texture per icon, with vector fallback until the image is ready. */
 export class CropArtwork {
   private frame: SpriteFrame | null = null;
@@ -26,6 +28,8 @@ export class CropArtwork {
       this.texture.image = image;
       this.frame = new SpriteFrame();
       this.frame.texture = this.texture;
+      const region = PRODUCT_ICON_REGIONS[icon];
+      if (region) this.frame.rect = new Rect(...region);
       for (const [node, size] of this.bindings) this.apply(node, size);
     };
     const bundle = assetManager.getBundle('resources');
@@ -50,11 +54,15 @@ export class CropArtwork {
     const sprite = child.getComponent(Sprite) ?? child.addComponent(Sprite);
     sprite.sizeMode = Sprite.SizeMode.CUSTOM;
     sprite.spriteFrame = this.frame;
-    child.getComponent(UITransform)!.setContentSize(size, size);
+    const width = this.frame.rect.width,
+      height = this.frame.rect.height,
+      scale = size / Math.max(width, height);
+    child.getComponent(UITransform)!.setContentSize(width * scale, height * scale);
     const fallback = node.getComponent(Graphics);
     if (fallback) fallback.enabled = false;
   }
   dispose(): void {
+    if (this.disposed) return;
     this.disposed = true;
     this.bindings.clear();
     this.frame?.destroy();

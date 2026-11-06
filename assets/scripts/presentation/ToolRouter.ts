@@ -1,17 +1,20 @@
 import type { Node, Vec2 } from 'cc';
-import { isCrop } from '../domain/game';
+import { isCrop, hasUnlimitedDurability, ACTIVE_TOOLS } from '../domain/game';
 import type { Item, Tool } from '../domain/game';
 import type { GameSession } from '../application/GameSession';
 import type { MapCamera } from './MapCamera';
 import type { TownView } from './TownView';
 import type { UiState } from './UiContracts';
 import type { ToolHandlers, ToolKind } from './ToolTray';
+import type { TrayAppearance } from './TrayIcons';
 import { FarmTools } from './FarmTools';
 import { StockDrag } from './StockDrag';
 import { ToolUseDrag } from './ToolUseDrag';
 /** One active gesture owns farming, product transfer or a durable tool, never two commits. */
 export class ToolRouter implements ToolHandlers {
   active = false;
+  private pointer: number | null = null;
+  private kind: ToolKind | null = null;
   private readonly farm: FarmTools;
   private readonly stock: StockDrag;
   private readonly tool: ToolUseDrag;
@@ -29,19 +32,19 @@ export class ToolRouter implements ToolHandlers {
   }
   begin(kind: ToolKind, id: number, point: Vec2): boolean {
     if (this.session.mode !== 'normal') return false;
-    if (this.ui.placing || this.ui.plantingTree || this.ui.resetArmed || this.ui.repurposeId) {
+    if (this.ui.plantingTree || this.ui.resetArmed || this.ui.repurposeId) {
       this.session.message = '请先取消当前操作';
       this.refresh();
       return false;
     }
     if (kind in this.session.state.tools) {
       const tool = kind as Tool;
-      if (!['sickle', 'axe', 'saw', 'hammer'].includes(tool)) {
-        this.session.message = '此工具用途尚未开放';
+      if (!ACTIVE_TOOLS.includes(tool)) {
+        this.session.message = tool === 'fertilizer' ? '肥料用途待设计' : '此工具用途尚未开放';
         this.refresh();
         return false;
       }
-      if (this.session.state.tools[tool] < 1) {
+      if (!hasUnlimitedDurability(tool) && this.session.state.tools[tool] < 1) {
         this.ui.toolShopOpen = true;
         this.session.message = '工具已耗尽，请补充';
         this.refresh();
@@ -62,30 +65,58 @@ export class ToolRouter implements ToolHandlers {
       if (isCrop(item)) this.farm.begin('plant', id, point, item);
       this.stock.begin(item, id);
     }
+    this.pointer = id;
+    this.kind = kind;
     return true;
   }
-  move(id: number, point: Vec2): void {
+  move(id: number, point: Vec2, returning: boolean): void {
+    if (id !== this.pointer) return;
     this.farm.move(id, point);
     this.tool.move(id, point);
     if (this.farm.hasActed) this.stock.cancel(true);
     else this.stock.move(id, point);
+    if (returning) {
+      this.session.message = this.isTool() ? '松手收回工具' : '松手收回仓库';
+      this.refresh();
+    }
   }
   updateHint(): void {
     this.farm.updateHint();
   }
-  end(id: number, point: Vec2): void {
+  appearance(kind: ToolKind, point: Vec2): TrayAppearance {
+    return kind === 'diggingTool' ? this.tool.appearance(point) : kind;
+  }
+  end(id: number, point: Vec2, returning: boolean): void {
+    if (id !== this.pointer) return;
+    if (returning) {
+      // Tray drags never remove stock up front. Finish without refunding completed
+      // farm strokes or spending/duplicating any remaining goods or tool uses.
+      this.farm.cancel();
+      this.stock.cancel(true);
+      this.tool.cancel();
+      this.session.message = this.isTool() ? '工具已收回' : '物品已收回仓库';
+      this.finish();
+      return;
+    }
     const planted = this.farm.end(id, point);
     if (planted) this.stock.cancel(true);
     else this.stock.end(id, point);
     this.tool.end(id, point);
-    this.active = false;
-    this.refresh();
+    this.finish();
   }
   cancel(): void {
     this.farm.cancel();
     this.stock.cancel();
     this.tool.cancel();
+    this.finish();
+  }
+  private isTool(): boolean {
+    return this.kind !== null && this.kind in this.session.state.tools;
+  }
+  private finish(): void {
     this.active = false;
+    this.pointer = null;
+    this.kind = null;
     this.refresh();
   }
   dispose(): void {

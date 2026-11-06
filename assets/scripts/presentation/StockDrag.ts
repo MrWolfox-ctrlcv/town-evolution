@@ -1,7 +1,14 @@
 import type { Node } from 'cc';
 import type { Item } from '../domain/game';
 import { stockDropCommand } from '../application/CommerceSelection';
-import { COMMERCE, footprint, isCrop } from '../domain/game';
+import {
+  COMMERCE,
+  footprint,
+  isCrop,
+  isTradableItem,
+  isGroundTradeItem,
+  isCompostItem,
+} from '../domain/game';
 import type { GameSession } from '../application/GameSession';
 import type { Point } from '../application/MapGesture';
 import type { MapCamera } from './MapCamera';
@@ -11,6 +18,8 @@ import { ModelFactory } from './ModelFactory';
 export class StockDrag {
   private pointer: number | null = null;
   private item: Item = 'vegetable';
+  private sourceAmount = 0;
+  private sourceInvalid = false;
   private readonly factory = new ModelFactory();
   private rings: Node[] = [];
   private preview: Node | null = null;
@@ -27,6 +36,8 @@ export class StockDrag {
     this.map.cancelGesture();
     this.pointer = id;
     this.item = item;
+    this.sourceAmount = this.session.state.inventory[item];
+    this.sourceInvalid = false;
     for (const b of this.session.state.buildings) {
       const command = this.buildingCommand(b.id);
       if (!command) continue;
@@ -61,43 +72,66 @@ export class StockDrag {
         );
       }
     }
-    this.session.message = isCrop(item) ? '拖到空田播种 · 消耗1份' : '拖到建筑挂载 / 空地堆放';
+    this.session.message =
+      item === 'sapling'
+        ? '拖到空地种树 · 消耗1份'
+        : isCrop(item)
+          ? '拖到空田播种 · 消耗1份'
+          : '拖到建筑挂载 / 空地堆放';
     this.refresh();
   }
   move(id: number, point: Point): void {
     if (id !== this.pointer) return;
+    this.sourceInvalid ||= this.session.state.inventory[this.item] !== this.sourceAmount;
     const b = this.target(point);
     this.previewDrop(point, b?.id ?? null);
+    // FarmTools owns crop-on-field feedback, including rejected planting.
+    if (b?.kind === 'farm' && isCrop(this.item)) return;
     this.session.message =
-      b && this.buildingCommand(b.id)?.type === 'attachMaterial'
-        ? '松手挂载1份材料'
-        : b?.kind === 'farm'
-          ? isCrop(this.item)
-            ? '划过小格播种 · 每格1份'
-            : '此物品不可播种'
-          : b?.kind === 'shop'
-            ? `卖1份 · +${COMMERCE.prices[this.item].sell}币`
-            : b?.kind === 'dock'
-              ? '装货1份 · 不会卖出'
-              : isCrop(this.item)
-                ? '空田播种 / 空地堆放'
-                : '拖到空地堆放';
+      b?.kind === 'compostBarrel'
+        ? this.sourceInvalid
+          ? '材料已变化，请重新拖动'
+          : isCompostItem(this.item)
+            ? '松手投入1份 · 不自动补充'
+            : '此物品不可堆肥'
+        : b && this.buildingCommand(b.id)?.type === 'attachMaterial'
+          ? '松手挂载1份材料'
+          : b?.kind === 'farm'
+            ? isCrop(this.item)
+              ? '划过小格播种 · 每格1份'
+              : '此物品不可播种'
+            : b?.kind === 'shop' && isTradableItem(this.item)
+              ? `卖1份 · +${COMMERCE.prices[this.item].sell}币`
+              : b?.kind === 'dock'
+                ? '装货1份 · 不会卖出'
+                : isCrop(this.item)
+                  ? '空田播种 / 空地堆放'
+                  : '拖到空地堆放';
     const command = this.dropCommand(point, b?.id ?? null);
-    if (command) this.session.message = this.session.reason(command) ?? this.session.message;
+    if (command)
+      this.session.message =
+        this.item === 'mud'
+          ? this.session.reason(command)
+            ? '暂不可用'
+            : ''
+          : (this.session.reason(command) ?? this.session.message);
     this.refresh();
   }
   end(id: number, point: Point): void {
     if (id !== this.pointer) return;
+    this.sourceInvalid ||= this.session.state.inventory[this.item] !== this.sourceAmount;
     const b = this.target(point);
     const command = this.dropCommand(point, b?.id ?? null);
-    if (command) this.session.run(command);
-    else this.session.message = '已取消';
+    if (command) {
+      if (!this.session.run(command) && this.item === 'mud') this.session.message = '暂不可用';
+    } else if (b?.kind !== 'farm' || !isCrop(this.item)) this.session.message = '已取消';
     this.cancel(true);
     this.refresh();
   }
   private previewDrop(point: Point, buildingId: string | null): void {
     const command = !buildingId ? this.dropCommand(point, null) : null;
-    const target = command?.type === 'dropProduct' ? command : null;
+    const target =
+      command?.type === 'dropProduct' || command?.type === 'plantSapling' ? command : null;
     const valid = target && !this.session.reason(target);
     const key = target ? `${target.x}:${target.z}:${Boolean(valid)}` : '';
     if (key === this.previewKey) return;
@@ -119,10 +153,14 @@ export class StockDrag {
   }
   private dropCommand(point: Point, buildingId: string | null) {
     if (!this.map.contains(point)) return null;
-    if (this.town.pickTree(this.map.screenRay(point))) return null;
+    const ray = this.map.screenRay(point);
+    if (this.town.pickTree(ray) || this.town.pickNatural(ray) || this.town.pickDrop?.(ray))
+      return null;
     if (buildingId) return this.buildingCommand(buildingId);
     const pile = this.town.pickStack(this.map.screenRay(point));
     const ground = this.map.ground(point);
+    if (ground && this.item === 'sapling' && !pile)
+      return { type: 'plantSapling' as const, x: Math.floor(ground.x), z: Math.floor(ground.z) };
     return ground
       ? {
           type: 'dropProduct' as const,
@@ -135,7 +173,20 @@ export class StockDrag {
   private buildingCommand(buildingId: string) {
     const building = this.session.state.buildings.find((b) => b.id === buildingId);
     if (!building) return null;
-    if (this.item !== 'wood' && this.item !== 'stone') {
+    if (building.kind === 'compostBarrel') {
+      this.sourceInvalid ||= this.session.state.inventory[this.item] !== this.sourceAmount;
+      return isCompostItem(this.item) && !this.sourceInvalid
+        ? {
+            type: 'depositCompost' as const,
+            buildingId,
+            quantity: 1,
+            source: { type: 'inventory' as const, item: this.item, amount: this.sourceAmount },
+          }
+        : null;
+    }
+    if (this.item === 'treeSeed' && building.kind === 'nursery')
+      return { type: 'seedNursery' as const, buildingId };
+    if (this.item === 'chilledVegetable' || isGroundTradeItem(this.item)) {
       if (building.kind === 'farm' && isCrop(this.item)) return null;
       if (building.kind === 'shop' || building.kind === 'dock')
         return stockDropCommand(this.session.state, this.item, buildingId);

@@ -4,18 +4,14 @@ import type { Action } from './Widgets';
 import { ActionArtwork } from './ActionArtwork';
 import { color } from './Palette';
 import { hudLayout } from '../application/HudLayout';
-export type HudTab = 'build' | 'manage' | 'orders' | 'tools';
-const TABS: Array<[HudTab, string]> = [
-  ['build', '建造'],
-  ['manage', '经营'],
-  ['orders', '订单'],
-  ['tools', '工具'],
-];
+export type HudTab = 'manage' | 'orders' | 'tools';
+const TABS: Array<[HudTab, string]> = [['orders', '订单']];
 interface ContextData {
   actions: Action[];
   rotation: Action | null;
   tab: HudTab;
   detail: string;
+  contextHeading?: boolean;
 }
 /** Transparent illustrated controls. Only a fresh selection plays the short opening motion. */
 export class BottomActions {
@@ -119,9 +115,12 @@ export class BottomActions {
         { height: 76, fontSize: 12 },
       );
     });
-    const step = Math.min(78, (width - 104) / 4);
+    const step = Math.min(78, (width - 104) / this.tabs.length);
     this.tabs.forEach((b, i) =>
-      b.layout((i - 1.5) * step - 36, l.tabsY, step - 4, { height: 76, fontSize: 12 }),
+      b.layout((i - (this.tabs.length - 1) / 2) * step - 36, l.tabsY, step - 4, {
+        height: 76,
+        fontSize: 12,
+      }),
     );
   }
   render(data: ContextData): void {
@@ -132,9 +131,9 @@ export class BottomActions {
     this.buttons.forEach((b, i) => b.set(data.actions[i] ?? null));
     this.rotate.set(data.rotation);
     this.heading.string =
-      data.tab === 'manage'
+      data.contextHeading || data.tab === 'manage'
         ? data.detail.split(/\r?\n/)[0].trim()
-        : { build: '建造小镇', orders: '订单', tools: '工具与小镇' }[data.tab];
+        : { orders: '订单', tools: '工具与小镇' }[data.tab];
     this.tabs.forEach((b, i) => b.setSelected(TABS[i]![0] === data.tab));
     if (relayout) this.layout(this.screen.width, this.screen.height);
     const visible = this.requested && (data.actions.length > 0 || Boolean(data.rotation));

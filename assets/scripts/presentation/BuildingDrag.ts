@@ -1,13 +1,19 @@
+import { BuildingDragSelection } from '../application/BuildingDragSelection';
+import { buildingMergePreview } from '../application/BuildingMergePreview';
+import { buildingOutline } from './BuildingOutline';
 import { Node, Vec3, geometry } from 'cc';
 import type { Building, Command } from '../domain/game';
-import { footprint, CONFIG } from '../domain/game';
+import { footprint, canMergeBuildings } from '../domain/game';
 import type { GameSession } from '../application/GameSession';
 import type { UiState } from './HudActions';
 import type { TownView } from './TownView';
 import { ModelFactory } from './ModelFactory';
+import { focusObject } from './UiContracts';
 /** Long-press lift is visual only. Movement or compatible merge commits on valid release. */
 export class BuildingDrag {
   private readonly factory = new ModelFactory();
+  private readonly selection = new BuildingDragSelection();
+  private mergedGhost: Node | null = null;
   private ghost: Node | null = null;
   private ring: Node | null = null;
   private source: string | null = null;
@@ -22,7 +28,6 @@ export class BuildingDrag {
   ) {}
   candidate(ray: geometry.Ray): string | null {
     if (
-      this.ui.placing ||
       this.ui.plantingTree ||
       this.ui.resetArmed ||
       this.ui.repurposeId ||
@@ -33,28 +38,52 @@ export class BuildingDrag {
       b = this.session.state.buildings.find((item) => item.id === id);
     const p = this.ground(ray);
     if (!b || !p) return null;
+    this.selection.begin(b);
     const f = footprint(b);
     this.offset = { x: b.x + f.width / 2 - p.x, z: b.z + f.depth / 2 - p.z };
     return b.id;
   }
-  move(id: string, point: Vec3, ray: geometry.Ray): void {
+  move(id: string, point: Vec3, ray: geometry.Ray | null): void {
     const b = this.session.state.buildings.find((item) => item.id === id);
-    if (!b) return;
+    if (!b) {
+      this.selection.check(this.session.state);
+      this.mergedGhost?.destroy();
+      this.ring?.destroy();
+      this.mergedGhost = this.ring = null;
+      if (this.ghost) this.ghost.active = false;
+      this.session.message = '位置不可用';
+      this.refresh();
+      return;
+    }
     if (this.source !== id) {
-      this.clear(true);
+      const prepared = this.selection.sourceId === id;
+      this.clear(true, true);
+      if (!prepared) this.selection.begin(b);
       this.source = id;
       this.ghost = this.factory.building(
         b,
         Math.max(Date.now(), this.session.state.lastSeenAt),
         this.session.state.mapSeed,
+        this.session.state.terrainVersion,
+        this.session.state.landExtensions,
       );
       this.ghost.name = 'BuildingLift';
       this.parent.addChild(this.ghost);
       this.town.setLifted(id);
     }
     this.ghost!.setPosition(point.x + this.offset.x, 0.45, point.z + this.offset.z);
-    const command = this.command(b, ray);
+    // Covered UI and off-map motion still move the lifted model, but cannot retain
+    // a previous valid target or commit a command on release.
+    const command = ray ? this.command(b, ray) : null;
     const reason = command ? this.session.reason(command) : '位置不可用';
+    let plan: ReturnType<typeof buildingMergePreview> | null = null;
+    if (command?.type === 'dragMerge' && !reason) {
+      try {
+        plan = buildingMergePreview(this.session.state, command);
+      } catch {
+        /* Invalid result has no ghost. */
+      }
+    }
     const key = JSON.stringify([command, reason]);
     if (key === this.targetKey) return;
     this.targetKey = key;
@@ -64,32 +93,52 @@ export class BuildingDrag {
       this.highlight({ ...b, x: command.x, z: command.z }, reason ? '#D87163' : '#EFD377');
     else if (command?.type === 'dragMerge') {
       const target = this.session.state.buildings.find((item) => item.id === command.targetId);
-      if (target) this.highlight(target, reason ? '#D87163' : '#EFD377');
+      if (target) this.highlight(plan?.building ?? target, reason ? '#D87163' : '#EFD377');
+    }
+    this.mergedGhost?.destroy();
+    this.mergedGhost = null;
+    this.ghost!.active = true;
+    if (plan?.building.kind === 'woodenBridge') {
+      this.mergedGhost = this.factory.building(
+        plan.building,
+        Math.max(Date.now(), this.session.state.lastSeenAt),
+        this.session.state.mapSeed,
+        this.session.state.terrainVersion,
+        this.session.state.landExtensions,
+      );
+      this.mergedGhost.name = 'BridgeMergePreview';
+      this.parent.addChild(this.mergedGhost);
+      this.ghost!.active = false;
     }
     this.session.message =
-      reason ?? (command?.type === 'dragMerge' ? `松手合体 · ${CONFIG.combineCost}币` : '松手移动');
+      reason ?? (plan ? (plan.cost ? `松手合体 · ${plan.cost}币` : '松手合成') : '松手移动');
     this.refresh();
   }
   drop(id: string, ray: geometry.Ray | null): void {
+    if (this.source !== id) return;
     const b = this.session.state.buildings.find((item) => item.id === id);
     const command = b && ray ? this.command(b, ray) : null;
     if (command) {
-      const warehouse =
-        command.type === 'dragMerge'
-          ? this.session.state.buildings.find(
-              (item) =>
-                (item.id === id || item.id === command.targetId) && item.kind === 'warehouse',
-            )
-          : null;
-      if (this.session.run(command)) this.ui.selected = warehouse?.id ?? id;
+      let retainedId = id;
+      if (command.type === 'dragMerge') {
+        try {
+          retainedId = buildingMergePreview(this.session.state, command).retainedId;
+        } catch {
+          /* run reports rejection. */
+        }
+      }
+      if (this.session.run(command)) focusObject(this.ui, { kind: 'building', id: retainedId });
     } else this.session.message = '已取消';
     this.clear(true);
     this.refresh();
   }
-  clear(silent = false): void {
+  clear(silent = false, preserveSelection = false): void {
     const wasActive = this.source !== null;
     this.town.setLifted(null);
     this.ghost?.destroy();
+    this.mergedGhost?.destroy();
+    this.mergedGhost = null;
+    if (!preserveSelection) this.selection.clear();
     this.ring?.destroy();
     this.ghost = this.ring = null;
     this.source = null;
@@ -100,20 +149,27 @@ export class BuildingDrag {
     }
   }
   private command(b: Building, ray: geometry.Ray): Command | null {
+    if (!this.selection.check(this.session.state)) return null;
     const targetId = this.town.pickBuilding(ray, b.id),
       target = this.session.state.buildings.find((item) => item.id === targetId);
-    if (
-      target &&
-      ((b.kind === 'cooler' && target.kind === 'warehouse') ||
-        (b.kind === 'warehouse' && target.kind === 'cooler'))
-    )
+    if (b.kind === 'woodenPier' && target?.kind === 'woodenPier') {
+      const sources = this.selection.pair(this.session.state, target);
+      return sources ? { type: 'dragMerge', sourceId: b.id, targetId: target.id, sources } : null;
+    }
+    if (this.selection.hasTarget) return null;
+    if (target && canMergeBuildings(b.kind, target.kind))
       return { type: 'dragMerge', sourceId: b.id, targetId: target.id };
+    if (this.town.pickTree(ray) || this.town.pickNatural(ray) || this.town.pickDrop?.(ray))
+      return null;
     const p = this.ground(ray);
     if (!p) return null;
     const f = footprint(b);
     return {
       type: 'moveBuilding',
       buildingId: b.id,
+      ...(b.kind === 'woodenBridge'
+        ? { source: this.selection.movement(this.session.state)! }
+        : {}),
       x: Math.round(p.x + this.offset.x - f.width / 2),
       z: Math.round(p.z + this.offset.z - f.depth / 2),
     };
@@ -124,14 +180,7 @@ export class BuildingDrag {
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);
   }
   private highlight(b: Building, shade: string): void {
-    const { width: w, depth: d } = footprint(b);
-    this.ring = new Node('BuildingDropTarget');
-    this.parent.addChild(this.ring);
-    this.ring.setPosition(b.x + w / 2, 0.12, b.z + d / 2);
-    for (const side of [-1, 1]) {
-      this.factory.shape(this.ring, 'Edge', 0, 0, (side * d) / 2, w + 0.1, 0.08, 0.1, shade);
-      this.factory.shape(this.ring, 'Edge', (side * w) / 2, 0, 0, 0.1, 0.08, d, shade);
-    }
+    this.ring = buildingOutline(this.parent, this.factory, b, shade, 'BuildingDropTarget', 0.12);
   }
   dispose(): void {
     this.clear(true);

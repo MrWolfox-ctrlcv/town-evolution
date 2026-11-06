@@ -12,19 +12,33 @@ export interface MovingCrop {
 export class CropMotion extends Component {
   private crops: MovingCrop[] = [];
   private time = 0;
+  private growthTime: number | null = null;
   configure(crops: MovingCrop[], now: number): void {
     this.crops = crops;
     this.time = now;
     this.apply();
   }
+  /** Title display only: preserve production stages while allowing the wind animation. */
+  freezeGrowth(now: number): void {
+    this.growthTime = now;
+    this.time = now;
+    this.apply();
+  }
   update(dt: number): void {
     if (!Number.isFinite(dt) || dt <= 0) return;
-    this.time = cropClock(this.time, dt, Date.now());
+    this.time =
+      this.growthTime === null ? cropClock(this.time, dt, Date.now()) : this.time + dt * 1000;
     this.apply();
   }
   private apply(): void {
     for (const crop of this.crops) {
-      const pose = cropPose(crop.job, this.time, crop.phase, crop.ready);
+      const pose = cropPose(
+        crop.job,
+        this.time,
+        crop.phase,
+        crop.ready,
+        this.growthTime ?? this.time,
+      );
       crop.node.setRotationFromEuler(pose.leanX, 0, pose.leanZ);
       crop.node.setScale(pose.width, pose.height, pose.width);
     }

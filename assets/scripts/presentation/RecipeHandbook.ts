@@ -1,9 +1,11 @@
-import { Node, UITransform, EventTouch, EventMouse, Vec2, Graphics } from 'cc';
+import { Node, UITransform, EventTouch, EventMouse, Vec2, Graphics, input } from 'cc';
 import { uiNode, ActionButton } from './Widgets';
 import { HandbookArt } from './HandbookArt';
 import { handbookLayout, handbookLauncher, RECIPE_PAPER } from '../application/HandbookLayout';
 import type { GameState } from '../domain/game';
 import { HandbookPages } from './HandbookPages';
+import { HandbookInputGuard, handleHandbookWheel } from './HandbookInputGuard';
+import { liveInputTouches } from './InputProvenance';
 
 /** A pocket folder, not a modal. Only visible paper intercepts island gestures. */
 export class RecipeHandbook {
@@ -19,9 +21,15 @@ export class RecipeHandbook {
   private bottom = 0;
   private scale = 1;
   private position: { x: number; y: number } | null = null;
+  private readonly ownership: HandbookInputGuard;
   private readonly pointers = new Map<number, Vec2>();
+  private readonly buttonPointers = new Map<number, Vec2>();
+  private readonly startedPointers = new Set<number>();
   private view: 'closed' | 'directory' | 'paper' = 'closed';
-  constructor(private readonly parent: Node) {
+  constructor(
+    private readonly parent: Node,
+    private readonly standalone = false,
+  ) {
     this.launcher = new ActionButton(parent, () => {});
     this.launcher.node.name = 'RecipeBookOpen';
     this.launcher.set({ text: '', run: () => this.show('directory') });
@@ -57,12 +65,23 @@ export class RecipeHandbook {
       sheet.on(Node.EventType.TOUCH_CANCEL, this.cancel, this);
       sheet.on(Node.EventType.MOUSE_WHEEL, this.wheel, this);
     }
-    parent.on(Node.EventType.TOUCH_START, this.capture, this, true);
+    this.ownership = new HandbookInputGuard(
+      parent,
+      {
+        start: (e) => this.capture(e),
+        move: (e) => this.captureMove(e),
+        end: (e) => this.captureEnd(e),
+        cancel: (e) => this.captureCancel(e),
+      },
+      () => this.cancelGesture(),
+      (point) => this.covers(point),
+    );
     this.show('closed');
     this.layout(this.width, this.height);
     this.position = null;
   }
   layout(width: number, height: number, _left = 0, bottom = 0): void {
+    this.cancelGesture();
     this.width = width;
     this.height = height;
     this.bottom = bottom;
@@ -76,6 +95,11 @@ export class RecipeHandbook {
     if (background) background.enabled = false;
     this.placePaper();
   }
+  regions(): UITransform[] {
+    return [this.launcher.node, this.directory, this.paper]
+      .filter((node) => node.activeInHierarchy)
+      .map((node) => node.getComponent(UITransform)!);
+  }
   covers(point: { x: number; y: number }): boolean {
     return [this.launcher.node, this.directory, this.paper].some(
       (node) =>
@@ -84,24 +108,33 @@ export class RecipeHandbook {
     );
   }
   cancelGesture(): void {
+    this.ownership?.clear();
     this.pointers.clear();
+    this.buttonPointers.clear();
     this.launcher.cancelGesture();
     this.buttons.forEach((button) => button.cancelGesture());
   }
   dispose(): void {
     this.cancelGesture();
-    this.parent.off(Node.EventType.TOUCH_START, this.capture, this, true);
+    this.startedPointers.clear();
+    this.ownership.dispose();
     this.art.dispose();
     this.paper.destroy();
     this.directory.destroy();
     this.launcher.node.destroy();
+  }
+  open(): void {
+    this.show('directory');
+  }
+  close(): void {
+    this.show('closed');
   }
   private show(view: 'closed' | 'directory' | 'paper'): void {
     this.cancelGesture();
     this.view = view;
     this.directory.active = view === 'directory';
     this.paper.active = view === 'paper';
-    this.launcher.node.active = view === 'closed';
+    this.launcher.node.active = view === 'closed' && !this.standalone;
     const node = view === 'paper' ? this.paper : this.directory;
     if (view !== 'closed') {
       this.placePaper();
@@ -150,18 +183,73 @@ export class RecipeHandbook {
     this.placePaper(this.paper.position);
   }
   private capture(event: EventTouch): void {
-    if (event.getAllTouches().length < 2) return;
+    const id = event.getID() ?? 0;
+    const touches = liveInputTouches(event, input);
+    for (const started of this.startedPointers)
+      if (!touches.some((touch) => touch.getID() === started)) this.startedPointers.delete(started);
+    this.startedPointers.add(id);
+    if (this.pointers.has(id) || this.buttonPointers.has(id)) return;
+    const target = event.target as Node;
+    const control = [this.launcher, ...this.buttons].some(
+      (button) => target === button.node || target.isChildOf(button.node),
+    );
+    const onSheet =
+      this.view !== 'closed' && (target === this.activeSheet || target.isChildOf(this.activeSheet));
+    if (touches.length < 2) {
+      // Keep single button taps intact, but remember their origin if a second finger joins.
+      if (
+        onSheet &&
+        control &&
+        this.activeSheet.getComponent(UITransform)!.hitTest(event.getLocation())
+      )
+        this.buttonPointers.set(id, event.getUILocation().clone());
+      return;
+    }
     this.launcher.cancelGesture();
     this.buttons.forEach((button) => button.cancelGesture());
-    const target = event.target as Node;
-    const controls = [this.launcher, ...this.buttons];
-    if (controls.some((button) => target === button.node || target.isChildOf(button.node)))
-      event.propagationStopped = true;
+    if (control || onSheet) event.propagationStopped = true;
     if (
-      this.view !== 'closed' &&
-      !this.activeSheet.getComponent(UITransform)!.hitTest(event.getLocation())
-    )
+      !onSheet ||
+      touches.length !== 2 ||
+      touches.some(
+        (touch) =>
+          !this.activeSheet.getComponent(UITransform)!.hitTest(touch.getLocation()) ||
+          (touch.getID() !== id &&
+            !this.pointers.has(touch.getID()) &&
+            !this.buttonPointers.has(touch.getID()) &&
+            this.startedPointers.has(touch.getID())),
+      )
+    ) {
       this.pointers.clear();
+      this.buttonPointers.clear();
+      return;
+    }
+    // A simultaneous batch may report both touches before the second START is dispatched.
+    this.buttonPointers.set(id, event.getUILocation().clone());
+    if (
+      touches.some(
+        (touch) => !this.pointers.has(touch.getID()) && !this.buttonPointers.has(touch.getID()),
+      )
+    )
+      return;
+    // Both contacts started on this sheet. Buttons cannot consume their later events.
+    for (const touch of touches) this.pointers.set(touch.getID(), touch.getUILocation().clone());
+    this.buttonPointers.clear();
+  }
+  private captureMove(event: EventTouch): void {
+    const id = event.getID() ?? 0;
+    if (this.buttonPointers.has(id)) this.buttonPointers.set(id, event.getUILocation().clone());
+    else if (this.pointers.has(id)) this.move(event);
+  }
+  private captureEnd(event: EventTouch): void {
+    this.startedPointers.delete(event.getID() ?? 0);
+    if (!this.buttonPointers.delete(event.getID() ?? 0) && this.pointers.has(event.getID() ?? 0))
+      this.end(event);
+  }
+  private captureCancel(event: EventTouch): void {
+    this.startedPointers.delete(event.getID() ?? 0);
+    if (this.buttonPointers.delete(event.getID() ?? 0)) return;
+    if (this.pointers.has(event.getID() ?? 0)) this.cancel(event);
   }
   private get activeSheet(): Node {
     return this.view === 'directory' ? this.directory : this.paper;
@@ -170,9 +258,9 @@ export class RecipeHandbook {
     event.propagationStopped = true;
     if (
       this.pointers.size === 0 &&
-      event
-        .getAllTouches()
-        .some((touch) => !this.activeSheet.getComponent(UITransform)!.hitTest(touch.getLocation()))
+      liveInputTouches(event, input).some(
+        (touch) => !this.activeSheet.getComponent(UITransform)!.hitTest(touch.getLocation()),
+      )
     )
       return;
     this.pointers.set(event.getID() ?? 0, event.getUILocation().clone());
@@ -202,10 +290,9 @@ export class RecipeHandbook {
   }
   private cancel(event: EventTouch): void {
     event.propagationStopped = true;
-    this.cancelGesture();
+    if (this.pointers.has(event.getID() ?? 0)) this.cancelGesture();
   }
   private wheel(event: EventMouse): void {
-    event.propagationStopped = true;
-    this.zoom(event.getScrollY() > 0 ? 1.1 : 1 / 1.1);
+    handleHandbookWheel(event, (factor) => this.zoom(factor));
   }
 }

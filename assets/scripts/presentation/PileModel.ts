@@ -11,7 +11,12 @@ export function pileModel(factory: ModelFactory, pile: GroundStack, name = 'Grou
   return root;
 }
 /** Attached goods wait beside the building, instead of levitating over its roof. */
-export function attachmentModel(factory: ModelFactory, stock: Stock, kind: BuildingKind): Node {
+export function attachmentModel(
+  factory: ModelFactory,
+  stock: Stock,
+  kind: BuildingKind,
+  farmSize?: 6,
+): Node {
   const root = new Node('AttachedMaterials');
   const cfg = CONFIG.buildings[kind];
   let count = 0;
@@ -23,7 +28,11 @@ export function attachmentModel(factory: ModelFactory, stock: Stock, kind: Build
         { x: 0, z: 0, item, amount: 1 },
         `Attached-${item}-${count}`,
       );
-      token.setPosition(cfg.width / 2 + 0.1, 0.024, (count - 2) * 0.24);
+      token.setPosition(
+        (kind === 'farm' && farmSize === 6 ? 4 : cfg.width) / 2 + 0.1,
+        0.024,
+        (count - 2) * 0.24,
+      );
       token.setScale(0.6, 0.6, 0.6);
       root.addChild(token);
       count++;
