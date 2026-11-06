@@ -16,9 +16,12 @@ const { drag, dragPath } = require('./pointer-input.cjs');
     await p.goto('http://127.0.0.1:4178');
     await ready(p);
     const d = driver(p, false);
+    await d.button('游览演示岛');
     const initialHeight = (await inspect(p)).cameraHeight;
-    await d.button('工具');
-    await d.button('保存进度');
+    await d.townActions();
+    await d.button('存档');
+    await d.button('立即保存');
+    await d.button('返回游戏');
     assert.equal(
       (await inspect(p)).cameraHeight,
       initialHeight,
@@ -42,7 +45,7 @@ const { drag, dragPath } = require('./pointer-input.cjs');
     });
     await d.click(close);
     assert.ok(
-      !(await inspect(p)).labels.some((l) => l.action && l.text === '保存进度'),
+      !(await inspect(p)).labels.some((l) => l.action && l.text === '存档'),
       'context closes',
     );
 

@@ -6,8 +6,8 @@ const { inspect, until, ready, driver } = require('./ui-driver.cjs');
 const { select, build, quantity, item, crop } = require('./commerce-driver.cjs');
 const stockDrop = require('./stock-input.cjs');
 module.exports = async function commerce(page, evidence, name, touch) {
-  const { button } = driver(page, touch);
-  await button('工具');
+  const { button, townActions } = driver(page, touch);
+  await townActions();
   await button('重新开始');
   await button('确认重置进度');
   const initial = await until(page, (state) => state.save?.coins === 120, 'fresh commerce town');

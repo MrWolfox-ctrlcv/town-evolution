@@ -65,7 +65,17 @@ async function main() {
   fs.mkdirSync(path.join(out, 'crop-icons'), { recursive: true });
   for (const file of fs.readdirSync(icons).filter((file) => file.endsWith('.png')))
     fs.copyFileSync(path.join(icons, file), path.join(out, 'crop-icons', file));
+  fs.mkdirSync(path.join(out, 'ui'), { recursive: true });
+  fs.copyFileSync(
+    path.resolve('assets/resources/ui/settings.png'),
+    path.join(out, 'ui/settings.png'),
+  );
   fs.mkdirSync(path.join(out, 'handbook'), { recursive: true });
+  fs.mkdirSync(path.join(out, 'buildings'), { recursive: true });
+  fs.copyFileSync(
+    path.resolve('assets/resources/buildings/warm-wood.png'),
+    path.join(out, 'buildings/warm-wood.png'),
+  );
   const handbook = path.resolve('assets/resources/handbook');
   for (const file of fs.readdirSync(handbook).filter((file) => file.endsWith('.png')))
     fs.copyFileSync(path.join(handbook, file), path.join(out, 'handbook', file));

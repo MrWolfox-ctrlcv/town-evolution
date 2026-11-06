@@ -5,7 +5,7 @@ const path = require('node:path');
 const { inspect, until, ready, driver, useTool } = require('./ui-driver.cjs');
 const commerce = require('./commerce-driver.cjs');
 module.exports = async function interactions(page, evidence, name, touch) {
-  const { click, button } = driver(page, touch);
+  const { click, button, townActions } = driver(page, touch);
   const initial = await inspect(page);
   assert.ok(initial.labels.some((label) => label.text.includes('金币 120')));
   await click(initial.farm);
@@ -68,7 +68,7 @@ module.exports = async function interactions(page, evidence, name, touch) {
   await button('菜地 ·');
   await button('取消建造');
   assert.equal((await inspect(page)).save.coins, 176);
-  await button('工具');
+  await townActions();
   await button('重新开始');
   await button('取消');
   assert.equal((await inspect(page)).save.coins, 176);

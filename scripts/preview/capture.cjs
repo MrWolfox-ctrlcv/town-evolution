@@ -70,14 +70,17 @@ async function capture(browser, width, height, name) {
     assert.ok(colors.size > 30, `Canvas looks blank: only ${colors.size} distinct sampled colors`);
     assert.deepEqual(errors, [], 'Runtime console errors');
     await page.screenshot({ path: path.join(evidence, `${name}.png`) });
+    await require('./title-interactions.cjs')(page, evidence, name, name === 'mobile');
     await require('./demo-interactions.cjs')(page, evidence, name, name === 'mobile');
+    await require('./settings-interactions.cjs')(page, evidence, name, name === 'mobile');
     const checkpoint = [];
     for (let cycle = 0; cycle < 3; cycle++) {
       if (cycle) {
-        const { button } = require('./ui-driver.cjs').driver(page, name === 'mobile');
-        await button('工具');
+        const { button, townActions } = require('./ui-driver.cjs').driver(page, name === 'mobile');
+        await townActions();
+        await button('存档');
         await button('重置演示岛');
-        await button('确认重置演示岛');
+        await button('确认');
       }
       checkpoint.push(
         await require('./checkpoint-interactions.cjs')(

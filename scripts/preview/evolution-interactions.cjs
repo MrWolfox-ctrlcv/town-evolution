@@ -5,7 +5,7 @@ const path = require('node:path');
 const { inspect, until, ready, worldPoint, driver, useTool } = require('./ui-driver.cjs');
 const { drag, interruptDrag } = require('./pointer-input.cjs');
 module.exports = async function evolution(page, evidence, name, touch) {
-  const { click, button } = driver(page, touch);
+  const { click, button, townActions } = driver(page, touch);
   const selected = async (id) => {
     const state = await inspect(page);
     await click(state.buildings.find((building) => building.id === id));
@@ -140,7 +140,7 @@ module.exports = async function evolution(page, evidence, name, touch) {
   const coldState = (await inspect(page)).save;
 
   // Exercise the separate expansion branch using the real confirmed-new-town flow.
-  await button('工具');
+  await townActions();
   await button('重新开始');
   await button('确认重置进度');
   const reset = await until(

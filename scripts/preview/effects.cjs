@@ -25,6 +25,7 @@ module.exports = function effectCompilerPlugin(engine, cli) {
   walk(path.join(root, 'chunks'));
   const files = [
     'builtin-unlit.effect',
+    'builtin-standard.effect',
     'for2d/builtin-sprite.effect',
     'internal/builtin-graphics.effect',
     'internal/builtin-clear-stencil.effect',

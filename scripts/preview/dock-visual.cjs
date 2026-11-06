@@ -14,7 +14,12 @@ async function sceneInfo(page, id) {
     const rect = canvas.getBoundingClientRect();
     const transform = scene
       .getComponentsInChildren(cc.UITransform)
-      .find((t) => t.node.name === 'RotateBuilding' && t.node.activeInHierarchy);
+      .find(
+        (t) =>
+          t.node.name.startsWith('ObjectAction-') &&
+          t.node.activeInHierarchy &&
+          t.node.getComponentsInChildren(cc.Label).some((label) => label.string === '转向'),
+      );
     const p = transform && ui.worldToScreen(transform.node.worldPosition);
     const find = (node) => (node.name === id ? node : node.children.map(find).find(Boolean));
     const building = find(scene);
@@ -49,9 +54,12 @@ async function main() {
   try {
     await page.goto(process.env.CROP_PREVIEW_URL || 'http://127.0.0.1:4178/');
     await ready(page);
-    const { button, click } = driver(page, false);
-    await button('工具');
-    await button('保存进度');
+    const { button, click, townActions } = driver(page, false);
+    await button('游览演示岛');
+    await townActions();
+    await button('存档');
+    await button('立即保存');
+    await button('返回游戏');
     let state = await until(page, (s) => s.save?.schemaVersion === 8, 'demo saved');
     assert.equal(state.profile, 'demo');
     const dock = state.save.buildings.find((b) => b.kind === 'dock');
@@ -89,6 +97,7 @@ async function main() {
       assert.equal(normalize(visual.pierAngle), valid[0] * 90);
       await page.reload();
       await ready(page);
+      await button('游览演示岛');
       assert.equal(
         (await inspect(page)).save.buildings.find((b) => b.id === dock.id).rotation,
         valid[0],

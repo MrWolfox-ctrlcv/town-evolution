@@ -1,5 +1,39 @@
 # Actual Cocos preview (experimental)
 
+## Schema10 development integration (not the published schema9 checkpoint)
+
+Current scripts target schema10 and all 35 handbook entries. `compost-checkpoint.cjs`
+adds real-pointer cancellation, explicit seed deposits, withdrawal of waiting inputs,
+real 15-second compost and 10-second roasting waits, finite fertilizer tool quantities,
+two-carrot-to-one-roasted-portion output and restart preservation. No state or clock
+is injected. These browser scripts are prepared, not reported as passed.
+The deployed owner-only v5 experimental package remains the separately frozen schema9
+checkpoint; development changes here do not alter that bundle or user storage.
+
+## 2026-11-06 schema9 checkpoint
+
+The source verification gates include the domain and presentation tests, official
+Cocos declarations, asset budgets and architecture checks. The schema9 standalone
+preview is also built with the pinned official engine and CLI. These are separate
+checks: neither proves browser rendering, Creator editor import, Android export or
+device performance.
+
+At this schema9 checkpoint, `demo-interactions.cjs` and `checkpoint-interactions.cjs`
+were prepared for all 32 then-active handbook entries and hammer construction. The additional
+`route-checkpoint.cjs` uses real pointer input for loose-drop merging/movement,
+ordinary harvest left on the ground, manual field-box harvest/withdrawal, explicit
+pickup, hammer object assembly, direct facility combination and reload. Inspection
+is read-only; these scripts never inject inventory or invoke gameplay commands.
+They must run in a graphics-capable environment before being called browser passes.
+
+On 2026-11-06, the local-only server reported a successful listen, but the available
+cloud browser returned `ERR_CONNECTION_REFUSED` for the local preview. A separate
+command session could not reach it either. A same-session HTTP self-check returned
+byte-identical index and app files, isolating the failure from the static preview
+artifacts. No sandbox/network settings were changed
+and no external deployment was used to work around the boundary. The earlier
+sandboxed Chromium launch also stopped at `socket(): Operation not permitted`.
+
 ## 2026-11-03 Windows checkpoint
 
 The fusion/handbook checkpoint has now been built and exercised locally on Windows
@@ -42,24 +76,25 @@ mirror binaries; engine/compiler source commits are pinned.
 ## Local application integration
 
 Run `npm run build:domain && node scripts/preview/session-smoke.cjs`.
-Schema8 uses the real TownProfiles, GameSession and storage adapters. It verifies
+The current development runtime uses the real TownProfiles, GameSession and storage adapters. It verifies
 the source-controlled playable demonstration and a separate normal player town:
-three crop production states, real elapsed timers, bulk orders, shop trades,
-three/five-wood saw recipes, axe use, natural-shore shipments, durability,
+compatible dry-field and rice production states, real elapsed timers, bulk orders, shop trades,
+wood-and-hammer construction, explicit hammer entity assembly, axe use, natural-shore shipments, unlimited tool durability,
 profile switching, persistence and isolated resets. It takes about 30 seconds.
-The script does not advance the clock or mutate gameplay state. Old-save cleanup
-uses explicit synthetic storage fixtures and preserves unrelated keys. This does
-not mean an actual user's browser storage has been accessed or erased.
+The script does not advance the clock or inject gameplay inventory. Save-preservation
+checks use explicit synthetic storage fixtures and leave unsupported saves untouched
+until the test invokes an explicit reset. No actual user's browser storage is accessed.
 Results are written to build/session-smoke.json only after success.
 
-The old prototype saves are intentionally cleared on load, as requested. Legacy
-migration smoke was removed; no migration-preservation work is part of this version.
+Unsupported prototype saves are never cleared on load. Existing version-8 saves
+retain the original coastline and depleted resources; new islands use the expanded
+seeded terrain. Explicit reset retains the original primary in a recovery key.
 
 ## Browser verification
 
 `node scripts/preview/capture.cjs` launches sandboxed Chromium with software WebGL,
 renders real Cocos pixels, and fails on runtime errors or blank output. It now
-invokes demo-interactions.cjs for current schema8 profile operations. The older
+invokes demo-interactions.cjs for current schema10 profile operations. The older
 whole-farm/cell/evolution suites remain historical helpers and are not invoked.
 PREVIEW_TOOLS can select an isolated Playwright installation and
 CHROMIUM_EXECUTABLE an installed browser; browser sandboxing remains enabled.
@@ -73,8 +108,8 @@ uses a stable seed and preserves its own progress until explicitly reset.
 
 The current real-time application smoke also issues all four building rotations,
 checks crop-job/economy preservation, moves a ground stack and reloads it, rejects
-a water drop, and verifies actual GameSession collection events for harvests,
-axe gains and returned saw surplus. These event assertions do not validate the
+a water drop, and verifies actual GameSession collection events for explicit drop pickups,
+axe gains and returned construction surplus, while harvest itself stays on the ground. These event assertions do not validate the
 rendered collection animation. Rotation/stack UI gestures and their visuals
 still require browser testing in a graphics-capable execution environment.
 
@@ -110,4 +145,39 @@ before browser capture and preserves build/tween-smoke.json as evidence.
 
 `node scripts/preview/bottom-ui.cjs` 使用真实鼠标/触摸检查桌面、手机及小横屏的图标资源、弹出动画、关闭恢复和镜头稳定，截图为 `bottom-*-dock.png` / `bottom-*-tools.png`。测试按帧只读记录动画状态，不调用游戏内部操作。
 
-设置 `HARVEST_CHECK=1`、`HARVEST_TOUCH=1` 后运行 `node scripts/preview/crop-visual.cjs`，同时检查满仓停止收割、耐久不多扣、警告持续显示至少5秒及手机显示。截图为 `warehouse-full-warning.png` 和 `warehouse-full-warning-phone.png`。
+旧版满仓停割截图用例尚待按 schema9 的落地规则更新，不能用于当前验收。旧入口为设置 `HARVEST_CHECK=1`、`HARVEST_TOUCH=1` 后运行 `node scripts/preview/crop-visual.cjs`，同时检查满仓停止收割、无限耐久计数不变、警告持续显示至少5秒及手机显示。截图为 `warehouse-full-warning.png` 和 `warehouse-full-warning-phone.png`。
+
+### Live demo-island title acceptance
+
+`capture.cjs` now runs `title-interactions.cjs` before normal demo interactions. It checks
+actual Cocos meshes, camera drift and crop sway; unchanged template/growth/storage;
+handbook close, save/exit/back, lock-waiting tabs, repeated start/exit/cancel and teardown.
+No title PNG is copied or loaded. Expected evidence is `*-live-title.png/json`.
+The 2026-11-05 local sandboxed Chromium launch failed at AF_UNIX `socket()` before any
+page rendering. These added browser scenarios are prepared, not recorded as passed.
+
+### Isolated mountain and one-unit model review
+
+`?art-review=terrain` shows the current generated mountain in the actual Cocos
+renderer, `&terrain-version=2` shows the retained legacy layout with current
+surface art, and `&terrain-unit=1` shows three views of the same exported rock unit.
+These views create disposable state; they do not read browser saves or require a
+reset. Drag rotates and the wheel zooms. Compare the cut silhouettes, coherent
+moss caps, pale crowns, and the complete soil walls beside cut rock faces.
+
+The 2026-11-05 CPU mesh inspection in Blender checks the actual runtime geometry
+and vertex colors independently. Those renders are mesh evidence, not Cocos
+screenshots or browser interaction passes. The sandboxed Chromium attempt still
+failed at `socket()` before page rendering; actual browser/mobile visual QA
+remains a separate gate.
+
+### Prepared wooden-bridge acceptance
+
+`bridge-checkpoint.cjs` is a prepared real-pointer module for a fresh isolated browser
+context after entering a game. It returns to the title, opens **木桥演示**, waits for
+terrain publication, reverse-drags the two real river-bank piers, verifies no coin
+or inventory charge, rejects an invalid turn, reloads the saved bridge, and checks
+all other profile bytes. The shared read-only UI inspector now resolves both
+versioned v5 namespaces. The module is not recorded as executed: use the actual
+Cocos build in an authorized graphics environment, and preserve screenshots and
+console errors separately from the CPU routing tests.

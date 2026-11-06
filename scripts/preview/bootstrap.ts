@@ -13,6 +13,8 @@ import {
   TweenSystem,
 } from 'cc';
 import { effects } from 'cocos-preview-effects';
+import { buildingReview } from './building-review';
+import { terrainReview } from './terrain-review';
 import { TownBootstrap } from '../../assets/scripts/presentation/TownBootstrap';
 if (typeof tween !== 'function' || typeof Tween !== 'function' || typeof TweenSystem !== 'function')
   throw new Error('Preview engine is missing required Cocos tween exports');
@@ -55,7 +57,11 @@ game.run(() => {
   const scene = new Scene('Town Preview');
   const root = new Node('Town');
   scene.addChild(root);
-  root.addComponent(TownBootstrap);
+  if (new URLSearchParams(window.location.search).get('art-review') === 'buildings')
+    buildingReview(scene);
+  else if (new URLSearchParams(window.location.search).get('art-review') === 'terrain')
+    terrainReview(scene);
+  else root.addComponent(TownBootstrap);
   director.runSceneImmediate(scene);
   let frames = 0;
   director.on(Director.EVENT_AFTER_DRAW, () => {

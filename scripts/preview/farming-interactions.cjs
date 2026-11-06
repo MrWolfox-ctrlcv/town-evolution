@@ -6,8 +6,8 @@ const { inspect, until, driver, worldPoint, useTool } = require('./ui-driver.cjs
 const commerce = require('./commerce-driver.cjs');
 const { drag, dragPath } = require('./pointer-input.cjs');
 module.exports = async function farming(page, evidence, name, touch) {
-  const { button, click } = driver(page, touch);
-  await button('工具');
+  const { button, click, townActions } = driver(page, touch);
+  await townActions();
   await button('重新开始');
   await button('确认重置进度');
   await until(page, (state) => state.save?.coins === 120, 'fresh farming scenario');

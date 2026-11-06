@@ -48,9 +48,12 @@ async function main() {
   try {
     await page.goto(process.env.CROP_PREVIEW_URL || 'http://127.0.0.1:4178/');
     await ready(page);
-    const { button } = driver(page, false);
-    await button('工具');
-    await button('保存进度');
+    const { button, townActions } = driver(page, false);
+    await button('游览演示岛');
+    await townActions();
+    await button('存档');
+    await button('立即保存');
+    await button('返回游戏');
     let state = await until(page, (s) => s.save?.schemaVersion === 8, 'demo save');
     assert.equal(state.profile, 'demo');
     assert.equal(state.save.buildings.find((b) => b.id === 'b6')?.kind, 'farm');
@@ -153,7 +156,11 @@ async function main() {
         }),
       );
       assert.equal(remaining, 0, 'Sickle swept over visible crop heads harvests all nine cells');
-      assert.equal(state.save.tools.sickle, 81, 'Each harvested cell uses exactly one durability');
+      assert.equal(
+        state.save.tools.sickle,
+        90,
+        'Harvested cells preserve unlimited tool durability',
+      );
       assert.equal(state.save.inventory.wheat, 18, 'Nine cells yield exactly eighteen wheat');
       await frameFarm(page, 'b2');
       state = await inspect(page);
@@ -178,7 +185,11 @@ async function main() {
         1,
         'Full warehouse preserves uncollected crop',
       );
-      assert.equal(state.save.tools.sickle, 76, 'Full warehouse does not consume extra durability');
+      assert.equal(
+        state.save.tools.sickle,
+        90,
+        'Full warehouse preserves unlimited tool durability',
+      );
       assert.ok(
         state.labels.some((l) => l.text.includes('仓储空间不足')),
         'Full warehouse explains remaining and required capacity',

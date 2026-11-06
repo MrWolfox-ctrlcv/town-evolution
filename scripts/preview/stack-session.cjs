@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { townSession } = require('../../.domain-build/application/TownProfiles.js');
 const { stackDropCommand } = require('../../.domain-build/application/StackDrop.js');
 const { collectionOrigin } = require('../../.domain-build/application/Collections.js');
-const { getCapacity, getUsedStorage } = require('../../.domain-build/domain/game.js');
+const { getCapacity, getUsedStorage, dropPosition } = require('../../.domain-build/domain/game.js');
 module.exports = function stacks() {
   const data = new Map();
   const storage = {
@@ -12,34 +12,38 @@ module.exports = function stacks() {
     removeItem: (key) => data.delete(key),
   };
   let session = townSession(storage, 'demo', Date.now);
+  assert.equal(session.state.schemaVersion, 10);
   const farmBefore = JSON.stringify(session.state.buildings.filter((b) => b.kind === 'farm'));
+  const looseBefore = structuredClone(session.state.looseDrops);
   const events = [];
   const listen = () => session.setCollectionListener((event) => events.push(event));
   listen();
   const run = (command) => assert.equal(session.run(command), true, session.message);
   const piles = session.state.groundStacks.filter((pile) => pile.item === 'wood');
-  const source = piles.find((pile) => pile.amount === 5),
-    target = piles.find((pile) => pile.amount === 3);
+  const source = piles.find((pile) => pile.amount === 4),
+    target = piles.find((pile) => pile.amount === 2);
+  run({ type: 'dropProduct', item: 'wood', quantity: 1, x: source.x, z: source.z });
+  run({ type: 'dropProduct', item: 'wood', quantity: 1, x: target.x, z: target.z });
   const originalInventory = session.state.inventory.wood;
-  run(stackDropCommand(source, { kind: 'ground', x: target.x, z: target.z }));
+  run(stackDropCommand(source, { kind: 'ground', x: target.x, z: target.z }, session.state));
   const amountAt = (point) =>
     session.state.groundStacks.find((pile) => pile.x === point.x && pile.z === point.z)?.amount ??
     0;
-  assert.equal(amountAt(target), 5);
-  assert.equal(amountAt(source), 3);
+  assert.equal(amountAt(target), 6);
+  assert.equal(amountAt(source), 2);
   assert.equal(session.state.inventory.wood, originalInventory);
   assert.equal(events.length, 0, 'Partial merge creates no collection gain');
   session = townSession(storage, 'demo', Date.now);
   listen();
   assert.equal(amountAt(target) + amountAt(source), 8, 'Overflow survives reload');
   const warehouse = session.state.buildings.find((b) => b.kind === 'expandedWarehouse');
-  run(stackDropCommand(target, { kind: 'building', building: warehouse }));
-  run(stackDropCommand(source, { kind: 'products' }));
+  run(stackDropCommand(target, { kind: 'building', building: warehouse }, session.state));
+  run(stackDropCommand(source, { kind: 'products' }, session.state));
   assert.equal(session.state.inventory.wood, originalInventory + 8);
   assert.equal(amountAt(target) + amountAt(source), 0);
   assert.deepEqual(
     events.map((event) => event.gains),
-    [[{ kind: 'wood', amount: 5 }], [{ kind: 'wood', amount: 3 }]],
+    [[{ kind: 'wood', amount: 6 }], [{ kind: 'wood', amount: 2 }]],
   );
   for (const event of events) assert.ok(collectionOrigin(event));
   run({ type: 'dropProduct', item: 'wood', quantity: 3, x: source.x, z: source.z });
@@ -48,15 +52,87 @@ module.exports = function stacks() {
   run({ type: 'buyCrop', item: 'vegetable', quantity: room });
   const full = JSON.stringify(session.state),
     eventCount = events.length;
-  assert.equal(session.run(stackDropCommand(source, { kind: 'products' })), false);
+  assert.equal(session.run(stackDropCommand(source, { kind: 'products' }, session.state)), false);
   assert.equal(JSON.stringify(session.state), full, 'Full capacity rejects whole pile atomically');
   assert.equal(events.length, eventCount, 'Rejected retrieval emits nothing');
   const shop = session.state.buildings.find((b) => b.kind === 'shop');
   run({ type: 'shopTrade', buildingId: shop.id, item: 'vegetable', side: 'sell', quantity: 3 });
-  run(stackDropCommand(source, { kind: 'products' }));
+  run(stackDropCommand(source, { kind: 'products' }, session.state));
   assert.equal(amountAt(source), 0);
   assert.equal(getUsedStorage(session.state), getCapacity(session.state));
+  // Mining output follows a different, explicit path from user-created ground stacks.
+  const soil = session.state.naturalResources.find((resource) => resource.kind === 'soil');
+  const stockBeforeMining = { ...session.state.inventory },
+    eventsBeforeMining = events.length;
+  run({ type: 'gatherNatural', resourceId: soil.id });
+  assert.deepEqual(session.state.inventory, stockBeforeMining);
+  assert.equal(
+    events.length,
+    eventsBeforeMining,
+    'Full-storage mining drops goods without a flight',
+  );
+  const drops = session.state.looseDrops.filter(
+    (drop) => drop.source.type === 'natural' && drop.source.resourceId === soil.id,
+  );
+  assert.deepEqual(
+    drops.map((drop) => drop.amount),
+    [5, 4],
+  );
+  assert.ok(drops.every((drop) => drop.item === 'soil'));
+  assert.equal(
+    session.state.naturalResources.some((resource) => resource.id === soil.id),
+    false,
+  );
+  const mined = JSON.stringify(session.state),
+    minedBytes = [...data];
+  assert.equal(session.run({ type: 'pickupDrop', dropId: drops[0].id }), false);
+  assert.equal(JSON.stringify(session.state), mined);
+  assert.deepEqual([...data], minedBytes, 'Full-storage loose pickup cannot change saved bytes');
+  assert.equal(events.length, eventsBeforeMining);
   session = townSession(storage, 'demo', Date.now);
+  listen();
+  assert.deepEqual(
+    session.state.looseDrops,
+    [...looseBefore, ...drops],
+    'All original and newly mined drops persist',
+  );
+  run({ type: 'shopTrade', buildingId: shop.id, item: 'vegetable', side: 'sell', quantity: 9 });
+  for (const drop of drops) {
+    run({ type: 'pickupDrop', dropId: drop.id });
+    const event = events.at(-1);
+    assert.deepEqual(event.gains, [{ kind: 'soil', amount: drop.amount }]);
+    assert.deepEqual(
+      event.before.looseDrops.find((entry) => entry.id === drop.id),
+      drop,
+    );
+    assert.equal(
+      collectionOrigin(event),
+      null,
+      'Rendered surface height requires an explicit resolver',
+    );
+    assert.deepEqual(dropPosition(drop), { x: drop.x6 / 6, z: drop.z6 / 6 });
+    const picked = JSON.stringify(session.state),
+      bytes = [...data],
+      eventCount = events.length;
+    assert.equal(session.run({ type: 'pickupDrop', dropId: drop.id }), false);
+    assert.equal(JSON.stringify(session.state), picked);
+    assert.deepEqual([...data], bytes);
+    assert.equal(events.length, eventCount);
+  }
+  assert.equal(session.state.inventory.soil, stockBeforeMining.soil + 9);
+  assert.deepEqual(
+    session.state.looseDrops,
+    looseBefore,
+    'Mining pickup preserves unrelated showcase drops',
+  );
+  assert.equal(getUsedStorage(session.state), getCapacity(session.state));
+  session = townSession(storage, 'demo', Date.now);
+  assert.equal(session.state.inventory.soil, stockBeforeMining.soil + 9);
+  assert.deepEqual(
+    session.state.looseDrops,
+    looseBefore,
+    'Mining pickup preserves unrelated showcase drops',
+  );
   assert.equal(
     JSON.stringify(session.state.buildings.filter((b) => b.kind === 'farm')),
     farmBefore,
@@ -64,14 +140,18 @@ module.exports = function stacks() {
   );
   return {
     passed: true,
+    schemaVersion: 10,
     layer: 'GameSession and shared stack-drop command routing, not browser drag',
     checks: [
-      '5 onto 3 merges 2 and leaves 3 at the source',
+      '5 onto 3 merges 3 and leaves 2 at the source',
       'merge conservation across reload',
-      'warehouse target retrieves all 5 units',
-      'products target retrieves all 3 units',
+      'warehouse target retrieves all 6 units',
+      'products target retrieves all 2 units',
       'full storage rejects whole pile without partial loss or events',
       'retrieval succeeds after freeing capacity',
+      'full-storage mining leaves nine soil as 5+4 loose drops without inventory gain',
+      'loose pickup rejects atomically when full; saved output survives restart',
+      'explicit pickup after freeing capacity conserves all nine and rejects replay',
       'independent farm jobs remain unchanged',
     ],
     collectionEvents: events.length,

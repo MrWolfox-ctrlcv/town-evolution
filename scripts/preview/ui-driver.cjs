@@ -1,14 +1,19 @@
 /** Read-only inspection and real browser input shared by runtime tests. */
 const assert = require('node:assert/strict');
+const { V5_GENERATOR_REVISION } = require('../../.domain-build/domain/v5-world');
 async function inspect(page) {
-  return page.evaluate(async () => {
+  return page.evaluate(async (v5Revision) => {
     const cc = await System.import('cc');
     const scene = cc.director.getScene();
     const cameras = scene
       .getComponentsInChildren(cc.Camera)
       .filter((camera) => camera.node.activeInHierarchy);
-    const ui = cameras.find((camera) => camera.node.name === 'UICamera');
-    const world = cameras.find((camera) => camera.node.name === 'WorldCamera');
+    const ui =
+      cameras.find((camera) => camera.node.name === 'UICamera') ??
+      cameras.find((camera) => camera.node.name === 'StartCamera');
+    const world =
+      cameras.find((camera) => camera.node.name === 'WorldCamera') ??
+      cameras.find((camera) => camera.node.name === 'TitleIslandCamera');
     const canvas = document.querySelector('#GameCanvas');
     const rect = canvas.getBoundingClientRect();
     const project = (camera, position) => {
@@ -18,17 +23,19 @@ async function inspect(page) {
         y: rect.top + ((canvas.height - point.y) * rect.height) / canvas.height,
       };
     };
+    const isAction = (node) =>
+      node.name === 'Action' ||
+      node.name.startsWith('Menu-') ||
+      node.name.startsWith('ObjectAction-');
     const labels = scene
       .getComponentsInChildren(cc.Label)
       .filter((label) => label.node.activeInHierarchy)
       .map((label) => ({
         text: label.string,
-        action: label.node.parent.name === 'Action',
+        action: isAction(label.node.parent),
         ...project(
           ui,
-          label.node.parent.name === 'Action'
-            ? label.node.parent.worldPosition
-            : label.node.worldPosition,
+          isAction(label.node.parent) ? label.node.parent.worldPosition : label.node.worldPosition,
         ),
       }));
     const find = (node, name) =>
@@ -36,17 +43,27 @@ async function inspect(page) {
         ? node
         : node.children.map((child) => find(child, name)).find(Boolean);
     const town = find(scene, 'TownWorld');
-    const farm = town.children.find((node) => node.getChildByName('Soil'));
+    const farm = town?.children.find((node) => node.getChildByName('Soil'));
     const position = farm?.getChildByName('Soil')?.worldPosition;
     return {
       labels,
+      targets: scene
+        .getComponentsInChildren(cc.UITransform)
+        .filter(
+          (transform) =>
+            transform.node.activeInHierarchy && transform.node.name.startsWith('Menu-'),
+        )
+        .map((transform) => ({
+          name: transform.node.name,
+          ...project(ui, transform.node.worldPosition),
+        })),
       cropImages: scene
         .getComponentsInChildren(cc.Sprite)
         .filter(
           (sprite) =>
             sprite.node.name === 'CropImage' && sprite.node.activeInHierarchy && sprite.spriteFrame,
         ).length,
-      cameraHeight: world.orthoHeight,
+      cameraHeight: world?.orthoHeight ?? null,
       now: Date.now(),
       tools: scene
         .getComponentsInChildren(cc.UITransform)
@@ -62,6 +79,15 @@ async function inspect(page) {
               'VegetableStock',
               'WheatStock',
               'LettuceStock',
+              'RiceStock',
+              'SaplingStock',
+              'MilledRiceStock',
+              'FlourStock',
+              'BreadStock',
+              'SoilStock',
+              'MudStock',
+              'TreeSeedStock',
+              'diggingTool',
               'WoodStock',
               'StoneStock',
             ].includes(component.node.name) && component.node.activeInHierarchy,
@@ -70,7 +96,7 @@ async function inspect(page) {
           name: component.node.name,
           ...project(ui, component.node.worldPosition),
         })),
-      buildings: town.children
+      buildings: (town?.children ?? [])
         .filter((node) => /^b\d+$/.test(node.name))
         .map((node) => ({
           id: node.name,
@@ -79,17 +105,33 @@ async function inspect(page) {
             new cc.Vec3(node.worldPosition.x, node.worldPosition.y + 0.4, node.worldPosition.z),
           ),
         })),
+      drops: (find(scene, 'LooseDrops')?.children ?? [])
+        .filter((node) => node.activeInHierarchy && node.name.startsWith('Drop:'))
+        .map((node) => ({
+          id: node.name.slice(5),
+          ...project(
+            world,
+            new cc.Vec3(node.worldPosition.x, node.worldPosition.y + 0.04, node.worldPosition.z),
+          ),
+        })),
       farm: position ? project(world, position) : null,
       profile: localStorage.getItem('town-evolution.active-profile') || 'demo',
       save: JSON.parse(
         localStorage.getItem(
-          (localStorage.getItem('town-evolution.active-profile') === 'normal'
-            ? ''
-            : 'town-evolution.demo.') + 'town-evolution.save.v1',
+          (() => {
+            const profile = localStorage.getItem('town-evolution.active-profile');
+            return (
+              (profile === 'normal'
+                ? ''
+                : profile === 'v5-preview' || profile === 'v5-bridge-demo'
+                  ? `town-evolution.${profile}.${v5Revision}.`
+                  : 'town-evolution.demo.') + 'town-evolution.save.v1'
+            );
+          })(),
         ) || 'null',
       ),
     };
-  });
+  }, V5_GENERATOR_REVISION);
 }
 async function until(page, predicate, message, timeout = 10000) {
   const deadline = Date.now() + timeout;
@@ -143,7 +185,19 @@ function driver(page, touch) {
     assert.equal(targets.length, 1, `Unique rendered button: ${text}`);
     await click(targets[0]);
   };
-  return { click, button };
+  const named = async (name) => {
+    const state = await until(
+      page,
+      (view) => view.targets.some((target) => target.name === name),
+      name,
+    );
+    await click(state.targets.find((target) => target.name === name));
+  };
+  const townActions = async () => {
+    await named('Menu-settings');
+    await button('小镇事务');
+  };
+  return { click, button, named, townActions };
 }
 async function useTool(page, name, touch, buildingId) {
   const state = await inspect(page);
