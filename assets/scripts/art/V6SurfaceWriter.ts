@@ -1,3 +1,4 @@
+import { v6WorldHeight } from './V6SurfaceSamples';
 import type {
   V6SurfaceSource,
   V6SurfaceMesh,
@@ -152,7 +153,7 @@ export function v6SurfaceWriter(state: V6SurfaceSource, mesh: V6SurfaceMesh) {
       // Coincident original/fill boundaries retain exactly one original surface.
       points = (below ? materialClip(fillPoints, false) : fillPoints).map((p) => ({
         ...p,
-        g: world.groundHeight(p.x, p.z),
+        g: v6WorldHeight(world, p.x, p.z, true),
       }));
     }
     // No duplicate co-planar base face: zero thickness belongs solely to base soil.

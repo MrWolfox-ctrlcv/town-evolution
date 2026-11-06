@@ -1,4 +1,3 @@
-import { v6CoastSamples } from './V6CoastSamples';
 import type { MeshData } from './AssetTypes';
 import { v6OwnsSurfaceCell } from './V6SurfaceContracts';
 import type { V6SurfaceWorld } from './V6SurfaceContracts';
@@ -28,8 +27,8 @@ export interface V5CoastJob {
 export interface V5CoastSource {
   readonly keys: readonly string[];
   readonly water: CoastalWaterData;
-  build(key: string): MeshData;
-  begin(key: string): V5CoastJob;
+  build(key: string, visualOnly?: boolean): MeshData;
+  begin(key: string, visualOnly?: boolean): V5CoastJob;
 }
 /** Validation once per source. No dense whole-world terrain intermediate or stored meshes. */
 export function createV6CoastSource(
@@ -39,7 +38,6 @@ export function createV6CoastSource(
 ): V5CoastSource {
   const seed = world.seed;
   const field = world.hydrology;
-  const sampled = v6CoastSamples(field);
   const fills = extensions.map((p) => ({ x: p.x, z: p.z }));
   const filled = new Set(fills.map((p) => v5FillKey(p.x, p.z)));
   const water = reusedWater ?? buildCoastalWater(field.size, seed, []);
@@ -57,10 +55,10 @@ export function createV6CoastSource(
       water.colors[i * 4 + 1] = 0.75 * (1 - d) + 0.43 * d;
       water.colors[i * 4 + 2] = 0.73 * (1 - d) + 0.58 * d;
     }
-  function begin(key: string): V5CoastJob {
+  function begin(key: string, visualOnly = false): V5CoastJob {
     const [x0, z0, x1, z1] = v5CoastChunkBounds(key);
     const writer = v5MeshWriter(),
-      sample = v5SurfaceSampler(sampled);
+      sample = v5SurfaceSampler(field);
     const cliff = v5CliffTileBuilder(field, filled),
       bounds = field.featureBounds;
     const local = fills.filter((p) => p.x >= x0 && p.x < x1 && p.z >= z0 && p.z < z1);
@@ -98,6 +96,11 @@ export function createV6CoastSource(
         r = (width * Math.SQRT2) / 2 + 0.25 * Math.SQRT2;
       const cliffOverlap =
         x < bounds.x1 && x + width > bounds.x0 && z < bounds.z1 && z + width > bounds.z0;
+      // Far display only: the complete block is below the opaque water's global
+      // minimum -0.642. PROFILE depth >= .74 at dry <= -2.35; bankScale <= 1,
+      // naturalCoast only lowers that bound. Dry-distance is 1-Lipschitz.
+      // Preserve every shore, original owner, reclaimed fill and cliff block.
+      if (visualOnly && !ownedAny && !any && !cliffOverlap && d + r <= -2.35) return;
       const flat =
         all && !cliffOverlap
           ? 1
@@ -174,8 +177,8 @@ export function createV6CoastSource(
       },
     };
   }
-  function build(key: string): MeshData {
-    const job = begin(key);
+  function build(key: string, visualOnly = false): MeshData {
+    const job = begin(key, visualOnly);
     while (!job.advance(1024)) {
       /* Offline synchronous convenience only. */
     }

@@ -1,3 +1,4 @@
+import { v6WorldHeight, v6PreparedSamples } from './V6SurfaceSamples';
 import type { V3 } from './AssetTypes';
 import type { V6SurfaceSource } from './V6SurfaceContracts';
 import { v6SurfaceNormal } from './V6SurfaceNormals';
@@ -5,6 +6,9 @@ export const V6_FAR_DEFAULT_HEIGHT_ERROR = 1 / 16;
 export const V6_FAR_MAX_HEIGHT_ERROR = 1 / 4;
 export const V6_FAR_MAX_NORMAL_ERROR = 0.06;
 type Material = 'grass' | 'stone';
+const normalOrder = [
+  12, 2, 10, 14, 22, 0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 13, 15, 16, 17, 18, 19, 20, 21, 23, 24,
+] as const;
 const offsets = [
   [-1, 0],
   [0, 1],
@@ -90,23 +94,27 @@ export function v6FarCellMaterial(
     for (let i = 0; i <= 4; i++) {
       const px = x + i / 4,
         pz = z + j / 4;
-      const h = Math.fround(source.heightInCell(px, pz, x, z));
+      const h = Math.fround(
+        v6PreparedSamples(world)
+          ? v6WorldHeight(world, px, pz, ground)
+          : source.heightInCell(px, pz, x, z),
+      );
       heights.push(h);
-      exposed.push(stone && h > Math.fround(world.groundHeight(px, pz)));
+      exposed.push(stone && h > Math.fround(v6WorldHeight(world, px, pz, true)));
     }
-  let material: Material | undefined;
-  for (let j = 0; j < 4; j++)
-    for (let i = 0; i < 4; i++) {
-      const k = j * 5 + i;
-      for (const ids of [
-        [k, k + 5, k + 6],
-        [k, k + 6, k + 1],
-      ]) {
-        const next = stone && ids.some((n) => exposed[n]) ? 'stone' : 'grass';
-        if (material && material !== next) return null;
-        material = next;
+  let material: Material = 'grass';
+  if (stone) {
+    let previous: boolean | undefined;
+    for (let j = 0; j < 4; j++)
+      for (let i = 0; i < 4; i++) {
+        const k = j * 5 + i;
+        const a = exposed[k]! || exposed[k + 5]! || exposed[k + 6]!;
+        const b = exposed[k]! || exposed[k + 6]! || exposed[k + 1]!;
+        if (a !== b || (previous !== undefined && previous !== a)) return null;
+        previous = a;
       }
-    }
+    material = previous ? 'stone' : 'grass';
+  }
   const mix = (k: number, value: (n: number) => number) => {
     const u = (k % 5) / 4,
       v = Math.floor(k / 5) / 4;
@@ -131,8 +139,22 @@ export function v6FarCellMaterial(
   };
   flags[index] = 1;
   // Reject curved normals early, before sampling every normal on an ineligible cell.
-  for (const k of [12, 2, 10, 14, 22, ...Array.from({ length: 25 }, (_, i) => i)]) {
-    const error = Math.hypot(...normal(k).map((n, a) => n - mix(k, (id) => normal(id)[a]!)));
+  for (const k of normalOrder) {
+    const n = normal(k),
+      u = (k % 5) / 4,
+      v = Math.floor(k / 5) / 4;
+    const upper = v >= u,
+      a = normal(0),
+      b = normal(upper ? 20 : 24),
+      c = normal(upper ? 24 : 4);
+    const wa = 1 - (upper ? v : u),
+      wb = upper ? v - u : v,
+      wc = upper ? u : u - v;
+    // Keep the same Float32 samples and left-to-right weighted additions as mix.
+    const dx = n[0] - (a[0] * wa + b[0] * wb + c[0] * wc);
+    const dy = n[1] - (a[1] * wa + b[1] * wb + c[1] * wc);
+    const dz = n[2] - (a[2] * wa + b[2] * wb + c[2] * wc);
+    const error = Math.hypot(dx, dy, dz);
     if (error > V6_FAR_MAX_NORMAL_ERROR / 2 || !Number.isFinite(error)) return null;
   }
   flags[index] = material === 'stone' ? 3 : 2;

@@ -1,3 +1,4 @@
+import { v6WorldHeight, v6PreparedSamples } from './V6SurfaceSamples';
 import type { V6SurfaceSource, V6SurfaceMesh } from './V6SurfaceContracts';
 import { buildV6SurfaceMeshSteps } from './V6SurfaceMesh';
 import { emptyV6SurfaceMesh } from './V6SurfaceMerge';
@@ -99,7 +100,11 @@ export function* buildV6FarSurfaceSteps(
           const index = mesh.positions.length / 3;
           const p = [
             Math.fround(px),
-            Math.fround(source.heightInCell(px, pz, x, z)),
+            Math.fround(
+              v6PreparedSamples(source.world)
+                ? v6WorldHeight(source.world, px, pz, ground)
+                : source.heightInCell(px, pz, x, z),
+            ),
             Math.fround(pz),
           ];
           mesh.positions.push(...p);

@@ -1,3 +1,4 @@
+import { v6WorldHeight } from './V6SurfaceSamples';
 import { v6SurfaceNormal } from './V6SurfaceNormals';
 import type { V6SurfaceSource, V6SurfacePoint } from './V6SurfaceContracts';
 /** Exact constant attribute field, not distance LOD. Resource-bearing, edited and
@@ -27,7 +28,7 @@ export function v6ExactFlatCell(
     x: px!,
     z: pz!,
     h: height,
-    g: source.world.groundHeight(px!, pz!),
+    g: v6WorldHeight(source.world, px!, pz!, true),
   }));
 }
 /** Match the quarter-grid perimeter of every unsimplified neighbor, including
@@ -56,7 +57,7 @@ export function v6ExactFlatTriangles(
     for (let i = 0; i < segments; i++) {
       const px = a.x + ((b.x - a.x) * i) / segments;
       const pz = a.z + ((b.z - a.z) * i) / segments;
-      boundary.push({ x: px, z: pz, h: a.h, g: source.world.groundHeight(px, pz) });
+      boundary.push({ x: px, z: pz, h: a.h, g: v6WorldHeight(source.world, px, pz, true) });
     }
   }
   if (boundary.length === 4)
@@ -68,7 +69,7 @@ export function v6ExactFlatTriangles(
     x: x + 0.5,
     z: z + 0.5,
     h: corners[0]!.h,
-    g: source.world.groundHeight(x + 0.5, z + 0.5),
+    g: v6WorldHeight(source.world, x + 0.5, z + 0.5, true),
   };
   return boundary.map((a, i) => [center, a, boundary[(i + 1) % boundary.length]!]);
 }
@@ -101,7 +102,7 @@ function cachedFlatCell(source: V6SurfaceSource, x: number, z: number): V6Surfac
       x: px!,
       z: pz!,
       h,
-      g: source.world.groundHeight(px!, pz!),
+      g: v6WorldHeight(source.world, px!, pz!, true),
     }));
   }
   const result = v6ExactFlatCell(source, x, z);

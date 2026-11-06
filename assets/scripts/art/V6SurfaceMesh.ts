@@ -1,3 +1,4 @@
+import { v6WorldHeight } from './V6SurfaceSamples';
 import type { V6SurfaceSource, V6SurfaceMesh, V6SurfacePoint as P } from './V6SurfaceContracts';
 import { v6Plane as plane } from './V6SurfaceContracts';
 import { v6SurfaceWriter } from './V6SurfaceWriter';
@@ -37,8 +38,8 @@ export function* buildV6SurfaceMeshSteps(
   const p = (x: number, z: number): P => ({
     x,
     z,
-    h: world.naturalHeight(x, z),
-    g: world.groundHeight(x, z),
+    h: v6WorldHeight(world, x, z, false),
+    g: v6WorldHeight(world, x, z, true),
   });
   for (let z = z0; z < z0 + depth; z++)
     for (let x = x0; x < x0 + width; x++) {

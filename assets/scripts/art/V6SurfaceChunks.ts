@@ -6,13 +6,19 @@ import type { V6CellPatch, V6CellSpan } from './V6CellSpans';
 import { buildV6SurfaceMeshSteps } from './V6SurfaceMesh';
 import { mergeV6SurfaceJob, type V6SurfaceJob } from './V6SurfaceChunkWork';
 import { buildV6FarSurfaceSteps } from './V6FarSurfaceMesh';
+const neighbors = [
+  [0, 0],
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+] as const;
 export const v6ChunkKey = (x: number, z: number) => `${Math.floor(x / 16)},${Math.floor(z / 16)}`;
 export interface V6SurfaceTransaction {
   chunks: readonly V6SurfaceChunk[];
   rebuiltCells: number;
   commit(): NaturalSurfaceData;
 }
-/** Changed neighbors publish atomically, including coast, resource and artificial faces. */
 export class V6SurfaceChunks {
   private wanted = new Set<string>();
   private detailed = new Set<string>();
@@ -28,6 +34,7 @@ export class V6SurfaceChunks {
   private pending: V6SurfaceTransaction | null = null;
   private epoch = 0;
   private rebuilt = 0;
+  private farError = 0.25;
   constructor(
     private source: V6SurfaceSource,
     private coast: V5CoastSource,
@@ -46,24 +53,32 @@ export class V6SurfaceChunks {
     if (coast) this.coast = coast;
     if (!changes.length) return;
     for (const p of changes)
-      for (const [dx, dz] of [
-        [0, 0],
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ]) {
-        const x = p.x + dx!,
-          z = p.z + dz!;
-        this.dirty.add(`${x},${z}`);
-        if (coast) this.coastDirty.add(v6ChunkKey(x, z));
-      }
+      for (let dz = -2; dz <= 2; dz++)
+        for (let dx = -2; dx <= 2; dx++) {
+          const radius = Math.abs(dx) + Math.abs(dz),
+            x = p.x + dx,
+            z = p.z + dz;
+          // Far edge segments depend on the neighboring cell's qualification.
+          if (radius > 2 || (radius === 2 && this.detailed.has(v6ChunkKey(x, z)))) continue;
+          this.dirty.add(`${x},${z}`);
+          if (coast) this.coastDirty.add(v6ChunkKey(x, z));
+        }
     this.cancel();
   }
-  request(keys: readonly string[], details: readonly string[] = keys): void {
+  request(
+    keys: readonly string[],
+    details: readonly string[] = keys,
+    farError = this.farError,
+  ): void {
+    if (!(farError >= 0 && farError <= 0.25)) throw Error('Invalid far error');
+    const errorChanged = farError !== this.farError;
+    if (errorChanged)
+      for (const [key, chunk] of this.live) if (!chunk.detail) this.lodDirty.add(key);
+    this.farError = farError;
     const next = new Set(keys),
       fine = new Set(details.filter((k) => next.has(k)));
     if (
+      !errorChanged &&
       next.size === this.wanted.size &&
       [...next].every((k) => this.wanted.has(k)) &&
       fine.size === this.detailed.size &&
@@ -73,13 +88,7 @@ export class V6SurfaceChunks {
     for (const key of new Set([...this.detailed, ...fine]))
       if (this.detailed.has(key) !== fine.has(key)) {
         const [x, z] = key.split(',').map(Number);
-        for (const [dx, dz] of [
-          [0, 0],
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ]) {
+        for (const [dx, dz] of neighbors) {
           const neighbor = `${x! + dx!},${z! + dz!}`;
           if (this.live.has(neighbor) && next.has(neighbor)) this.lodDirty.add(neighbor);
         }
@@ -91,9 +100,7 @@ export class V6SurfaceChunks {
   abort(): void {
     this.cancel();
   }
-  memoryUsage() {
-    return this.budget.usage();
-  }
+  memoryUsage = () => this.budget.usage();
   private cancel(): void {
     this.budget.cancel();
     this.epoch++;
@@ -144,8 +151,11 @@ export class V6SurfaceChunks {
           patches: wanted ? new Map(this.patches.get(key)) : new Map(),
           spans: new Map(),
           coastJob:
-            wanted && (!this.coasts.has(key) || this.coastDirty.has(key))
-              ? this.coast.begin(key)
+            wanted &&
+            (!this.coasts.has(key) ||
+              this.coastDirty.has(key) ||
+              this.live.get(key)?.detail !== this.detailed.has(key))
+              ? this.coast.begin(key, !this.detailed.has(key))
               : null,
           coast: wanted ? (this.coasts.get(key) ?? null) : null,
           merge: null,
@@ -176,7 +186,7 @@ export class V6SurfaceChunks {
               1,
               (xx, zz) =>
                 this.detailed.has(v6ChunkKey(xx, zz)) || this.visualCells.has(`${xx},${zz}`),
-              0.25,
+              this.farError,
             );
         const next = job.cellJob.next(),
           cost = v6SurfaceCost(next.value);
