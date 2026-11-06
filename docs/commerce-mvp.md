@@ -78,7 +78,9 @@ The old `vegetable` code identifier is retained as the carrot item key. Current 
 
 ## Shoreline docks
 
-New and moved docks require their entire footprint on actual land and water immediately beyond their whole south-facing edge. The shared mask uses the town's saved seed; no fixed z row or fake visual inlet makes an inland dock legal. The demo fixture finds a real legal shoreline footprint from the same rules.
+Moved docks and new departures require their entire footprint on actual land and water immediately beyond their whole exit edge, in the dock's saved orientation. The shared mask uses the town's saved seed, terrain version and reclaimed tiles; no fixed z row or fake visual inlet makes an inland departure legal. The demo fixture finds a real legal shoreline footprint from the same rules.
+
+Historical inland or incorrectly oriented docks remain readable without moving or deleting them. Staging and unloading remain available, and voyages already in transit can still settle exactly once. Only a new departure is blocked until the player moves or rotates the dock to a valid coast. Panel availability and the departure command use the same rule and relocation message.
 
 ## Retired cold-production path
 
