@@ -76,7 +76,11 @@ export class V6TreeView {
     for (const [key, surface] of this.stream.surfaces()) if (key === id) return surface.bounds;
     return null;
   }
-  pick(ray: geometry.Ray) {
+  isReady(id: string): boolean {
+    const owner = this.owners.get(id);
+    return !!owner && this.groundReady(owner.x, owner.z);
+  }
+  pick(ray: geometry.Ray, includeBlocked = false) {
     let result: { id: string; distance: number } | null = null;
     for (const [id, surface] of this.stream.surfaces()) {
       const distance = surface.distance(ray, result?.distance);
@@ -86,17 +90,16 @@ export class V6TreeView {
       )
         result = { id, distance };
     }
-    const owner = result && this.owners.get(result.id);
-    return owner && this.groundReady(owner.x, owner.z) ? result : null;
+    return result && (includeBlocked || this.isReady(result.id)) ? result : null;
   }
-  candidates(context: TouchPickContext): TouchCandidate[] {
+  candidates(context: TouchPickContext, includeBlocked = false): TouchCandidate[] {
     const result: TouchCandidate[] = [];
     for (const [id, surface] of this.stream.surfaces())
       if (nearProjectedBounds(surface.bounds, context))
         result.push({
           pick: (ray) => {
             const owner = this.owners.get(id);
-            if (!owner || !this.groundReady(owner.x, owner.z)) return null;
+            if (!includeBlocked && (!owner || !this.groundReady(owner.x, owner.z))) return null;
             const distance = surface.distance(ray);
             return distance === null ? null : { kind: 'tree', id, distance };
           },

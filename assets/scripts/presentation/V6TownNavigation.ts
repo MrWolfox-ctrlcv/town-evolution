@@ -38,16 +38,16 @@ export class V6TownNavigation {
     this.lastPhase = status?.phase ?? '';
     this.lastProblem = problem;
     this.navigation.update(
-      !problem && !!status?.overviewReady,
+      !problem && !!status?.overviewVisible,
       this.map.interacting || this.toolActive(),
     );
     this.hud.terrainStatus(
       problem
         ? '地形暂不可操作 · 可回家或缩放后重试'
-        : !status?.overviewReady
+        : !status?.overviewVisible
           ? '正在准备真实全岛远景 · 可回家或调整视角'
           : status.phase === 'overview'
-            ? `全岛远景 ${status.readyChunks}/${status.requestedChunks} · 拉近或回家后操作`
+            ? `${status.overviewComplete ? '远景浏览' : '正在绘制全岛'} ${status.readyChunks}/${status.requestedChunks} · 拉近或回家后操作`
             : status.phase === 'detail'
               ? `地形细化中 · 当前区域 ${status.readyChunks}/${status.requestedChunks} 块已就绪`
               : '当前区域已就绪 · 可开田、挖地或填地',

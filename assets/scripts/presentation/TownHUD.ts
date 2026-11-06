@@ -134,6 +134,7 @@ export class TownHUD {
   setTerrainNavigation(handlers: TerrainNavigationHandlers): void {
     this.terrainNavigation?.dispose();
     this.terrainNavigation = new TerrainNavigation(this.canvas, handlers);
+    this.terrainNavigation.root.setSiblingIndex(this.top.getSiblingIndex() + 1);
   }
   terrainStatus(text: string): void {
     this.terrainNavigation?.render(text);

@@ -29,10 +29,10 @@ export class TownObjectPicking {
     if (cached?.has(key)) return cached.get(key)!;
     const ground = this.resources(),
       building = this.buildingHit(ray, exclude),
-      tree = ground.pickTree(ray),
-      pile = ground.pickStack(ray, exclude),
-      natural = ground.pickNatural(ray),
-      drop = ground.pickDrop?.(ray);
+      tree = ground.pickTree(ray, true),
+      pile = ground.pickStack(ray, exclude, true),
+      natural = ground.pickNatural(ray, true),
+      drop = ground.pickDrop?.(ray, true);
     let hit: VisibleHit | null = null;
     if (building) hit = { kind: 'building', ...building };
     if (tree) hit = nearerHit(hit, { kind: 'tree', ...tree });
@@ -43,7 +43,7 @@ export class TownObjectPicking {
     if (hit && groundDistance != null && hit.distance > groundDistance + 0.015) hit = null;
     // Any exact center hit wins, even when it is not usable by the current tool.
     if (!hit && context) {
-      const candidates: TouchCandidate[] = ground.touchCandidates(context, exclude);
+      const candidates: TouchCandidate[] = ground.touchCandidates(context, exclude, true);
       for (const building of this.buildingSurfaces())
         if (building.id !== exclude && building.surface.nearScreen(context))
           candidates.push({

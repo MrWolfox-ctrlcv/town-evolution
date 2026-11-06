@@ -64,11 +64,11 @@ export function cameraBoxVisible(
 }
 
 /** A screen-space error threshold using physical viewport pixels, capped at a quarter cell. */
-export function cameraTerrainError(camera: Camera): number {
+export function cameraTerrainError(camera: Camera, orthoHeight = camera.orthoHeight): number {
   const render = camera.camera;
   const height = render?.window?.height * render?.viewport?.height;
-  return Number.isFinite(height) && height > 0 && Number.isFinite(camera.orthoHeight)
-    ? Math.max(0, Math.min(0.25, (0.75 * 2 * camera.orthoHeight) / height))
+  return Number.isFinite(height) && height > 0 && Number.isFinite(orthoHeight)
+    ? Math.max(0, Math.min(0.25, (0.75 * 2 * orthoHeight) / height))
     : 0;
 }
 

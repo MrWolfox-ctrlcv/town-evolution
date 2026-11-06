@@ -29,10 +29,10 @@ export function townFarmToolSurface(
         distance: hit.distance,
       };
   }
-  const tree = resources.pickTree(ray),
-    pile = resources.pickStack(ray);
-  const natural = resources.pickNatural(ray);
-  for (const blocker of [tree, pile, natural, resources.pickDrop?.(ray)])
+  const tree = resources.pickTree(ray, true),
+    pile = resources.pickStack(ray, undefined, true);
+  const natural = resources.pickNatural(ray, true);
+  for (const blocker of [tree, pile, natural, resources.pickDrop?.(ray, true)])
     if (blocker && blocker.distance < (nearest?.distance ?? Infinity))
       nearest = { buildingId: null, cell: null, soil: false, distance: blocker.distance };
   const ground = terrainDistance?.(ray) ?? null;

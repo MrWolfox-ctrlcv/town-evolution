@@ -42,7 +42,9 @@ export class TownView {
           .map(([id, entry]) => ({ id, surface: entry.surface })),
       (sample) =>
         this.previous?.terrainVersion === 6 ? this.island.terrainDistance(sample) : null,
-      (hit) => hit.kind !== 'building' || this.buildingReady(hit.id),
+      (hit) =>
+        this.previous?.terrainVersion !== 6 ||
+        (hit.kind === 'building' ? this.buildingReady(hit.id) : this.resources.isUsable(hit)),
     );
     return this.picking.hit(ray, exclude);
   }
@@ -52,7 +54,11 @@ export class TownView {
     this.feedback = this.root.addComponent(TownFeedback);
     this.feedback.configure(this.factory);
     this.island = new IslandView(this.root, 40);
-    this.resources = new GroundObjects(this.root, (x, z) => this.island.isGroundReady(x, z));
+    this.resources = new GroundObjects(
+      this.root,
+      (x, z) => this.island.isGroundReady(x, z),
+      (x, z) => this.island.isGroundVisible(x, z),
+    );
   }
   sync(
     state: GameState,
@@ -142,9 +148,10 @@ export class TownView {
     treeLodSpan?: number,
     visible?: WorldBoxTest,
     maxError?: number,
+    overviewError?: number,
   ): void {
     if (!this.previous || this.previous.terrainVersion < 5) return;
-    const changed = this.island.frame(bounds, {}, visible, treeLodSpan, maxError);
+    const changed = this.island.frame(bounds, {}, visible, treeLodSpan, maxError, overviewError);
     if (changed)
       this.resources.sync(
         this.previous,

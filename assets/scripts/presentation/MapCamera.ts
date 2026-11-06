@@ -252,6 +252,8 @@ export class MapCamera {
   boxVisible(min: Readonly<WorldPoint>, max: Readonly<WorldPoint>): boolean {
     return visibility.cameraSceneBoxVisible(this.camera, min, max);
   }
+  readonly maxOverviewError = () =>
+    visibility.cameraTerrainError(this.camera, fittedOrthoHeight(this.aspect, this.size));
   maxTerrainError(): number {
     return visibility.cameraTerrainError(this.camera);
   }

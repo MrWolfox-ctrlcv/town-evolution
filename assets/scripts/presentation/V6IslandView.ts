@@ -23,6 +23,8 @@ export class V6IslandView {
   private pending: V6SurfaceTransaction | null = null;
   private failure: unknown = null;
   private failureView = '';
+  private constrained = false;
+  private requestedOverview = 0;
   private picker = new V6TerrainPicking();
   private requestedFine = new Set<string>();
   constructor(
@@ -96,6 +98,7 @@ export class V6IslandView {
     visible?: WorldBoxTest,
     _lodSpan?: number,
     maxError = 0,
+    overviewError = 0,
   ): boolean {
     if (
       !this.chunks ||
@@ -104,12 +107,19 @@ export class V6IslandView {
       !Object.values(bounds).every(Number.isFinite)
     )
       return false;
-    const initial = !this.surfaceStatus().overviewReady;
+    const initial = !this.surfaceStatus().overviewVisible;
+    if (initial && overviewError <= 0) return false;
+    const farError = Math.max(0, Math.min(0.25, overviewError));
     const cx = initial ? 96 : (bounds.minX + bounds.maxX) / 2;
     const cz = initial ? 96 : (bounds.minZ + bounds.maxZ) / 2;
-    const keys = [...this.coast.keys];
+    const keys = this.coast.keys.filter((key) => {
+      if (!this.constrained) return true;
+      const [x, z, xx, zz] = v5CoastChunkBounds(key);
+      return xx >= bounds.minX && x <= bounds.maxX && zz >= bounds.minZ && z <= bounds.maxZ;
+    });
+    this.requestedOverview = keys.length;
     const fine =
-      initial || maxError >= 0.25
+      initial || (maxError > 0 && maxError >= farError)
         ? []
         : keys.filter((key) => {
             const [x, z, xx, zz] = v5CoastChunkBounds(key);
@@ -132,7 +142,7 @@ export class V6IslandView {
     const view = JSON.stringify([bounds, fine]);
     if (this.failure && view === this.failureView) return false;
     this.failure = null;
-    this.chunks.request(keys, fine);
+    this.chunks.request(keys, fine, farError);
     if (this.pending && !this.chunks.isCurrent(this.pending)) {
       this.meshes.cancel();
       this.pending = null;
@@ -163,6 +173,7 @@ export class V6IslandView {
       this.pending = null;
       this.chunks.abort();
       this.failure = error;
+      this.constrained = true;
       this.failureView = view;
       console.warn('Terrain6 surface staging stopped; previous complete snapshot retained', error);
       return false;
@@ -177,16 +188,18 @@ export class V6IslandView {
   }
   surfaceStatus() {
     const live = this.chunks?.resident();
-    const overviewReady = !!live && [...live.values()].some((c) => c.mesh.indices.length > 0);
-    const overview = !live || live.size < (this.coast?.keys.length ?? 0);
+    const overviewVisible = !!live && [...live.values()].some((c) => c.mesh.indices.length > 0);
+    const overview = !this.requestedFine.size || !live || live.size < this.requestedOverview;
     const ready = this.chunks?.isSettled() ?? false;
     return {
-      overviewReady,
+      overviewVisible,
+      overviewComplete:
+        !!live && this.requestedOverview > 0 && live.size === this.requestedOverview,
       phase: overview ? ('overview' as const) : ready ? ('ready' as const) : ('detail' as const),
       readyChunks: overview
         ? (live?.size ?? 0)
         : [...this.requestedFine].filter((k) => live?.get(k)?.detail).length,
-      requestedChunks: overview ? (this.coast?.keys.length ?? 0) : this.requestedFine.size,
+      requestedChunks: overview ? this.requestedOverview : this.requestedFine.size,
     };
   }
   isGroundVisible(x: number, z: number): boolean {
@@ -206,6 +219,8 @@ export class V6IslandView {
     return !this.failure && !!this.chunks && !this.chunks.isSettled();
   }
   dispose(): void {
+    this.constrained = false;
+    this.requestedOverview = 0;
     this.meshes?.dispose();
     this.chunks?.dispose();
     this.meshes = null;

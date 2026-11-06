@@ -209,9 +209,10 @@ export class IslandView {
     visible?: WorldBoxTest,
     lodSpan?: number,
     maxError?: number,
+    overviewError?: number,
   ): boolean {
     if (this.v6) {
-      const changed = this.v6.frame(bounds, budget, visible, lodSpan, maxError);
+      const changed = this.v6.frame(bounds, budget, visible, lodSpan, maxError, overviewError);
       if (changed) this.naturalSurface = this.v6.naturalSurface;
       return changed;
     }

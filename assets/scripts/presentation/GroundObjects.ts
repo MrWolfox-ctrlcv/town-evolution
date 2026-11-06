@@ -15,7 +15,7 @@ import { pileModel } from './PileModel';
 import { nearProjectedBounds } from './TouchPicking';
 import { LooseDropView } from './LooseDropView';
 import type { DropSupport } from './DropSupport';
-import type { TouchCandidate, TouchPickContext } from './TouchPicking';
+import type { TouchCandidate, TouchPickContext, VisibleHit } from './TouchPicking';
 /** Resource identity comes from saves; decorative border scenery is never harvestable. */
 export class GroundObjects {
   private readonly root: Node;
@@ -52,7 +52,7 @@ export class GroundObjects {
     support?: DropSupport,
   ): void {
     if (support) {
-      this.drops ??= new LooseDropView(this.root);
+      this.drops ??= new LooseDropView(this.root, this.groundReady);
       this.drops.sync(state, support);
     }
     if (state.terrainVersion === 6) this.v6Surface = getV6EditSurface(state);
@@ -174,11 +174,10 @@ export class GroundObjects {
     this.lifted = key;
     for (const pile of this.piles) pile.node.active = pile.key !== key && pile.ready;
   }
-  pickStack(ray: geometry.Ray, exclude?: string) {
+  pickStack(ray: geometry.Ray, exclude?: string, includeBlocked = false) {
     let nearest: { id: string; x: number; z: number; distance: number } | null = null;
     for (const pile of this.piles) {
       if (pile.key === exclude || pile.key === this.lifted) continue;
-      if (this.treeVersion === 6 && (!pile.ready || !this.groundReady(pile.x, pile.z))) continue;
       const distance = pile.surface.distance(ray, nearest?.distance);
       if (
         distance !== null &&
@@ -188,22 +187,35 @@ export class GroundObjects {
       )
         nearest = { id: pile.key, x: pile.x, z: pile.z, distance };
     }
-    return nearest;
+    return nearest && (includeBlocked || this.isUsable({ kind: 'pile', ...nearest }))
+      ? nearest
+      : null;
   }
   private naturalReady(id: string): boolean {
     if (this.treeVersion !== 6) return true;
     const owner = this.natural.origin(id);
     return !!owner && this.groundReady(Math.floor(owner.x), Math.floor(owner.z));
   }
-  pickNatural(ray: geometry.Ray) {
+  pickNatural(ray: geometry.Ray, includeBlocked = false) {
     const hit = this.natural.pick(ray);
     // Reject the first blocked surface, never search through it for a farther ID.
-    return hit && this.naturalReady(hit.id) ? hit : null;
+    return hit && (includeBlocked || this.naturalReady(hit.id)) ? hit : null;
   }
-  touchCandidates(context: TouchPickContext, exclude?: string): TouchCandidate[] {
+  touchCandidates(
+    context: TouchPickContext,
+    exclude?: string,
+    includeBlocked = false,
+  ): TouchCandidate[] {
     const result: TouchCandidate[] = [
-      ...(this.drops?.candidates(context) ?? []),
-      ...(this.v5Trees?.candidates(context) ?? []),
+      ...(this.drops?.candidates(context) ?? []).map((candidate) => ({
+        pick: (ray: geometry.Ray) => {
+          const hit = candidate.pick(ray);
+          return hit && (includeBlocked || this.isUsable(hit)) ? hit : null;
+        },
+      })),
+      ...(this.v5Trees instanceof V6TreeView
+        ? this.v5Trees.candidates(context, includeBlocked)
+        : (this.v5Trees?.candidates(context) ?? [])),
     ];
     for (const tree of this.trees)
       if (tree.surface.nearScreen(context))
@@ -217,7 +229,11 @@ export class GroundObjects {
       if (pile.key !== exclude && pile.key !== this.lifted && pile.surface.nearScreen(context))
         result.push({
           pick: (ray) => {
-            if (this.treeVersion === 6 && (!pile.ready || !this.groundReady(pile.x, pile.z)))
+            if (
+              !includeBlocked &&
+              this.treeVersion === 6 &&
+              (!pile.ready || !this.groundReady(pile.x, pile.z))
+            )
               return null;
             const distance = pile.surface.distance(ray);
             return distance === null
@@ -229,7 +245,9 @@ export class GroundObjects {
     result.push({
       pick: (ray) => {
         const hit = natural.pick(ray);
-        return hit && this.naturalReady(hit.id) ? { kind: 'natural', ...hit } : null;
+        return hit && (includeBlocked || this.naturalReady(hit.id))
+          ? { kind: 'natural', ...hit }
+          : null;
       },
     });
     return result;
@@ -237,8 +255,17 @@ export class GroundObjects {
   setLiftedDrop(id: string | null): void {
     this.drops?.setLifted(id);
   }
-  pickDrop(ray: geometry.Ray) {
-    return this.drops?.pick(ray) ?? null;
+  pickDrop(ray: geometry.Ray, includeBlocked = false) {
+    const hit = this.drops?.pick(ray);
+    return hit && (includeBlocked || this.isUsable({ kind: 'drop', ...hit })) ? hit : null;
+  }
+  isUsable(hit: VisibleHit): boolean {
+    if (this.treeVersion !== 6) return true;
+    if (hit.kind === 'natural') return this.naturalReady(hit.id);
+    if (hit.kind === 'tree')
+      return this.v5Trees instanceof V6TreeView && this.v5Trees.isReady(hit.id);
+    const p = hit.kind === 'pile' ? hit : hit.kind === 'drop' ? this.drops?.origin(hit.id) : null;
+    return !!p && this.groundReady(Math.floor(p.x), Math.floor(p.z));
   }
   dropOrigin(id: string) {
     return this.drops?.origin(id) ?? null;
@@ -246,7 +273,8 @@ export class GroundObjects {
   naturalOrigin(id: string) {
     return this.natural.origin(id);
   }
-  pickTree(ray: geometry.Ray): { id: string; distance: number } | null {
+  pickTree(ray: geometry.Ray, includeBlocked = false): { id: string; distance: number } | null {
+    if (this.v5Trees instanceof V6TreeView) return this.v5Trees.pick(ray, includeBlocked);
     if (this.v5Trees) return this.v5Trees.pick(ray);
     let id: string | null = null,
       distance = Infinity;

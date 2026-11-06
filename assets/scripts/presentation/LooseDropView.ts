@@ -21,7 +21,10 @@ export class LooseDropView {
     this.lifted = id;
     for (const [key, entry] of this.entries) entry.node.active = key !== id && entry.ready;
   }
-  constructor(parent: Node) {
+  constructor(
+    parent: Node,
+    private readonly groundReady: (x: number, z: number) => boolean = () => true,
+  ) {
     this.root = new Node('LooseDrops');
     parent.addChild(this.root);
   }
@@ -44,7 +47,9 @@ export class LooseDropView {
       });
       // A missing support is visible and recoverable, never deleted or moved to another tile.
       const y = (height ?? 0.022) + 0.008 - shape.minY * shape.scale;
-      const ready = state.terrainVersion !== 6 || height !== null;
+      const ready =
+        state.terrainVersion !== 6 ||
+        (height !== null && this.groundReady(Math.floor(p.x), Math.floor(p.z)));
       const signature = `${asset}:${p.x}:${p.z}:${y}:${ready}`;
       const prior = old.get(drop.id);
       old.delete(drop.id);

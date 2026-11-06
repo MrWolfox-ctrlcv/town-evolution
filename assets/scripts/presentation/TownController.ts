@@ -1,5 +1,5 @@
 import { V6TownNavigation } from './V6TownNavigation';
-import { V6_VIEW_TOP } from '../application/CameraFraming';
+import { streamTownFrame } from './TownStreamingFrame';
 import { townUiActions } from './TownUiActions';
 import { materialQuantity } from '../application/MaterialQuantity';
 import { objectTarget, pickObject } from './ObjectContext';
@@ -129,20 +129,9 @@ export class TownController {
   tick(dt: number): void {
     this.hud.tick(dt);
     this.map.tick();
-    if (this.session.state.terrainVersion === 5)
-      this.town.frame(this.map.visibleBounds(64), this.map.visibleBounds(4));
-    else if (this.session.state.terrainVersion === 6) {
-      const visible = this.map.visibleBounds(V6_VIEW_TOP),
-        flat = this.map.visibleBounds(0);
-      this.town.frame(
-        visible,
-        visible,
-        Math.max(flat.maxX - flat.minX, flat.maxZ - flat.minZ),
-        (min, max) => this.map.boxVisible(min, max),
-        this.map.maxTerrainError(),
-      );
-      if (!this.tools.checkTerrainGesture()) this.cancelInput();
-    }
+    streamTownFrame(this.session.state.terrainVersion, this.map, this.town);
+    if (this.session.state.terrainVersion === 6 && !this.tools.checkTerrainGesture())
+      this.cancelInput();
     this.v6Navigation?.tick();
     this.projectSelection();
     this.elapsed += dt;
