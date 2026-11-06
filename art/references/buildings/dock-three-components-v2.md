@@ -1,0 +1,15 @@
+# Three-component simple dock reference
+
+Generated with the built-in image-generation tool on 2026-11-06, by editing the existing wooden pier/crate/coastal dock concept. This is a concept reference, not a screenshot of implemented gameplay.
+
+The current dock recipe includes a wooden pier, an open wooden crate and a notice board. The finished structure keeps all three ingredients visually identifiable. The crate sits toward the outer end; the notice board stands beside the shore entrance without blocking the walkway. This revision contains no boat, no shelf upgrade and no shipping behavior decision.
+
+Image: `dock-three-components-v2.png` (1774×887 PNG).
+
+## Generation prompt
+
+Use case: precise-object-edit / stylized-concept. Asset type: revised concept design sheet for a cozy isometric 3D island-building game. Input image is the EDIT TARGET and style reference. Revise this sheet to show the newly approved recipe: WOODEN PIER + OPEN WOODEN CRATE + NOTICE BOARD = SIMPLE DOCK. Keep the original warm honey-colored timber, stylized low-poly beveled forms, dark iron pins, round wooden posts, cream rope railings, soft daylight, pale ivory background, turquoise water and sandy rocky shoreline. At the top show three distinct isolated components with plus signs between them: (1) the same compact four-post wooden pier/platform with its open slatted deck and rope rails, (2) the same open-top wooden slatted crate, (3) a modest wooden notice board made from two horizontal timber planks on two vertical posts, with two small cream paper notices attached, no legible text. Then an arrow pointing toward the finished simple dock, or otherwise a clear visual link to the larger lower composition. In the large lower composition, the dock extends from the sandy shoreline into turquoise water: retain the original recognizable platform and rope/piling structure, place one clearly visible open crate near the outer end and mount the same recognizable TWO-PLANK NOTICE BOARD at the landward entrance beside the walkway. The notice board must be large enough to read as the third ingredient but not a building/kiosk or roof. Keep the walking path open and visually connect all three ingredients in the finished dock. The three ingredients must match their exact visible counterparts in the completed dock. Remove the original logs recipe and remove the separate rowboat from this revision; this image focuses only on the three-component dock, without implying a free boat. Do not add shelves, a shelf-upgraded dock, kiosk, roof, sails, characters, labels, logos, watermark or additional recipes. Keep all objects wholly visible, clean professional 3D game concept-art presentation, wide composition comparable to the original.
+
+## Review
+
+The generated sheet visibly includes all three components and their assembled shoreline dock. The notice-board drawing uses more than two slats; when implementing a model, preserve the established reusable in-game board assembly rather than changing unrelated board assets to match that incidental detail. No domain or shared gameplay files were changed for this reference.
