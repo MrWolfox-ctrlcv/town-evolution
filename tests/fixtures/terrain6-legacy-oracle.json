@@ -1,0 +1,386 @@
+{
+  "schema": 1,
+  "capturedAt": "2026-11-06T06:52:55.905Z",
+  "sourceTreeSha256": "0c3bfcc5c3083c3e641a6f90d5c88fe97a194b7fc5d71cef1ff5b5bb55abcd72",
+  "compiledTreeSha256": "79f130a4ead46637375b2949a5697ab976e89c22d1941ed57291f61a596d1583",
+  "sourceCount": 884,
+  "compiledCount": 386,
+  "compiledMatching": true,
+  "staleCompiledExtras": ["art/BuildingShapes.d.ts", "art/BuildingShapes.js"],
+  "fixtureSha256": "c82850a52922b3b847599418576908f398633ce675236f7edf23fe5974d29240",
+  "fixtureBytes": 1413998,
+  "v5Revision": "v5-natural-coast-starter-1",
+  "seeds": [1, 7, 42, 42173, 1000000000],
+  "versions": [1, 2, 3, 4, 5],
+  "records": [
+    {
+      "version": 1,
+      "seed": 1,
+      "size": 40,
+      "saveHash": "f25c61e10555a2e5e83bebc73f80e905a87e796ce53c9763bcbe08e6cac578fa",
+      "depletedSaveHash": "95051b6c10e693b99e7313b7de3e41cf48f531508c12bb0dfa4894a1d21990d8",
+      "defaultSaveHash": "2252b9e3145bb1b774eba197f9b698e07e93480b5938983373a22591eb7a47a5",
+      "landHash": "7c033efa513f7e18dd0d59e3349ed42032660857fe1c81e0c8d4165de2287621",
+      "terrainHash": "aa2f78d2641556ee13ef10b90eaeeb2d26c563ac93450b983ab328a468cf4f35",
+      "treeCount": 24,
+      "resourceCount": 0
+    },
+    {
+      "version": 1,
+      "seed": 7,
+      "size": 40,
+      "saveHash": "ced3fd889319937ab516e4690441ca262962feb0122f25b4f9ba365249b9c25e",
+      "depletedSaveHash": "8339fb7168743be813e415530bad8dec1f65f0a3b8835a2cd340c3940bfa3c19",
+      "defaultSaveHash": "3b940d7cdd95f7bbeab5d444efb6fc27e800bb388d0306ca8e4659e63e71ea7b",
+      "landHash": "7c033efa513f7e18dd0d59e3349ed42032660857fe1c81e0c8d4165de2287621",
+      "terrainHash": "aa2f78d2641556ee13ef10b90eaeeb2d26c563ac93450b983ab328a468cf4f35",
+      "treeCount": 24,
+      "resourceCount": 0
+    },
+    {
+      "version": 1,
+      "seed": 42,
+      "size": 40,
+      "saveHash": "1791b851a715e036f75ead97f40e8f037a41fe01128ae4c4808ae85c2e6c14aa",
+      "depletedSaveHash": "73255d574562a2864af2091d22e7ccc92337ad3edea1bc674ac3a8c1bfd7354d",
+      "defaultSaveHash": "ae4be18f7ba4f2c42fabea6a38dd4e32f75408389007f9056ce5c2ebf5ea73cd",
+      "landHash": "7c033efa513f7e18dd0d59e3349ed42032660857fe1c81e0c8d4165de2287621",
+      "terrainHash": "aa2f78d2641556ee13ef10b90eaeeb2d26c563ac93450b983ab328a468cf4f35",
+      "treeCount": 24,
+      "resourceCount": 0
+    },
+    {
+      "version": 1,
+      "seed": 42173,
+      "size": 40,
+      "saveHash": "b8ce81d2fd602273b2fe7a49a05703f6f297674872256184e562c4bab2ccd6e1",
+      "depletedSaveHash": "723c848395ca7de899985f2017a77a08e843c566455a764f4378c895c7dc4e7d",
+      "defaultSaveHash": "d02872697e115e434f84bbee6d764506296c7009b2f9e78f9bbf5f80c2cc6408",
+      "landHash": "b70c05730057f31ecbf7c3100dc82b5e1d35f491dab8e721c37e7cea58abb3d5",
+      "terrainHash": "45fc6ecdadbd54fe02561c5ccca9bdf87f9224062c3d5609272fafed18d5e4d4",
+      "treeCount": 24,
+      "resourceCount": 0
+    },
+    {
+      "version": 1,
+      "seed": 1000000000,
+      "size": 40,
+      "saveHash": "038964a90af5b36ea3e7d78c381150afbec4bd9f097b6357d486f983fa9e10a7",
+      "depletedSaveHash": "b217a53a2dc4fac4588871cde7d1537cb7b0e693db6e5d38557490257772cfdd",
+      "defaultSaveHash": "b73f5e7fa7aaac061e06a59e093771e3dacd99aa2026f5dca34bae46b758563d",
+      "landHash": "d8b53d1e3d125489d420c17bb4d55beaf964885c84b97d05ee08dd44308afd7e",
+      "terrainHash": "21350b8c88f853a5b9ba70c3748968920e55fa7e075f989a5f80b8105b6ef21c",
+      "treeCount": 24,
+      "resourceCount": 0
+    },
+    {
+      "version": 2,
+      "seed": 1,
+      "size": 40,
+      "saveHash": "0a1284e9551e10349b759d7787b9dfb1bd5d7ffe809f45ab6648f903cd0ac47d",
+      "depletedSaveHash": "6b6245945100c4908524878d9fdb52c13d19cee0fe8f0f1277bdf166013180e0",
+      "defaultSaveHash": "2252b9e3145bb1b774eba197f9b698e07e93480b5938983373a22591eb7a47a5",
+      "landHash": "a7a9632309b67409b3cf433d73b991bbc85ace6c07d0df12dc9e822c33b4f63e",
+      "terrainHash": "93bfa271d54a8c49723f04791c7b4d5924a79b9e448f203513bfae991e89c3f4",
+      "treeCount": 64,
+      "resourceCount": 400
+    },
+    {
+      "version": 2,
+      "seed": 7,
+      "size": 40,
+      "saveHash": "241817804a48173ed0308c9cab66232a0cd2d1dfc77a416e9166f3f1d9a28efc",
+      "depletedSaveHash": "b3c127f12548015442e76636ab1d43f2ab2dd1918514e9343bcca2c99657885d",
+      "defaultSaveHash": "3b940d7cdd95f7bbeab5d444efb6fc27e800bb388d0306ca8e4659e63e71ea7b",
+      "landHash": "89841a1bd8ca5a0685c7776c98aa94cb9ac71750aed4f359ab8314519bb958ec",
+      "terrainHash": "22b28e783fc219c612237a7a737fae89c235703c2a73e702e6b770c635f220de",
+      "treeCount": 64,
+      "resourceCount": 379
+    },
+    {
+      "version": 2,
+      "seed": 42,
+      "size": 40,
+      "saveHash": "62f3d04f539e98495a0205a3e620419ce5b2a780d45ef322f3f2a0e571c62ab4",
+      "depletedSaveHash": "c3cc1b7c07add788e640680b07deacdf9c74313b1031d00805fce9b2455676bb",
+      "defaultSaveHash": "ae4be18f7ba4f2c42fabea6a38dd4e32f75408389007f9056ce5c2ebf5ea73cd",
+      "landHash": "2ffae3ba6fe4dd84adc39ceefb8e3c801b5172c6ab87bd45d59c803d79a62a85",
+      "terrainHash": "1d7a5480fe5b273bf504519c6003a44bb8dd5cff84b56ee6b39baa777ad12309",
+      "treeCount": 64,
+      "resourceCount": 246
+    },
+    {
+      "version": 2,
+      "seed": 42173,
+      "size": 40,
+      "saveHash": "da50f7b21fd2f8a073f2f37baf678bb9cee56ccb77912b02a0df239c5b034106",
+      "depletedSaveHash": "5b62099557352737e8d92e9818bd37e9ba829a119ec4acdcba1372e65cfa8e05",
+      "defaultSaveHash": "d02872697e115e434f84bbee6d764506296c7009b2f9e78f9bbf5f80c2cc6408",
+      "landHash": "a88c89e56436756bbf7b31adf96bd4c98fbc36ffdfdc7ae92c24b3fa240cc0a8",
+      "terrainHash": "e2c621a80e93c52479510f25246c39c3e98a02f7c5e6a1a97c16426f1d331455",
+      "treeCount": 64,
+      "resourceCount": 340
+    },
+    {
+      "version": 2,
+      "seed": 1000000000,
+      "size": 40,
+      "saveHash": "3382c7445a5f8a5be135eb6821a98d7d20f8d6e7c674d5b369fda84fea209b78",
+      "depletedSaveHash": "ac69cec6461785eb82b87303db556b7880dd327cae28199804a9e54da96d88b0",
+      "defaultSaveHash": "b73f5e7fa7aaac061e06a59e093771e3dacd99aa2026f5dca34bae46b758563d",
+      "landHash": "cc0a7a4d0a5246ad0d68a17156d28758815ff513726d79c9a5b8825488c1e854",
+      "terrainHash": "2499f8b527034ae91a9ecc0273f519abcd81b84d619f06d76711295a11993d05",
+      "treeCount": 64,
+      "resourceCount": 283
+    },
+    {
+      "version": 3,
+      "seed": 1,
+      "size": 40,
+      "saveHash": "9045f30eb858c929210adcb452aa1ce85b6634c39effa903dcd0c8f73d18f69f",
+      "depletedSaveHash": "0eabc4211fee7d989a55028979a5bfe87f463dff1e508b3aabb43dbe01fd5ac4",
+      "defaultSaveHash": "2252b9e3145bb1b774eba197f9b698e07e93480b5938983373a22591eb7a47a5",
+      "landHash": "a7a9632309b67409b3cf433d73b991bbc85ace6c07d0df12dc9e822c33b4f63e",
+      "terrainHash": "c6ecc0be2ff36c4c7674c24afe0d84da7e4877cfb1bfb636da11a7b5a45cd02f",
+      "treeCount": 64,
+      "resourceCount": 202
+    },
+    {
+      "version": 3,
+      "seed": 7,
+      "size": 40,
+      "saveHash": "a13babfd0085446ca7f813c50e2b6fdda770d57abbe93c8b8bd2a0e012f260cd",
+      "depletedSaveHash": "bb696dd77e67539cef71c214a70a9746f8953e7cbe67f94c2517f623aff7907f",
+      "defaultSaveHash": "3b940d7cdd95f7bbeab5d444efb6fc27e800bb388d0306ca8e4659e63e71ea7b",
+      "landHash": "89841a1bd8ca5a0685c7776c98aa94cb9ac71750aed4f359ab8314519bb958ec",
+      "terrainHash": "fad82b2802bf681cb0839371a90bde1fea90cbe79907d4c79feb743cfc89e8a7",
+      "treeCount": 64,
+      "resourceCount": 179
+    },
+    {
+      "version": 3,
+      "seed": 42,
+      "size": 40,
+      "saveHash": "266f1b3c50e4e9142350043047c407026a308164b0fba4962a4be62981190e81",
+      "depletedSaveHash": "86f775ad4bcfeddd57d63401a2186a0c8a73732e6bab266c164c01f025c9fafc",
+      "defaultSaveHash": "ae4be18f7ba4f2c42fabea6a38dd4e32f75408389007f9056ce5c2ebf5ea73cd",
+      "landHash": "2ffae3ba6fe4dd84adc39ceefb8e3c801b5172c6ab87bd45d59c803d79a62a85",
+      "terrainHash": "38141a292e441b2fe2a03b2102d4114f14669fbf1db906fc924777ceaf5ab3d0",
+      "treeCount": 64,
+      "resourceCount": 205
+    },
+    {
+      "version": 3,
+      "seed": 42173,
+      "size": 40,
+      "saveHash": "e30cc6c0a975874b51aec63ee35973b98a1d254e0d8ba7bf5af8b5daca2900c1",
+      "depletedSaveHash": "feece58070959b74b4a346809cc438f573b8504f5757eb755b83c6ebf211b701",
+      "defaultSaveHash": "d02872697e115e434f84bbee6d764506296c7009b2f9e78f9bbf5f80c2cc6408",
+      "landHash": "a88c89e56436756bbf7b31adf96bd4c98fbc36ffdfdc7ae92c24b3fa240cc0a8",
+      "terrainHash": "e284abdd0e77bb0f2ea88769604b5479fe5732b96791ea1a7691226cd2d0d18a",
+      "treeCount": 64,
+      "resourceCount": 192
+    },
+    {
+      "version": 3,
+      "seed": 1000000000,
+      "size": 40,
+      "saveHash": "9432d1ff41c2765c579d73510307c2e822e8de8bae01b7eaa7651b6d856f0978",
+      "depletedSaveHash": "64f16b8ee9c7f99b15a2018c1367e98b31dab357c32afe595c363a9ef6dbf12c",
+      "defaultSaveHash": "b73f5e7fa7aaac061e06a59e093771e3dacd99aa2026f5dca34bae46b758563d",
+      "landHash": "cc0a7a4d0a5246ad0d68a17156d28758815ff513726d79c9a5b8825488c1e854",
+      "terrainHash": "a15e6db6b65a8383b968e39e390de894e27dc6ac991cbf5cbf942bb5778e1297",
+      "treeCount": 64,
+      "resourceCount": 186
+    },
+    {
+      "version": 4,
+      "seed": 1,
+      "size": 192,
+      "saveHash": "2252b9e3145bb1b774eba197f9b698e07e93480b5938983373a22591eb7a47a5",
+      "depletedSaveHash": "a3688fc5627ba782a9a7920799251cd5748e0b04b9f231837d677d5649f356bd",
+      "defaultSaveHash": "2252b9e3145bb1b774eba197f9b698e07e93480b5938983373a22591eb7a47a5",
+      "landHash": "3dc43affb459ee9d0ed687126e8f3a34409dab773c205dbc689ac7c80fe94052",
+      "terrainHash": "679112a28e0cec76f4af66f0e459859b4221539cffc8af5d3fc05555915df7c4",
+      "treeCount": 192,
+      "resourceCount": 1329
+    },
+    {
+      "version": 4,
+      "seed": 7,
+      "size": 192,
+      "saveHash": "3b940d7cdd95f7bbeab5d444efb6fc27e800bb388d0306ca8e4659e63e71ea7b",
+      "depletedSaveHash": "c488eba88d781d8e393f31605c3aa49103c7e80615ead4e75a72027523dc8b8a",
+      "defaultSaveHash": "3b940d7cdd95f7bbeab5d444efb6fc27e800bb388d0306ca8e4659e63e71ea7b",
+      "landHash": "c5054ae50d24b78c287ce842a602e225719eaf85ea01a0130dc5076913b6c762",
+      "terrainHash": "cb2ae5ca511e072456f94c4c1f02db17afda0f9a316d9d51f2ad21196275e3ca",
+      "treeCount": 192,
+      "resourceCount": 1325
+    },
+    {
+      "version": 4,
+      "seed": 42,
+      "size": 192,
+      "saveHash": "ae4be18f7ba4f2c42fabea6a38dd4e32f75408389007f9056ce5c2ebf5ea73cd",
+      "depletedSaveHash": "8505dc76c2625538b06426de85f12f5480d19ecf552f375b5cd1fefad33a028a",
+      "defaultSaveHash": "ae4be18f7ba4f2c42fabea6a38dd4e32f75408389007f9056ce5c2ebf5ea73cd",
+      "landHash": "c21d8391d8a71f9d0ca4186be8b647bc8019e24e0936d13bf2486a720c993970",
+      "terrainHash": "7e510db8d9d9e865b2ad9154e19e9dbff463b9b3834642afa0d06f72c365e3be",
+      "treeCount": 192,
+      "resourceCount": 1363
+    },
+    {
+      "version": 4,
+      "seed": 42173,
+      "size": 192,
+      "saveHash": "d02872697e115e434f84bbee6d764506296c7009b2f9e78f9bbf5f80c2cc6408",
+      "depletedSaveHash": "8575378a38c7dc7f1c5d5ebcd7be3bf5b0357b669bf0cdcbd3ea68fb7f87b897",
+      "defaultSaveHash": "d02872697e115e434f84bbee6d764506296c7009b2f9e78f9bbf5f80c2cc6408",
+      "landHash": "21a17094837e8a558ce1174fc37a1cfc7cefaa24004b85fdffe9b4c3c2e7b416",
+      "terrainHash": "8d57b86286ff7037546527710fc1af09ae4c817a8d1c198285f8ebdf04368203",
+      "treeCount": 192,
+      "resourceCount": 1372
+    },
+    {
+      "version": 4,
+      "seed": 1000000000,
+      "size": 192,
+      "saveHash": "b73f5e7fa7aaac061e06a59e093771e3dacd99aa2026f5dca34bae46b758563d",
+      "depletedSaveHash": "617508361be257f55316ff0198812a45f2cb618e35f8c6730ed840cfce857182",
+      "defaultSaveHash": "b73f5e7fa7aaac061e06a59e093771e3dacd99aa2026f5dca34bae46b758563d",
+      "landHash": "4d7c3d3e98e6cfc253629e61332ca4430a71123e6b3731e1c0eca89466378b8b",
+      "terrainHash": "55aa29ec060b83bcae85935172a3affa743842afc3bf40a94ba9a6fb410acf1f",
+      "treeCount": 192,
+      "resourceCount": 1329
+    },
+    {
+      "version": 5,
+      "seed": 1,
+      "size": 192,
+      "saveHash": "f4a537e6e67b5a6a3e52d3e888cc3e7a9086a39bb3e903fdfca50b27ab83c265",
+      "depletedSaveHash": "7b6a68f220f461542dda0cd4288fe06b5f0d384f0cddf9f4031486994478b637",
+      "defaultSaveHash": "2252b9e3145bb1b774eba197f9b698e07e93480b5938983373a22591eb7a47a5",
+      "landHash": "1605589820c8595bb2716b38901259792ce76c19826a8e3c83a8d99130f3edd5",
+      "terrainHash": "93c92f95e2803b8ae2e6166a186c9b248c24657e7773004af4c2c04d7cfed31a",
+      "treeCount": 2076,
+      "resourceCount": 8860,
+      "v5Hashes": {
+        "revision": "30940ed657afcdfa41048c9cafe45f74050883c9e1d35700ede2e3b343f41a3a",
+        "world": "c048f8c6758430511cf2787646c1ae7e90ffbffe1512184948ad1bfc16d97ab8",
+        "hydrology": "902e4d9160d949ade66c68dc4a320443d833924c2c1b5dd566c6e724a750615d",
+        "fields": "bf922a41150624c6628de84051de77f730cade64047c19ef5278e3a47d0dd2be",
+        "stock": "1eae96127b8dc1fc34f962ebc208a102e069205964747c1bb672f42f0107b2c1",
+        "treeCandidates": "b0217f8cd4d1f06e25b720163f25c4a3db5cd59e3112025c45f06b37b89ebb3b"
+      }
+    },
+    {
+      "version": 5,
+      "seed": 7,
+      "size": 192,
+      "saveHash": "5398e4c17a08b1b81422e6ce88810512406f2180467c3cc874c7635d5c5354cf",
+      "depletedSaveHash": "0e2168f700e329e2dc981c630ad74f3dd6f404c60f439ec2a30ca1a527081e32",
+      "defaultSaveHash": "3b940d7cdd95f7bbeab5d444efb6fc27e800bb388d0306ca8e4659e63e71ea7b",
+      "landHash": "0d061a610bae961820a8e423513b806b16fbdfd3221a20c59e003639e83841bd",
+      "terrainHash": "6be79fa5a0980098121e10f631ce944f4544d4a8405e2bd77490851c37727904",
+      "treeCount": 1790,
+      "resourceCount": 8695,
+      "v5Hashes": {
+        "revision": "30940ed657afcdfa41048c9cafe45f74050883c9e1d35700ede2e3b343f41a3a",
+        "world": "e577951e3ead0d7760492206412f0c6c3a772987c4482db2466ee5025e9d16ef",
+        "hydrology": "45c114c5d89acda66462d04cf941d5b146224594e56e877dbed4b489faa163ab",
+        "fields": "555905f93e585d4a617adee914de6148c0ed23450ca231a611fae50f30268e9f",
+        "stock": "8f0a3176836d88a1dc61fb1169ee93b90de8064df1d5c0a3ea0708a4704830b7",
+        "treeCandidates": "984780961a0958cd8301bd8ac08946a9803af8e1270bb4a03ea1c760e9c53459"
+      }
+    },
+    {
+      "version": 5,
+      "seed": 42,
+      "size": 192,
+      "saveHash": "0a05f6c491e4e4cbc96d71dbe436e540938e57b85c20cbf179ba6a407f52b33f",
+      "depletedSaveHash": "f80250a734570e13ec06a95d57218e0700658ea62973fc6e702b3f10ec9cb8a5",
+      "defaultSaveHash": "ae4be18f7ba4f2c42fabea6a38dd4e32f75408389007f9056ce5c2ebf5ea73cd",
+      "landHash": "27c795324a7207f7bbe5a22dffc8929984e304b5aab8feb9f4639cf4d1a9ad68",
+      "terrainHash": "226c93af4c0bdb672ec75be9848f3fcb3d078c7ebb6136b22ce3de455c7200dc",
+      "treeCount": 1842,
+      "resourceCount": 8872,
+      "v5Hashes": {
+        "revision": "30940ed657afcdfa41048c9cafe45f74050883c9e1d35700ede2e3b343f41a3a",
+        "world": "e72ad1a793e3e36fd27ce7ba341473bd3b2d7a9360a0c3d4bc264fffc478d53b",
+        "hydrology": "785bed7b189278dec78140a7d75cba84566c9fea256eb1633914fc5347daba1e",
+        "fields": "f94879cbc6f6600e22aa0bdb3afae7ac00120075edad5804f1f6924e9bc675ca",
+        "stock": "90f5d40fe2257600f6941155c530b565ba24382aa16c58073e3cdc912961e935",
+        "treeCandidates": "1880bc4066029fef22d6c8a414cef0d862ced014805380ec9a183310bb65c9ed"
+      }
+    },
+    {
+      "version": 5,
+      "seed": 42173,
+      "size": 192,
+      "saveHash": "382fa67d0d3cfacb42c7445212ccac273d2185cbd772aeadaa61f5c4f3a595e0",
+      "depletedSaveHash": "2aaf52c3fcef6424a1eede957094ea2a86ac4dadf387c829b584eeef2c488d60",
+      "defaultSaveHash": "d02872697e115e434f84bbee6d764506296c7009b2f9e78f9bbf5f80c2cc6408",
+      "landHash": "b35c12eaa062caea6b4cfc79da969270ac3d0ddeafe6a78e28cbb0ca0e594169",
+      "terrainHash": "5f016a14da4b3f992e087d7d5903f732e343a4bb0432953335845650d07c26cc",
+      "treeCount": 1875,
+      "resourceCount": 8563,
+      "v5Hashes": {
+        "revision": "30940ed657afcdfa41048c9cafe45f74050883c9e1d35700ede2e3b343f41a3a",
+        "world": "16aa9a6d157332f90386b1139eb570117855717cea09e3e47b9b56c6a2015553",
+        "hydrology": "57d65d03060e1aae4555131e8b2a61cf0370a0f542693606207b8b7beb63e01d",
+        "fields": "6c830ff897240aa8e6a535dfebfa1f22dbdb513aa3594e89b62a4540c0a9b033",
+        "stock": "d6f3903110a3c5ee73c49b81ff8ab448d3c12036f7d41b820201fa8095644c68",
+        "treeCandidates": "90606e1e818a236260f2999909d91279f6b4c77960115eee6fdafab7bd825ca6"
+      }
+    },
+    {
+      "version": 5,
+      "seed": 1000000000,
+      "size": 192,
+      "saveHash": "cd9984a6d53af586a1b279883b935da578210616743af80096b2fb0bb485c27d",
+      "depletedSaveHash": "b2b0bec6daf1abde123e4843c3953a3b5435933b4ed07cb2a1c574e5a99a5acf",
+      "defaultSaveHash": "b73f5e7fa7aaac061e06a59e093771e3dacd99aa2026f5dca34bae46b758563d",
+      "landHash": "4919f8eb04cc053e3422b6760c325b018d19d47706abe07a1b0eed52c1a7f6be",
+      "terrainHash": "9dd766aafed99d7cb3eab66ec9a6d900201654322877606d6c7027eec425ccc4",
+      "treeCount": 1865,
+      "resourceCount": 8647,
+      "v5Hashes": {
+        "revision": "30940ed657afcdfa41048c9cafe45f74050883c9e1d35700ede2e3b343f41a3a",
+        "world": "086b7d0a89d6269da262480a4ff94041f892e37b644e09975753e469f67211b2",
+        "hydrology": "d8edd6f0876238082a29f35b300bb6293efe2fa4c6758461ebc4ef13de911574",
+        "fields": "9ae3eda7a69aadc1c70a1257b42b359e28f4310dc49f9486baad19dbd6fab32c",
+        "stock": "358a5eb39eb1a904135a855eb2d652025499f2f5f77688b8ede56807d449c51a",
+        "treeCandidates": "ecae625ea754660c96d2b127d82a38f1b8da70553a54c0dd8a991fcf10474f0c"
+      }
+    }
+  ],
+  "profileHashes": [
+    {
+      "profile": "normal",
+      "saveHash": "e2ea88f2a86b65cfef3c64d11908e4e9d4755ce9a3d0bfe37b9def974225ecd9",
+      "keysHash": "9010865dda67fae4784b663d16c85ce7ece2fa22603f4639ba0328d157e333c3"
+    },
+    {
+      "profile": "demo",
+      "saveHash": "1af8c0a23f7817bbeae8a26b571f014b9189845ca3c7257399b72af9f769cfdc",
+      "keysHash": "9cac4f3b95d0e034726286096d25321fbf7de82e3191c39498bc90fecc9aa4c9"
+    },
+    {
+      "profile": "v5-preview",
+      "saveHash": "382fa67d0d3cfacb42c7445212ccac273d2185cbd772aeadaa61f5c4f3a595e0",
+      "keysHash": "3436dcabf7bf3a2e119df136d3f339e78336f9343b7cf48d682a9c28b86d8bcb"
+    },
+    {
+      "profile": "v5-bridge-demo",
+      "saveHash": "14d3345ec8a93dd36043d1cea5647e4d2ac56aa000080f5ff0f7ee825ee4131b",
+      "keysHash": "cb5badba9460f653e7335f9dc4eeadab6b7e9d8edd1aab3c98d89e1811b63ae2"
+    }
+  ],
+  "bridge": {
+    "initialHash": "14d3345ec8a93dd36043d1cea5647e4d2ac56aa000080f5ff0f7ee825ee4131b",
+    "mergedHash": "0b7b3fd03d1ac171a97123567bffd92f0c3630118562d08c839998cd7317ec12"
+  },
+  "fullOracleSha256": "494f33168a47dfe03bc280c99da283ac9c1aced87d19df31ac5ae31cdcdee8de",
+  "fullOracleBytes": 15429310,
+  "provenance": "Captured once before terrain6 production integration from frozen-source; all 386 emitted files matched existing compiled bytes. Full cell oracle retained in terrain-v5-lab/terrain6-integration-compat. Do not regenerate these fixtures to fit terrain6."
+}
