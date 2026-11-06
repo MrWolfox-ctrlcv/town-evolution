@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const fs = require('node:fs');
+const zlib = require('node:zlib');
+const { assertV5Reference } = require('./helpers/assert-v5-reference.cjs');
 const fixture = require('./fixtures/v5-phase1-reference.json');
 const {
   getV5World,
@@ -8,18 +11,25 @@ const {
   V5_GENERATOR_REVISION,
 } = require('../.domain-build/domain/v5-world');
 const { createV5Foundation } = require('../.domain-build/domain/v5-foundation');
+const frozenPayloads = JSON.parse(
+  zlib.gunzipSync(fs.readFileSync(`${__dirname}/fixtures/v5-phase1-reference-payloads.json.gz`)),
+);
 const allCells = (w) =>
   Array.from({ length: 192 * 192 }, (_, i) => w.at(i % 192, Math.floor(i / 192)));
 test('frozen phase1 oracle retains every cell, stock and candidate across six seeds', () => {
+  assert.deepEqual(
+    frozenPayloads.map((f) => f.seed),
+    fixture.seeds.map((f) => f.seed),
+  );
   for (const f of fixture.seeds) {
     const w = getV5BaseWorld(f.seed);
     assert.equal(w.revision, fixture.revision);
     const resources = w.recipe.resourcesForNewWorld();
-    const sha = crypto
-      .createHash('sha256')
-      .update(JSON.stringify({ cells: allCells(w), trees: w.treeCandidates, resources }))
-      .digest('hex');
+    const frozen = frozenPayloads.find((entry) => entry.seed === f.seed).payload;
+    // Authenticate the expanded oracle against the original, unchanged phase1 hash.
+    const sha = crypto.createHash('sha256').update(JSON.stringify(frozen)).digest('hex');
     assert.equal(sha, f.sha256, `frozen seed ${f.seed}`);
+    assertV5Reference({ cells: allCells(w), trees: w.treeCandidates, resources }, frozen);
     assert.equal(resources.length, f.resourceCount);
     assert.equal(w.treeCandidates.length, f.treeCandidateCount);
   }
