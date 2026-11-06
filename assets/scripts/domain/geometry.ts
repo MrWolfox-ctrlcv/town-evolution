@@ -1,7 +1,8 @@
+import { getV6EditSurface, v6FoundationHeight } from './v6-edit-surface';
 import { validateBridgeTerrain } from './bridge-terrain';
 import { farmCellAtSixths } from './farm-coordinates';
 import type { GameState, Building, LooseDrop } from './types';
-import { isLandCell, landCellCount } from './island';
+import { isLandCell, landCellCount, isDockShore } from './island';
 import { hasTradeFacility } from './commerce';
 import { worldSize } from './world';
 import { requireRule, integer } from './guards';
@@ -37,8 +38,17 @@ function checkedCells(state: GameState, b: Building) {
   const cells = buildingOccupiedCells(b);
   if (b.kind === 'woodenBridge') {
     requireRule(b.bridge, '木桥缺少跨度记录');
-    validateBridgeTerrain(state, { x: b.x, z: b.z, rotation: b.rotation, length: b.bridge.length });
-    return cells;
+    const plan = validateBridgeTerrain(state, {
+      x: b.x,
+      z: b.z,
+      rotation: b.rotation,
+      length: b.bridge.length,
+    });
+    return {
+      cells,
+      baseElevation:
+        state.terrainVersion === 6 ? v6FoundationHeight(state, plan.endpointCells) : undefined,
+    };
   }
   for (const p of cells) {
     requireRule(integer(p.x, size - 1) && integer(p.z, size - 1), '建筑或附加箱位超出地图');
@@ -47,17 +57,37 @@ function checkedCells(state: GameState, b: Building) {
       '此处是水域，不能建造',
     );
   }
-  return cells;
+  if (state.terrainVersion === 6) {
+    const marineUse =
+      b.kind === 'dock' ||
+      (b.kind === 'woodenPier' &&
+        [0, 1, 2, 3].some((rotation) =>
+          isDockShore(
+            { ...b, kind: 'dock', rotation: rotation as Building['rotation'] },
+            state.mapSeed,
+            6,
+            state.landExtensions,
+          ),
+        ));
+    return { cells, baseElevation: v6FoundationHeight(state, cells, marineUse) };
+  }
+  return { cells, baseElevation: undefined };
 }
 export function validatePlacement(state: GameState, b: Building): void {
-  checkedCells(state, b);
+  const { baseElevation } = checkedCells(state, b);
   requireRule(
     !state.buildings.some((other) => other.id !== b.id && overlaps(b, other)),
     '此处已有建筑',
   );
   const inside = (p: { x: number; z: number }) => buildingOccupiesCell(b, p.x, p.z);
   requireRule(!state.trees.some(inside), '此处有树木');
-  requireRule(!state.naturalResources.some(inside), '请先采集此处的天然资源');
+  const surface = state.terrainVersion === 6 ? getV6EditSurface(state) : null;
+  requireRule(
+    !state.naturalResources.some(
+      (p) => inside(p) && (!surface || surface.exposedResourceAt(p.x, p.z)),
+    ),
+    '请先采集此处的天然资源',
+  );
   requireRule(!state.groundStacks.some(inside), '请先取回地上的产品');
   requireRule(
     !state.looseDrops.some(
@@ -65,6 +95,7 @@ export function validatePlacement(state: GameState, b: Building): void {
     ),
     '请先拾取建筑位置的掉落物',
   );
+  if (baseElevation !== undefined) b.baseElevation = baseElevation;
 }
 /** Retain an empty recovery tile while the town has no trading facility. */
 export function preserveTradeTile(s: GameState): void {
@@ -74,7 +105,12 @@ export function preserveTradeTile(s: GameState): void {
     for (const p of buildingOccupiedCells(b))
       if (isLandCell(p.x, p.z, s.mapSeed, s.terrainVersion, s.landExtensions))
         cells.add(`${p.x},${p.z}`);
-  for (const p of [...s.trees, ...s.naturalResources, ...s.groundStacks])
+  const surface = s.terrainVersion === 6 ? getV6EditSurface(s) : null;
+  for (const p of [
+    ...s.trees,
+    ...s.naturalResources.filter((r) => !surface || surface.exposedResourceAt(r.x, r.z)),
+    ...s.groundStacks,
+  ])
     cells.add(`${p.x},${p.z}`);
   for (const p of s.looseDrops) cells.add(`${Math.floor(p.x6 / 6)},${Math.floor(p.z6 / 6)}`);
   requireRule(
@@ -84,12 +120,24 @@ export function preserveTradeTile(s: GameState): void {
 }
 /** Save imports validate every body and attached outside box tile without resetting assets. */
 export function validateTownPlacements(state: GameState): void {
+  const surface = state.terrainVersion === 6 ? getV6EditSurface(state) : null;
   const occupied = new Set<string>(),
     trees = new Set(state.trees.map((p) => `${p.x},${p.z}`)),
-    resources = new Set(state.naturalResources.map((p) => `${p.x},${p.z}`)),
+    resources = new Set(
+      state.naturalResources
+        .filter((p) => !surface || surface.exposedResourceAt(p.x, p.z))
+        .map((p) => `${p.x},${p.z}`),
+    ),
     piles = new Set(state.groundStacks.map((p) => `${p.x},${p.z}`));
   for (const b of state.buildings) {
-    const cells = checkedCells(state, b);
+    const { cells, baseElevation } = checkedCells(state, b);
+    if (baseElevation !== undefined) {
+      requireRule(
+        b.baseElevation === undefined || b.baseElevation === baseElevation,
+        '建筑存档高度与真实地形不一致',
+      );
+      b.baseElevation = baseElevation;
+    }
     requireRule(
       !state.looseDrops.some(
         (p) =>

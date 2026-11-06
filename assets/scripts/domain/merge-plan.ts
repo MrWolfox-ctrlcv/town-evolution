@@ -1,3 +1,4 @@
+import { isV6MarineCell } from './v6-maritime';
 import type { Building, GameState, RecipeId, EntitySnapshot, BridgePierSnapshot } from './types';
 import { bridgeCrossingPlan } from './bridge-crossing';
 import { buildingMergeRecipe } from './merge-recipes';
@@ -41,7 +42,9 @@ export function hasDockExit(
         !integer(x, worldSize(state.terrainVersion) - 1) ||
         !integer(z, worldSize(state.terrainVersion) - 1) ||
         isLandCell(x, z, state.mapSeed, state.terrainVersion, state.landExtensions) ||
-        (state.terrainVersion === 5 && !isV5MarineCell(state.mapSeed, x, z, state.landExtensions))
+        (state.terrainVersion === 5 &&
+          !isV5MarineCell(state.mapSeed, x, z, state.landExtensions)) ||
+        (state.terrainVersion === 6 && !isV6MarineCell(state.mapSeed, x, z, state.landExtensions))
       )
         return false;
     }

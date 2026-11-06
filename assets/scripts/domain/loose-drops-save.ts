@@ -1,3 +1,4 @@
+import { validItemAmount } from './v6-material-amount';
 import type { GameState, Item } from './types';
 import type { DropSource, LooseDrop } from './loose-drops';
 import { LOOSE_DROPS } from './loose-drops';
@@ -15,9 +16,39 @@ function exact(value: Record<string, unknown>, keys: string[]): boolean {
     keys.every((k) => Object.hasOwnProperty.call(value, k))
   );
 }
-function source(value: unknown, item: Item, size: number, nextId: number): DropSource {
+function source(
+  value: unknown,
+  item: Item,
+  size: number,
+  nextId: number,
+  terrainVersion: number,
+  nextOperation?: number,
+): DropSource {
   requireRule(record(value), '掉落来源无效');
+  if (value.type === 'terrain6') {
+    requireRule(
+      terrainVersion === 6 &&
+        exact(value, ['type', 'x', 'z', 'operation', 'kind']) &&
+        integer(value.x, size - 1) &&
+        integer(value.z, size - 1) &&
+        integer(value.operation) &&
+        value.operation >= 1 &&
+        typeof nextOperation === 'number' &&
+        value.operation < nextOperation &&
+        (value.kind === 'soil' || value.kind === 'stone') &&
+        item === value.kind,
+      'v6掉落来源无效',
+    );
+    return {
+      type: 'terrain6',
+      x: value.x,
+      z: value.z,
+      operation: value.operation,
+      kind: value.kind,
+    };
+  }
   if (value.type === 'natural') {
+    requireRule(terrainVersion !== 6, 'v6采掘来源必须引用真实地形操作');
     requireRule(
       exact(value, ['type', 'resourceId', 'kind']) &&
         typeof value.resourceId === 'string' &&
@@ -53,7 +84,7 @@ function source(value: unknown, item: Item, size: number, nextId: number): DropS
 /** Historical producer references need not still exist. Drop assets never follow moved producers. */
 export function parseLooseDrops(
   value: unknown,
-  world: Pick<GameState, 'mapSeed' | 'terrainVersion' | 'landExtensions' | 'nextId'>,
+  world: Pick<GameState, 'mapSeed' | 'terrainVersion' | 'landExtensions' | 'nextId' | 'terrain6'>,
   acceptId: (id: unknown, prefix: string) => string,
 ): LooseDrop[] {
   requireRule(Array.isArray(value) && value.length <= LOOSE_DROPS.maxCount, '掉落列表无效');
@@ -68,7 +99,7 @@ export function parseLooseDrops(
     );
     const item = raw.item as Item;
     requireRule(
-      integer(raw.amount, stackLimitFor(item)) &&
+      validItemAmount(raw.amount, item, world.terrainVersion, stackLimitFor(item)) &&
         raw.amount > 0 &&
         integer(raw.x6, size6 - 1) &&
         integer(raw.z6, size6 - 1),
@@ -94,7 +125,14 @@ export function parseLooseDrops(
       amount: raw.amount,
       x6: raw.x6,
       z6: raw.z6,
-      source: source(raw.source, item, worldSize(world.terrainVersion), world.nextId),
+      source: source(
+        raw.source,
+        item,
+        worldSize(world.terrainVersion),
+        world.nextId,
+        world.terrainVersion,
+        world.terrain6?.nextOperation,
+      ),
     };
   });
 }

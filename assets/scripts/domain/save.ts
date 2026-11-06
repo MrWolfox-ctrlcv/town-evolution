@@ -1,3 +1,9 @@
+import { MAX_SAVE_CHARACTERS } from './save-limits';
+export { MAX_SAVE_CHARACTERS } from './save-limits';
+import { parseTerrain6, validateTerrain6Resources } from './v6-save';
+import { V6_GENERATOR_REVISION } from './v6-world';
+import { SaveVersionError } from './save-version';
+export { SaveVersionError } from './save-version';
 import { parseBridgeState } from './bridge-save';
 import { parseCompostState } from './compost-save';
 import { parseLooseDrops } from './loose-drops-save';
@@ -23,8 +29,6 @@ import { V5_GENERATOR_REVISION } from './v5-world';
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
-export class SaveVersionError extends Error {}
-export const MAX_SAVE_CHARACTERS = 4_000_000;
 /** Current-world imports are strict. Authorized old-test clearing belongs to the storage adapter. */
 export function importSave(text: string, now: number): GameState {
   time(now);
@@ -52,13 +56,21 @@ export function importSave(text: string, now: number): GameState {
       terrainVersion === 2 ||
       terrainVersion === 3 ||
       terrainVersion === 4 ||
-      terrainVersion === 5,
+      terrainVersion === 5 ||
+      terrainVersion === 6,
     '地图版本无效',
   );
   if (terrainVersion === 5 && data.terrainRevision !== V5_GENERATOR_REVISION)
     throw new SaveVersionError(
       '此 v5 预览地形版本不兼容，请保留原始存档；不会重新生成或重解释旧数据',
     );
+  if (
+    terrainVersion === 6 &&
+    (data.schemaVersion !== 10 || data.terrainRevision !== V6_GENERATOR_REVISION)
+  )
+    throw new SaveVersionError('此 v6 地形版本不兼容，请保留原始存档；不会重新生成或重解释旧数据');
+  requireRule(terrainVersion === 6 || data.terrain6 === undefined, '旧地图不能包含v6地形记录');
+  const terrain6 = terrainVersion === 6 ? parseTerrain6(data.terrain6, data.mapSeed) : undefined;
   const landExtensions = importLandExtensions(data.landExtensions, data.mapSeed, terrainVersion);
   requireRule(
     integer(data.coins) &&
@@ -68,7 +80,7 @@ export function importSave(text: string, now: number): GameState {
     '存档数值无效',
   );
   requireRule(integer(data.lastSeenAt, MAX_TIME), '存档时间无效');
-  const inventory = importStock(data.inventory, data.schemaVersion);
+  const inventory = importStock(data.inventory, data.schemaVersion, [], terrainVersion);
   requireRule(typeof data.cropRecoveryAvailable === 'boolean', '种苗恢复状态无效');
   requireRule(
     Array.isArray(data.buildings) && data.buildings.length <= worldSize(terrainVersion) ** 2,
@@ -118,6 +130,16 @@ export function importSave(text: string, now: number): GameState {
       z: raw.z,
       rotation: raw.rotation,
     };
+    if (terrainVersion === 6) {
+      requireRule(
+        typeof raw.baseElevation === 'number' &&
+          Number.isFinite(raw.baseElevation) &&
+          raw.baseElevation >= 0 &&
+          raw.baseElevation <= 128,
+        'v6建筑缺少有效地形高度',
+      );
+      b.baseElevation = raw.baseElevation;
+    } else requireRule(raw.baseElevation === undefined, '旧地图不能包含v6建筑高度');
     requireRule(
       raw.nurserySeeded === undefined || (b.kind === 'nursery' && raw.nurserySeeded === true),
       '育苗状态无效',
@@ -210,7 +232,13 @@ export function importSave(text: string, now: number): GameState {
   }
   const looseDrops = parseLooseDrops(
     data.looseDrops === undefined && data.schemaVersion === 8 ? [] : data.looseDrops,
-    { mapSeed: data.mapSeed, terrainVersion, landExtensions, nextId: data.nextId },
+    {
+      mapSeed: data.mapSeed,
+      terrainVersion,
+      landExtensions,
+      nextId: data.nextId,
+      ...(terrain6 ? { terrain6 } : {}),
+    },
     acceptId,
   );
   requireRule(data.nextId > maxId, '存档编号顺序无效');
@@ -220,6 +248,7 @@ export function importSave(text: string, now: number): GameState {
     mapSeed: data.mapSeed,
     terrainVersion,
     ...(terrainVersion === 5 ? { terrainRevision: V5_GENERATOR_REVISION } : {}),
+    ...(terrain6 ? { terrainRevision: V6_GENERATOR_REVISION, terrain6 } : {}),
     landExtensions,
     ...importFoundation(
       data,
@@ -240,11 +269,12 @@ export function importSave(text: string, now: number): GameState {
     lastSeenAt: savedTime,
   };
   requireRule(!landExtensions.some((p) => blocksDockWater(p, buildings)), '扩地占用船坞出口');
-  if (terrainVersion === 5)
+  if (terrainVersion === 5 || terrainVersion === 6)
     requireRule(
       buildings.every((b) => b.kind !== 'dock' || hasDockExit(state, b)),
       '船坞必须保留通向外海的两格出口',
     );
+  if (terrainVersion === 6) validateTerrain6Resources(state);
   validateTownPlacements(state);
   validateDropPlacements(state);
   requireRule(getUsedStorage(state) <= getCapacity(state), '库存超过仓储容量');

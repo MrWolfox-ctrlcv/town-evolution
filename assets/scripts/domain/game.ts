@@ -1,3 +1,9 @@
+import { assertSaveFits } from './save-limits';
+import { editTerrain6, gatherTerrain6 } from './actions/terrain6-edit';
+export { previewTerrain6Edit } from './v6-edit-plan';
+export { terrain6EditLevel } from './v6-edit-level';
+export { getV6EditSurface, v6FoundationHeight, v6ExposedResource } from './v6-edit-surface';
+export type { EditTerrain6Command, Terrain6State } from './v6-edit-types';
 export { createBridgeDemo, BRIDGE_DEMO_SEED } from './bridge-demo';
 export { bridgeCrossingPlan } from './bridge-crossing';
 export { BRIDGE_CROSSING, bridgeSpanCells, validateBridgeTerrain } from './bridge-terrain';
@@ -165,8 +171,14 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
       case 'recoverTool':
         events = replenishTool(next, command.tool, command.type === 'recoverTool');
         break;
+      case 'editTerrain6':
+        events = editTerrain6(next, command);
+        break;
       case 'gatherNatural':
-        events = gatherNatural(next, command);
+        events =
+          next.terrainVersion === 6
+            ? gatherTerrain6(next, command.resourceId)
+            : gatherNatural(next, command);
         break;
       case 'placeTree':
         events = placeTree(next, command);
@@ -271,6 +283,7 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
     next.lastSeenAt = effectiveNow;
     const discovered = recordRecipe(next, command, effectiveNow, state);
     if (discovered) events.push(`图鉴新发现：${discovered}`);
+    if (next.terrainVersion === 6) assertSaveFits(next);
     return { ok: true, state: next, events };
   } catch (error) {
     return { ok: false, state, error: error instanceof Error ? error.message : '操作失败' };

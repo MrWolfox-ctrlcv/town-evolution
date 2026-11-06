@@ -1,3 +1,4 @@
+import { v6ExposedResource } from './v6-edit-surface';
 import type { GameState } from './types';
 import { worldSize } from './world';
 import { isLandCell } from './island';
@@ -17,6 +18,11 @@ export function assertGroundCell(s: GameState, x: number, z: number, ignoredDrop
     '请先移动此处其它掉落物',
   );
   requireRule(!s.trees.some((p) => p.x === x && p.z === z), '此地块有树木');
-  requireRule(!s.naturalResources.some((p) => p.x === x && p.z === z), '请先采集此处的天然资源');
+  requireRule(
+    s.terrainVersion === 6
+      ? !v6ExposedResource(s, x, z)
+      : !s.naturalResources.some((p) => p.x === x && p.z === z),
+    '请先采集此处的天然资源',
+  );
   requireRule(!s.buildings.some((b) => buildingOccupiesCell(b, x, z)), '此地块有建筑');
 }

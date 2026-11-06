@@ -23,6 +23,10 @@ export function bridgeCrossingPlan(
   state: GameState,
   sources: readonly EntitySnapshot[],
 ): BridgeCrossingPlan {
+  requireRule(
+    state.terrainVersion !== 6,
+    '自然挖填实验的木桥桩基与桥面高度尚未完成，请使用木桥演示岛。',
+  );
   requireRule(state.terrainVersion === 5, '木桥需要真实河道，两端必须接岸');
   requireRule(Array.isArray(sources) && sources.length === 2, '请明确选择两座木栈桥');
   requireRule(sources[0]?.id !== sources[1]?.id, '不能重复使用同一座栈桥');

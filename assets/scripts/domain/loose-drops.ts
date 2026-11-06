@@ -1,3 +1,5 @@
+import { validItemAmount } from './v6-material-amount';
+import { getV6EditSurface } from './v6-edit-surface';
 export { farmCellCenterSixths as cropDropAnchor } from './farm-coordinates';
 import { farmCellAtSixths } from './farm-coordinates';
 export type { DropSource, LooseDrop } from './types';
@@ -20,6 +22,7 @@ export type DropWorld = Pick<
   | 'naturalResources'
   | 'groundStacks'
   | 'nextId'
+  | 'terrain6'
 > & { looseDrops: readonly LooseDrop[] };
 export function cloneLooseDrop(drop: LooseDrop): LooseDrop {
   return { ...drop, source: { ...drop.source } };
@@ -31,6 +34,8 @@ export function dropInsideBuilding(drop: Pick<LooseDrop, 'x6' | 'z6'>, b: Buildi
   return buildingOccupiesCell(b, Math.floor(drop.x6 / 6), Math.floor(drop.z6 / 6));
 }
 function sourceEqual(a: DropSource, b: DropSource): boolean {
+  if (a.type === 'terrain6' && b.type === 'terrain6')
+    return a.x === b.x && a.z === b.z && a.operation === b.operation && a.kind === b.kind;
   return a.type === 'natural' && b.type === 'natural'
     ? a.resourceId === b.resourceId && a.kind === b.kind
     : a.type === 'crop' &&
@@ -56,7 +61,12 @@ function available(
     return false;
   if (
     world.naturalResources.some(
-      (p) => p.x === x && p.z === z && !(source.type === 'natural' && p.id === source.resourceId),
+      (p) =>
+        p.x === x &&
+        p.z === z &&
+        !(source.type === 'natural' && p.id === source.resourceId) &&
+        !(source.type === 'terrain6' && source.x === x && source.z === z) &&
+        (world.terrainVersion !== 6 || !!getV6EditSurface(world).exposedResourceAt(x, z)),
     )
   )
     return false;
@@ -80,7 +90,7 @@ export function planLooseDrops(
   anchor: { x6: number; z6: number },
   source: DropSource,
 ): { drops: LooseDrop[]; nextId: number } {
-  requireRule(integer(amount) && amount > 0, '掉落数量无效');
+  requireRule(validItemAmount(amount, item, world.terrainVersion) && amount > 0, '掉落数量无效');
   requireRule(source.type === 'crop' ? isCrop(item) : item === source.kind, '掉落来源与物品不符');
   const size6 = worldSize(world.terrainVersion) * 6;
   requireRule(integer(anchor.x6, size6 - 1) && integer(anchor.z6, size6 - 1), '掉落来源位置无效');

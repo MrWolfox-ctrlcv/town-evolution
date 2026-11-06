@@ -1,3 +1,4 @@
+import { validItemAmount } from './v6-material-amount';
 export type { MixedCraftRequest } from './types';
 import type { Building, GameState, MixedCraftRequest } from './types';
 import { MAX_VALUE } from './config';
@@ -39,8 +40,13 @@ export function mixedCraftPlan(state: GameState, request: MixedCraftRequest): Mi
           integer(source.x, size - 1) &&
           integer(source.z, size - 1) &&
           (source.item === 'wood' || source.item === 'stone') &&
-          integer(source.amount, stackLimitFor(source.item)) &&
-          source.amount > 0,
+          validItemAmount(
+            source.amount,
+            source.item,
+            state.terrainVersion,
+            stackLimitFor(source.item),
+          ) &&
+          source.amount >= 1,
         '所选材料无效',
       );
       const key = `${source.x},${source.z}`;

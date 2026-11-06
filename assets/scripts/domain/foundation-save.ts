@@ -1,3 +1,5 @@
+import { getV6World } from './v6-world';
+import { validItemAmount } from './v6-material-amount';
 import type { TerrainVersion } from './world';
 import type { GameState, Tree, GroundStack, NaturalResource, LandCell } from './types';
 import { isLandCell } from './island';
@@ -60,14 +62,17 @@ export function importFoundation(
   );
   const cells = new Set<string>(),
     ids = new Set<string>();
-  function acceptCell(value: Record<string, unknown>): { x: number; z: number } {
+  function acceptCell(
+    value: Record<string, unknown>,
+    allowOccupied = false,
+  ): { x: number; z: number } {
     requireRule(integer(value.x, gridLimit - 1) && integer(value.z, gridLimit - 1), '地块位置无效');
     requireRule(
       isLandCell(value.x, value.z, seed, terrainVersion, landExtensions),
       '地面物品不能位于水域',
     );
     const key = `${value.x},${value.z}`;
-    requireRule(!cells.has(key), '树木或地堆重叠');
+    requireRule(allowOccupied || !cells.has(key), '树木或地堆重叠');
     cells.add(key);
     return { x: value.x, z: value.z };
   }
@@ -91,8 +96,13 @@ export function importFoundation(
     requireRule(
       record(value) &&
         ITEM_KEYS.includes(value.item as never) &&
-        integer(value.amount, stackLimitFor(value.item as GroundStack['item'])) &&
-        value.amount >= 1,
+        validItemAmount(
+          value.amount,
+          value.item,
+          terrainVersion,
+          stackLimitFor(value.item as GroundStack['item']),
+        ) &&
+        value.amount > 0,
       '地堆产品或数量无效',
     );
     result.groundStacks.push({
@@ -107,6 +117,7 @@ export function importFoundation(
       Array.isArray(raw.naturalResources) && raw.naturalResources.length <= gridLimit ** 2,
       '天然资源列表无效',
     );
+    const resourceCells = new Set<string>();
     for (const value of raw.naturalResources) {
       requireRule(
         record(value) &&
@@ -114,12 +125,26 @@ export function importFoundation(
           (value.kind === 'stone' || value.kind === 'soil') &&
           integer(
             value.amount,
-            terrainVersion === 5 ? 64 : terrainVersion === 4 ? MAX_TERRAIN_HEIGHT : 4,
+            terrainVersion >= 5 ? 64 : terrainVersion === 4 ? MAX_TERRAIN_HEIGHT : 4,
           ) &&
           value.amount > 0,
         '天然资源记录无效',
       );
-      const point = acceptCell(value);
+      const point = acceptCell(value, terrainVersion === 6);
+      const resourceKey = `${point.x},${point.z}`;
+      requireRule(!resourceCells.has(resourceKey), '天然资源重复');
+      resourceCells.add(resourceKey);
+      if (terrainVersion === 6) {
+        const resource: NaturalResource = {
+          id: value.id,
+          kind: value.kind,
+          amount: value.amount,
+          ...point,
+        };
+        requireRule(getV6World(seed).acceptsResource(resource), '天然资源与地图不一致');
+        result.naturalResources.push(resource);
+        continue;
+      }
       const terrain = terrainAt(point.x, point.z, seed, terrainVersion);
       requireRule(
         value.id === `n${point.x}_${point.z}` &&

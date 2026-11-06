@@ -28,6 +28,10 @@ export function validateBridgeTerrain(
   state: Pick<GameState, 'mapSeed' | 'terrainVersion' | 'landExtensions'>,
   p: BridgePlacement,
 ): BridgeTerrainPlan {
+  requireRule(
+    state.terrainVersion !== 6,
+    '自然挖填实验的木桥桩基与桥面高度尚未完成，请使用木桥演示岛。',
+  );
   requireRule(state.terrainVersion === 5, '木桥需要真实河道，两端必须接岸');
   const occupiedCells = bridgeSpanCells(p),
     hydro = getV5Hydrology(state.mapSeed),

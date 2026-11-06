@@ -1,3 +1,4 @@
+import { validateV6Extensions } from './v6-maritime';
 import type { TerrainVersion } from './world';
 import type { Building, LandCell } from './types';
 import { CONFIG } from './config';
@@ -31,8 +32,9 @@ export function importLandExtensions(
     keys.add(key);
     cells.push({ x: p.x, z: p.z });
   }
-  if (version === 5) {
-    validateV5Extensions(seed, cells);
+  if (version === 5 || version === 6) {
+    if (version === 6) validateV6Extensions(seed, cells);
+    else validateV5Extensions(seed, cells);
     return cells;
   }
   // One flood fill validates arbitrary input order without repeated quadratic pending scans.

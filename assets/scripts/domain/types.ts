@@ -1,3 +1,4 @@
+import type { Terrain6State, EditTerrain6Command } from './v6-edit-types';
 import type { BridgeState } from './bridge-types';
 export type { BridgeState, BridgePierSnapshot, BridgePlacement } from './bridge-types';
 import type { Crop, Item, Stock, ItemAmount } from './inventory-types';
@@ -73,6 +74,7 @@ export interface MixedCraftRequest {
 }
 export type DropSource =
   | { type: 'natural'; resourceId: string; kind: 'soil' | 'stone' }
+  | { type: 'terrain6'; x: number; z: number; operation: number; kind: 'soil' | 'stone' }
   | { type: 'crop'; buildingId: string; cell: number; jobId: string };
 export interface LooseDrop {
   id: string;
@@ -140,6 +142,8 @@ export interface FusionState {
 }
 export interface Building {
   id: string;
+  /** v6-only absolute support plane, recomputed by every placement and checked on import. */
+  baseElevation?: number;
   kind: BuildingKind;
   x: number;
   z: number;
@@ -182,6 +186,7 @@ export interface GameState {
   terrainVersion: TerrainVersion;
   /** Required on v5 preview saves. Old v1–v4 records remain byte-compatible. */
   terrainRevision?: string;
+  terrain6?: Terrain6State;
   landExtensions: LandCell[];
   tools: ToolState;
   toolRecoveryAvailable: Record<ToolId, boolean>;
@@ -201,6 +206,7 @@ export interface GameState {
 }
 export type EntitySnapshot = Pick<Building, 'id' | 'kind' | 'x' | 'z' | 'rotation'>;
 export type Command =
+  | EditTerrain6Command
   | { type: 'depositCompost'; buildingId: string; quantity: number; source: CompostSource }
   | { type: 'withdrawCompostInput'; buildingId: string; item: Item; quantity: number }
   | { type: 'collectCompost'; buildingId: string; jobId: string }

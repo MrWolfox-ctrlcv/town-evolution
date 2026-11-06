@@ -1,3 +1,8 @@
+import { assertSaveFits, SaveSizeError } from './save-limits';
+import { validateTownPlacements } from './geometry';
+import { cloneTerrain6 } from './v6-edit-types';
+import { createV6Foundation } from './v6-foundation';
+import { V6_GENERATOR_REVISION } from './v6-world';
 import { cloneCompostState } from './compost';
 import { cloneLooseDrop } from './loose-drops';
 import type { TerrainVersion } from './world';
@@ -15,6 +20,7 @@ import { requireRule, time, integer } from './guards';
 export function clone(state: GameState): GameState {
   return {
     ...state,
+    ...(state.terrain6 ? { terrain6: cloneTerrain6(state.terrain6) } : {}),
     fusion: cloneFusion(state.fusion),
     tools: { ...state.tools },
     toolRecoveryAvailable: { ...state.toolRecoveryAvailable },
@@ -68,7 +74,8 @@ export function createGame(
       terrainVersion === 2 ||
       terrainVersion === 3 ||
       terrainVersion === 4 ||
-      terrainVersion === 5,
+      terrainVersion === 5 ||
+      terrainVersion === 6,
     '地图版本无效',
   );
   const state: GameState = {
@@ -77,6 +84,12 @@ export function createGame(
     mapSeed: seed,
     terrainVersion,
     ...(terrainVersion === 5 ? { terrainRevision: V5_GENERATOR_REVISION } : {}),
+    ...(terrainVersion === 6
+      ? {
+          terrainRevision: V6_GENERATOR_REVISION,
+          terrain6: { format: 1 as const, nextOperation: 1, cells: [] },
+        }
+      : {}),
     landExtensions: [],
     tools: initialTools(),
     toolRecoveryAvailable: initialToolRecovery(),
@@ -113,17 +126,21 @@ export function createGame(
       { id: 'b2', kind: 'farm', x: 6, z: 3, rotation: 0, cropJobs: Array(9).fill(null) },
     ],
   };
-  if (terrainVersion === 5) {
+  if (terrainVersion === 5 || terrainVersion === 6) {
     const blocked: { x: number; z: number }[] = [];
     for (const b of state.buildings)
       for (const p of buildingOccupiedCells(b))
         for (let dz = -1; dz <= 1; dz++)
           for (let dx = -1; dx <= 1; dx++) blocked.push({ x: p.x + dx, z: p.z + dz });
-    Object.assign(state, createV5Foundation(seed, blocked));
+    Object.assign(
+      state,
+      terrainVersion === 6 ? createV6Foundation(seed, blocked) : createV5Foundation(seed, blocked),
+    );
   } else {
     populateNaturalResources(state);
     populateIslandTrees(state);
   }
+  if (terrainVersion === 6) validateTownPlacements(state);
   return state;
 }
 export function getCapacity(state: GameState): number {
@@ -147,5 +164,17 @@ export function nextId(state: GameState, prefix: string): string {
 }
 export function advance(state: GameState, now: number): GameState {
   time(now);
-  return { ...state, lastSeenAt: Math.max(now, state.lastSeenAt) };
+  const lastSeenAt = Math.max(now, state.lastSeenAt);
+  if (state.terrainVersion !== 6) return { ...state, lastSeenAt };
+  if (lastSeenAt === state.lastSeenAt) return state;
+  const next = { ...state, lastSeenAt };
+  try {
+    assertSaveFits(next);
+  } catch (error) {
+    // A clock-only digit increase must not turn a valid existing save into corrupt data.
+    // Keep the original snapshot; the next real command checks its entire final result.
+    if (error instanceof SaveSizeError) return state;
+    throw error;
+  }
+  return next;
 }
