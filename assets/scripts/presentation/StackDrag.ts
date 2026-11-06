@@ -1,3 +1,4 @@
+import { terrainContact, terrainHeight } from './TerrainInteraction';
 import { dropSnapshot } from '../application/DropSnapshot';
 import { Node, Vec3, geometry } from 'cc';
 import type { Command, GroundStack } from '../domain/game';
@@ -55,7 +56,11 @@ export class StackDrag {
       this.parent.addChild(this.ghost);
       this.town.setLiftedStack(id);
     }
-    this.ghost!.setPosition(point.x + this.offset.x, 0.12, point.z + this.offset.z);
+    this.ghost!.setPosition(
+      point.x + this.offset.x,
+      (this.session.state.terrainVersion === 6 ? point.y : 0) + 0.12,
+      point.z + this.offset.z,
+    );
     const changed = this.changedSource();
     const command = this.command(ray, screen),
       reason = changed
@@ -80,7 +85,7 @@ export class StackDrag {
         marker.x,
         command?.type === 'mergeStackIntoDrop'
           ? (this.town.dropOrigin(command.target.id)?.y ?? 0.09) + 0.04
-          : 0.09,
+          : terrainHeight(this.session.state, marker.x, marker.z) + 0.09,
         marker.z,
         marker.width,
         0.025,
@@ -202,6 +207,7 @@ export class StackDrag {
       : null;
   }
   private ground(ray: geometry.Ray): Vec3 | null {
+    if (this.session.state.terrainVersion === 6) return terrainContact(this.town, ray);
     if (Math.abs(ray.d.y) < 0.00001) return null;
     const t = -ray.o.y / ray.d.y;
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);

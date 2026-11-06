@@ -1,3 +1,4 @@
+import { terrainContact, buildingPreview } from './TerrainInteraction';
 import { BuildingDragSelection } from '../application/BuildingDragSelection';
 import { buildingMergePreview } from '../application/BuildingMergePreview';
 import { buildingOutline } from './BuildingOutline';
@@ -66,12 +67,17 @@ export class BuildingDrag {
         this.session.state.mapSeed,
         this.session.state.terrainVersion,
         this.session.state.landExtensions,
+        b.baseElevation ?? 0,
       );
       this.ghost.name = 'BuildingLift';
       this.parent.addChild(this.ghost);
       this.town.setLifted(id);
     }
-    this.ghost!.setPosition(point.x + this.offset.x, 0.45, point.z + this.offset.z);
+    this.ghost!.setPosition(
+      point.x + this.offset.x,
+      (this.session.state.terrainVersion === 6 ? point.y : 0) + 0.45,
+      point.z + this.offset.z,
+    );
     // Covered UI and off-map motion still move the lifted model, but cannot retain
     // a previous valid target or commit a command on release.
     const command = ray ? this.command(b, ray) : null;
@@ -90,7 +96,10 @@ export class BuildingDrag {
     this.ring?.destroy();
     this.ring = null;
     if (command?.type === 'moveBuilding')
-      this.highlight({ ...b, x: command.x, z: command.z }, reason ? '#D87163' : '#EFD377');
+      this.highlight(
+        buildingPreview(this.session.state, { ...b, x: command.x, z: command.z }),
+        reason ? '#D87163' : '#EFD377',
+      );
     else if (command?.type === 'dragMerge') {
       const target = this.session.state.buildings.find((item) => item.id === command.targetId);
       if (target) this.highlight(plan?.building ?? target, reason ? '#D87163' : '#EFD377');
@@ -105,6 +114,7 @@ export class BuildingDrag {
         this.session.state.mapSeed,
         this.session.state.terrainVersion,
         this.session.state.landExtensions,
+        plan.building.baseElevation ?? 0,
       );
       this.mergedGhost.name = 'BridgeMergePreview';
       this.parent.addChild(this.mergedGhost);
@@ -175,12 +185,20 @@ export class BuildingDrag {
     };
   }
   private ground(ray: geometry.Ray): Vec3 | null {
+    if (this.session.state.terrainVersion === 6) return terrainContact(this.town, ray);
     if (Math.abs(ray.d.y) < 0.00001) return null;
     const t = -ray.o.y / ray.d.y;
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);
   }
   private highlight(b: Building, shade: string): void {
-    this.ring = buildingOutline(this.parent, this.factory, b, shade, 'BuildingDropTarget', 0.12);
+    this.ring = buildingOutline(
+      this.parent,
+      this.factory,
+      b,
+      shade,
+      'BuildingDropTarget',
+      (b.baseElevation ?? 0) + 0.12,
+    );
   }
   dispose(): void {
     this.clear(true);

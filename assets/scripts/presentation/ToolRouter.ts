@@ -1,3 +1,4 @@
+import { V6TerrainTool } from './V6TerrainTool';
 import type { Node, Vec2 } from 'cc';
 import { isCrop, hasUnlimitedDurability, ACTIVE_TOOLS } from '../domain/game';
 import type { Item, Tool } from '../domain/game';
@@ -18,6 +19,7 @@ export class ToolRouter implements ToolHandlers {
   private readonly farm: FarmTools;
   private readonly stock: StockDrag;
   private readonly tool: ToolUseDrag;
+  private readonly terrain: V6TerrainTool;
   constructor(
     parent: Node,
     private readonly session: GameSession,
@@ -28,6 +30,7 @@ export class ToolRouter implements ToolHandlers {
   ) {
     this.farm = new FarmTools(parent, session, map, town, refresh);
     this.stock = new StockDrag(parent, session, map, town, refresh);
+    this.terrain = new V6TerrainTool(parent, session, map, town, refresh);
     this.tool = new ToolUseDrag(parent, session, map, town, refresh);
   }
   begin(kind: ToolKind, id: number, point: Vec2): boolean {
@@ -52,10 +55,20 @@ export class ToolRouter implements ToolHandlers {
       }
       this.active = true;
       if (tool === 'sickle') this.farm.begin('harvest', id, point);
+      else if (
+        tool === 'diggingTool' &&
+        this.session.state.terrainVersion === 6 &&
+        this.ui.terrainMode !== 'farm'
+      )
+        this.terrain.begin(id, this.ui.terrainMode, this.ui.terrainMaterial);
       else this.tool.begin(tool, id);
     } else {
       const item = kind as Item;
-      if (this.session.state.inventory[item] < 1) {
+      if (
+        this.session.state.inventory[item] <= 0 ||
+        (this.session.state.inventory[item] < 1 &&
+          !(this.session.state.terrainVersion === 6 && (item === 'soil' || item === 'stone')))
+      ) {
         if (isCrop(item)) this.ui.cropShopOpen = true;
         this.session.message = isCrop(item) ? '选择作物购买' : '暂无此产品';
         this.refresh();
@@ -73,12 +86,16 @@ export class ToolRouter implements ToolHandlers {
     if (id !== this.pointer) return;
     this.farm.move(id, point);
     this.tool.move(id, point);
+    this.terrain.move(id, point);
     if (this.farm.hasActed) this.stock.cancel(true);
     else this.stock.move(id, point);
     if (returning) {
       this.session.message = this.isTool() ? '松手收回工具' : '松手收回仓库';
       this.refresh();
     }
+  }
+  checkTerrainGesture(): boolean {
+    return this.terrain.valid();
   }
   updateHint(): void {
     this.farm.updateHint();
@@ -94,6 +111,7 @@ export class ToolRouter implements ToolHandlers {
       this.farm.cancel();
       this.stock.cancel(true);
       this.tool.cancel();
+      this.terrain.cancel();
       this.session.message = this.isTool() ? '工具已收回' : '物品已收回仓库';
       this.finish();
       return;
@@ -102,12 +120,14 @@ export class ToolRouter implements ToolHandlers {
     if (planted) this.stock.cancel(true);
     else this.stock.end(id, point);
     this.tool.end(id, point);
+    this.terrain.end(id, point);
     this.finish();
   }
   cancel(): void {
     this.farm.cancel();
     this.stock.cancel();
     this.tool.cancel();
+    this.terrain.cancel();
     this.finish();
   }
   private isTool(): boolean {
@@ -123,5 +143,6 @@ export class ToolRouter implements ToolHandlers {
     this.farm.dispose();
     this.stock.dispose();
     this.tool.dispose();
+    this.terrain.dispose();
   }
 }

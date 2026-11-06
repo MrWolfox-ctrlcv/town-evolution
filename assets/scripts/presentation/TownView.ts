@@ -1,3 +1,6 @@
+import type { PlacementPreview, BuildingVisualEntry } from './TownViewContracts';
+export type { PlacementPreview } from './TownViewContracts';
+import type { WorldBoxTest } from '../application/WorldVisibility';
 import type { WorldViewBounds } from '../application/TreeStreaming';
 import { buildingOutline } from './BuildingOutline';
 import { townChanges } from './TownChanges';
@@ -8,36 +11,21 @@ import { attachmentModel } from './PileModel';
 import { TownFeedback } from './TownFeedback';
 import { IslandView } from './IslandView';
 import { Node, geometry } from 'cc';
-import { nurseryStage, processingStage, compostStage } from '../domain/game';
+import { buildingVisualSignature } from './BuildingVisualSignature';
 import type { Building, GameState } from '../domain/game';
 import { GroundObjects } from './GroundObjects';
 import { ModelFactory } from './ModelFactory';
 import { ModelPicking } from './ModelPicking';
 import { RenderedCropPicking } from './RenderedCropPicking';
-import { farmVisuals } from '../art/FarmCellKit';
 import { resolveHarvestHit } from '../application/FarmPicking';
-import type { FarmToolSurface } from '../application/FarmPicking';
-export interface PlacementPreview {
-  kind: 'farm' | 'warehouse' | 'cooler' | 'shop' | 'orderBoard' | 'dock';
-  x: number;
-  z: number;
-  valid: boolean;
-}
+import { townFarmToolSurface } from './TownFarmPicking';
+import { buildingGroundReady } from '../application/BuildingGroundReady';
 export class TownView {
   private readonly factory = new ModelFactory();
   private island!: IslandView;
   private readonly root: Node;
   private readonly resources: GroundObjects;
-  private readonly buildings = new Map<
-    string,
-    {
-      signature: string;
-      node: Node;
-      kind: Building['kind'];
-      surface: ModelPicking;
-      crops: RenderedCropPicking;
-    }
-  >();
+  private readonly buildings = new Map<string, BuildingVisualEntry>();
   private readonly feedback: TownFeedback;
   private previous: GameState | null = null;
   private marker: Node | null = null;
@@ -52,6 +40,9 @@ export class TownView {
         [...this.buildings]
           .filter(([id]) => id !== this.lifted)
           .map(([id, entry]) => ({ id, surface: entry.surface })),
+      (sample) =>
+        this.previous?.terrainVersion === 6 ? this.island.terrainDistance(sample) : null,
+      (hit) => hit.kind !== 'building' || this.buildingReady(hit.id),
     );
     return this.picking.hit(ray, exclude);
   }
@@ -83,25 +74,7 @@ export class TownView {
         this.buildings.delete(id);
       }
     for (const b of state.buildings) {
-      const signature = [
-        state.mapSeed,
-        state.terrainVersion,
-        JSON.stringify(state.landExtensions),
-        b.kind,
-        b.x,
-        b.z,
-        b.rotation,
-        b.farmSize,
-        b.irrigated,
-        b.dockStyle,
-        b.boatAttached,
-        b.bridge?.length,
-        JSON.stringify(b.collectionBox),
-        b.compost ? compostStage(b.compost, effectiveNow) : '',
-        b.kind === 'nursery' ? nurseryStage(b, effectiveNow) : processingStage(b, effectiveNow),
-        JSON.stringify(state.fusion.attachments[b.id] ?? {}),
-        b.kind === 'farm' ? farmVisuals(b.cropJobs, effectiveNow).join(',') : Boolean(b.job),
-      ].join(':');
+      const signature = buildingVisualSignature(state, b, effectiveNow);
       const old = this.buildings.get(b.id);
       if (old?.signature === signature) continue;
       old?.node.destroy();
@@ -111,6 +84,7 @@ export class TownView {
         state.mapSeed,
         state.terrainVersion,
         state.landExtensions,
+        b.baseElevation ?? 0,
       );
       this.root.addChild(node);
       const stock = state.fusion.attachments[b.id];
@@ -144,7 +118,7 @@ export class TownView {
     const key = preview
       ? JSON.stringify(preview)
       : selected
-        ? `${selected.id}:${selected.kind}:${selected.x}:${selected.z}:${selected.rotation}:${selected.farmSize}:${Boolean(selected.collectionBox)}`
+        ? `${selected.id}:${selected.kind}:${selected.x}:${selected.z}:${selected.rotation}:${selected.farmSize}:${selected.baseElevation}:${Boolean(selected.collectionBox)}`
         : '';
     if (key === this.markerKey) return;
     this.markerKey = key;
@@ -153,12 +127,24 @@ export class TownView {
     if (preview) this.outline(preview, preview.valid ? '#EFD377' : '#D87163');
     else if (selected) this.outline(selected, '#F3D37C');
   }
+  get surfaceStatus() {
+    return this.island.surfaceStatus();
+  }
+  get surfaceProblem(): string | null {
+    return this.island.surfaceProblem();
+  }
   get loading(): boolean {
     return this.island.isLoading() || this.resources.loading;
   }
-  frame(bounds: WorldViewBounds, treeBounds = bounds): void {
-    if (this.previous?.terrainVersion !== 5) return;
-    const changed = this.island.frame(bounds);
+  frame(
+    bounds: WorldViewBounds,
+    treeBounds = bounds,
+    treeLodSpan?: number,
+    visible?: WorldBoxTest,
+    maxError?: number,
+  ): void {
+    if (!this.previous || this.previous.terrainVersion < 5) return;
+    const changed = this.island.frame(bounds, {}, visible, treeLodSpan, maxError);
     if (changed)
       this.resources.sync(
         this.previous,
@@ -166,7 +152,13 @@ export class TownView {
         Math.max(Date.now(), this.previous.lastSeenAt),
         this.island.dropSupport,
       );
-    if (this.resources.frame(treeBounds) || changed) this.picking?.clear();
+    if (this.resources.frame(treeBounds, treeLodSpan) || changed) this.picking?.clear();
+  }
+  isGroundReady(x: number, z: number): boolean {
+    return this.island.isGroundReady(x, z);
+  }
+  pickTerrain(ray: geometry.Ray) {
+    return this.island.pickTerrain(ray);
   }
   objectBounds(target: ObjectTarget) {
     if (target.kind !== 'building') return this.resources.objectBounds(target);
@@ -197,33 +189,20 @@ export class TownView {
     }
     return nearest;
   }
+  private buildingReady(id: string): boolean {
+    if (this.previous?.terrainVersion !== 6) return true;
+    const b = this.previous.buildings.find((entry) => entry.id === id);
+    return !!b && buildingGroundReady(b, (x, z) => this.island.isGroundReady(x, z));
+  }
   private farmToolSurface(ray: geometry.Ray) {
-    let nearest: FarmToolSurface | null = null;
-    for (const [id, entry] of this.buildings) {
-      if (id === this.lifted) continue;
-      const crop = entry.kind === 'farm' ? entry.crops : null;
-      const hit = entry.surface.hit(ray, nearest?.distance, (node) => crop?.cellAt(node) != null);
-      if (!hit) continue;
-      const cell = crop?.cellAt(hit.node) ?? null;
-      if (
-        !nearest ||
-        hit.distance < nearest.distance ||
-        (hit.distance === nearest.distance && cell !== null && nearest.cell === null)
-      )
-        nearest = {
-          buildingId: id,
-          cell,
-          soil: crop?.isSoil(hit.node) ?? false,
-          distance: hit.distance,
-        };
-    }
-    const tree = this.resources.pickTree(ray),
-      pile = this.resources.pickStack(ray);
-    const natural = this.resources.pickNatural(ray);
-    for (const blocker of [tree, pile, natural, this.resources.pickDrop?.(ray)])
-      if (blocker && blocker.distance < (nearest?.distance ?? Infinity))
-        nearest = { buildingId: null, cell: null, soil: false, distance: blocker.distance };
-    return nearest;
+    return townFarmToolSurface(
+      ray,
+      this.buildings,
+      this.lifted,
+      this.resources,
+      this.previous?.terrainVersion === 6 ? (sample) => this.island.terrainDistance(sample) : null,
+      (id) => this.buildingReady(id),
+    );
   }
   pickPlant(ray: geometry.Ray) {
     const hit = this.farmToolSurface(ray);
@@ -245,12 +224,19 @@ export class TownView {
     );
   }
   private outline(
-    b: Pick<Building, 'kind' | 'x' | 'z' | 'farmSize' | 'collectionBox'> & {
+    b: Pick<Building, 'kind' | 'x' | 'z' | 'farmSize' | 'collectionBox' | 'baseElevation'> & {
       rotation?: Building['rotation'];
     },
     shade: string,
   ): void {
-    this.marker = buildingOutline(this.root, this.factory, b, shade, 'PlacementOutline');
+    this.marker = buildingOutline(
+      this.root,
+      this.factory,
+      b,
+      shade,
+      'PlacementOutline',
+      (b.baseElevation ?? 0) + 0.09,
+    );
   }
   setLiftedStack(id: string | null): void {
     this.picking?.clear();

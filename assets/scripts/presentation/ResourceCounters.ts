@@ -1,3 +1,4 @@
+import { materialQuantity } from '../application/MaterialQuantity';
 import {
   Node,
   Label,
@@ -30,6 +31,7 @@ export class ResourceCounters {
       this.icons.push(icon);
       const value = label(parent, '', 18);
       value.enableWrapText = false;
+      value.overflow = Label.Overflow.SHRINK;
       value.isBold = true;
       value.color = color('#FFF4DF');
       const outline = value.node.addComponent(LabelOutline);
@@ -76,7 +78,8 @@ export class ResourceCounters {
   }
   render(state: GameState): void {
     this.values[0]!.string = String(state.coins);
-    this.values[1]!.string = `${getUsedStorage(state)}/${getCapacity(state)}`;
+    const used = getUsedStorage(state);
+    this.values[1]!.string = `${materialQuantity(used)}${Number.isInteger(used) ? '/' : ' / '}${getCapacity(state)}`;
   }
   dispose(): void {
     this.disposed = true;

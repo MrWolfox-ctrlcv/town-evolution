@@ -13,6 +13,7 @@ export function entityAssemblyPreview(
   z: number,
   valid: boolean,
 ): void {
+  const originY = state.terrainVersion === 6 ? root.position.y : 0;
   for (const s of sources) {
     const b = state.buildings.find((b) => b.id === s.id);
     if (!b) continue;
@@ -22,7 +23,7 @@ export function entityAssemblyPreview(
         root,
         'SelectedEntity',
         b.x + f.width / 2 + side * f.width * 0.48 - x,
-        0.15,
+        (b.baseElevation ?? 0) - originY + 0.15,
         b.z + f.depth / 2 - z,
         0.06,
         0.05,
@@ -37,11 +38,12 @@ export function entityAssemblyPreview(
     state.mapSeed,
     state.terrainVersion,
     state.landExtensions,
+    result.baseElevation ?? 0,
   );
   preview.name = 'EntityAssemblyResult';
   preview.setPosition(
     result.x + footprint(result).width / 2 - x,
-    0.025,
+    (state.terrainVersion === 6 ? preview.position.y - originY : 0) + 0.025,
     result.z + footprint(result).depth / 2 - z,
   );
   root.addChild(preview);
@@ -52,7 +54,7 @@ export function entityAssemblyPreview(
         root,
         'BoxFootprint',
         box.x + 0.5 + side * 0.48 - x,
-        0.15,
+        (result.baseElevation ?? 0) - originY + 0.15,
         box.z + 0.5 - z,
         0.06,
         0.05,

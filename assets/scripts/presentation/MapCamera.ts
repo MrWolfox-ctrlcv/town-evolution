@@ -1,4 +1,5 @@
-import { cameraVisibleBounds } from './CameraVisibility';
+import * as visibility from './CameraVisibility';
+import type { WorldPoint } from '../application/WorldVisibility';
 import {
   Node,
   Camera,
@@ -20,6 +21,7 @@ import { isTouchEvent, inputOwner, hasMultipleContacts, hasInputConflict } from 
 import { fitTownShadowDepth } from './SceneLighting';
 import {
   cameraDepth,
+  V6_VIEW_TOP,
   clampMapZoom,
   fittedOrthoHeight,
   homeZoom,
@@ -29,6 +31,7 @@ import { MapGesture } from '../application/MapGesture';
 import type { Point } from '../application/MapGesture';
 export interface MapHooks {
   covered(point: Point): boolean;
+  ground?(ray: geometry.Ray): { x: number; y: number; z: number } | null;
   tap(point: { x: number; z: number }, ray: geometry.Ray): void;
   candidate(ray: geometry.Ray): string | null;
   drag(id: string, point: Vec3, ray: geometry.Ray | null, screen: Point): void;
@@ -45,8 +48,6 @@ export class MapCamera {
   private readonly contactTouches = new Map<number, Touch>();
   private readonly globalStart = (e: EventTouch) => {
     const id = e.getID() ?? 0;
-    // Hidden UI targets can miss END. Only the live engine manager is authoritative:
-    // mouse-derived EventTouch.getAllTouches() contains just mouse ID 0, not held fingers.
     const touches = engineInput?.getAllTouches();
     const ids = touches?.map((touch) => touch.getID());
     if (ids?.includes(id) && ids.every(Number.isInteger) && new Set(ids).size === ids.length) {
@@ -62,14 +63,11 @@ export class MapCamera {
       }
       this.contactTouches.set(id, live.get(id)!);
     }
-    // Do not resurrect unobserved manager contacts after a focus/reset cancellation.
     this.contacts.add(id);
     if (this.contacts.size > 1 || hasMultipleContacts(e, engineInput)) this.gesture.interrupt();
   };
   private readonly globalEnd = (e: EventTouch) => {
     const id = e.getID() ?? 0;
-    // Cocos may route a colliding ID to another captured target, then remove our
-    // claim. Clear its orphan now; a foreign END must not commit the old gesture.
     if (e.target !== this.input || this.owners.get(id) !== inputOwner(e)) {
       this.gesture.discard(id);
       this.owners.delete(id);
@@ -84,7 +82,7 @@ export class MapCamera {
     parent: Node,
     private readonly input: Node,
     private readonly hooks: MapHooks,
-    terrainVersion: TerrainVersion = 4,
+    private terrainVersion: TerrainVersion = 4,
   ) {
     this.size = worldSize(terrainVersion);
     this.zoom = homeZoom(this.size);
@@ -139,7 +137,6 @@ export class MapCamera {
     });
     input.on(Node.EventType.TOUCH_END, (e: EventTouch) => this.end(e));
     input.on(Node.EventType.TOUCH_CANCEL, (e: EventTouch) => {
-      // Cocos rewrites releases outside the captured map node to CANCEL.
       if (e.getEventCode() === Node.EventType.TOUCH_END) this.end(e);
       else this.cancelGesture();
     });
@@ -154,7 +151,7 @@ export class MapCamera {
     });
   }
   visibleBounds(maxHeight = 64) {
-    return cameraVisibleBounds(this.camera, maxHeight);
+    return visibility.cameraVisibleBounds(this.camera, maxHeight);
   }
   get interacting(): boolean {
     return this.gesture.interacting;
@@ -196,6 +193,7 @@ export class MapCamera {
   }
   reset(terrainVersion?: TerrainVersion, frame = { x: 6, z: 6, zoomScale: 1 }): void {
     this.cancelGesture();
+    this.terrainVersion = terrainVersion ?? this.terrainVersion;
     if (terrainVersion !== undefined) this.size = worldSize(terrainVersion);
     this.focus.set(frame.x, 0, frame.z);
     this.zoom = homeZoom(this.size) * frame.zoomScale;
@@ -229,7 +227,6 @@ export class MapCamera {
     if (this.accepts(event)) {
       const p = this.pointer(event),
         size = screen.windowSize;
-      // CANCEL may be a release over a sidebar, but never commit outside the screen.
       if (p.x < 0 || p.y < 0 || p.x > size.width || p.y > size.height)
         this.gesture.discard(event.getID() ?? 0);
       else this.gesture.end(event.getID() ?? 0, p, event.getUILocation());
@@ -239,35 +236,35 @@ export class MapCamera {
   private pointer(event: EventTouch): Point {
     return Object.assign(event.getLocation(), { touch: isTouchEvent(event) });
   }
-  ground(p: Point, height = 0): Vec3 | null {
+  ground(p: Point, height?: number): Vec3 | null {
     const ray = this.screenRay(p);
+    if (height === undefined && this.hooks.ground) {
+      const point = this.hooks.ground(ray);
+      return point ? new Vec3(point.x, point.y, point.z) : null;
+    }
     if (Math.abs(ray.d.y) < 0.00001) return null;
-    const t = (height - ray.o.y) / ray.d.y;
-    return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);
+    const t = ((height ?? 0) - ray.o.y) / ray.d.y;
+    return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, height ?? 0, ray.o.z + ray.d.z * t);
   }
   contains(p: Point): boolean {
-    if (this.hooks.covered(p)) return false;
-    const viewport = this.camera.rect;
-    const size = screen.windowSize;
-    const x = p.x / size.width,
-      y = p.y / size.height;
-    return (
-      x >= viewport.x &&
-      y >= viewport.y &&
-      x <= viewport.x + viewport.width &&
-      y <= viewport.y + viewport.height
-    );
+    return !this.hooks.covered(p) && visibility.cameraContainsPoint(this.camera, p);
+  }
+  boxVisible(min: Readonly<WorldPoint>, max: Readonly<WorldPoint>): boolean {
+    return visibility.cameraSceneBoxVisible(this.camera, min, max);
+  }
+  maxTerrainError(): number {
+    return visibility.cameraTerrainError(this.camera);
   }
   private anchor(from: Point, to: Point): void {
-    const before = this.ground(from),
-      after = this.ground(to);
+    const before = this.ground(from, 0),
+      after = this.ground(to, 0);
     if (before && after) this.shift(before, after);
   }
   private zoomAt(ratio: number, from: Point, to: Point): void {
-    const before = this.ground(from);
+    const before = this.ground(from, 0);
     this.zoom = clampMapZoom(this.zoom * ratio, this.size);
     this.update();
-    const after = this.ground(to);
+    const after = this.ground(to, 0);
     if (before && after) this.shift(before, after);
   }
   private shift(before: Vec3, after: Vec3): void {
@@ -277,12 +274,13 @@ export class MapCamera {
   }
   private update(): void {
     this.camera.orthoHeight = fittedOrthoHeight(this.aspect, this.size) * this.zoom;
-    const depth = cameraDepth(this.size, this.camera.orthoHeight);
+    const top = this.terrainVersion === 6 ? V6_VIEW_TOP : undefined;
+    const depth = cameraDepth(this.size, this.camera.orthoHeight, top);
     this.camera.near = depth.near;
     this.camera.far = depth.far;
     this.camera.node.setPosition(this.focus.x + depth.x, depth.y, this.focus.z + depth.z);
     this.camera.node.lookAt(this.focus);
-    fitTownShadowDepth(this.camera);
+    fitTownShadowDepth(this.camera, top);
     this.camera.camera.update();
   }
   dispose(): void {

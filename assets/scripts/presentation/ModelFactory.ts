@@ -1,6 +1,8 @@
 import { bridgeFootings } from '../art/BridgeFootings';
+import { v6BridgeFootings } from '../art/V6BridgeFootings';
 import { BRIDGE_ROOT_HEIGHT } from '../art/WoodenBridgeKit';
 import { V5_PIER_FOOT_UNIT, v5PierFootings } from '../art/V5PierFootings';
+import { v6PierFootings } from '../art/V6PierFootings';
 import { farmCollectionBoxAssetId, farmBoxLocalCenter } from '../art/FarmBoxKit';
 import { buildingAssetId } from '../art/BuildingAssets';
 import type { TerrainVersion } from '../domain/world';
@@ -85,11 +87,16 @@ export class ModelFactory {
     mapSeed = 1,
     terrainVersion: TerrainVersion = 3,
     landExtensions: readonly LandCell[] = [],
+    baseElevation = 0,
   ): Node {
     const cfg = CONFIG.buildings[b.kind];
     const { width: w, depth: d } = footprint(b);
     const root = new Node(b.id);
-    root.setPosition(b.x + w / 2, b.kind === 'woodenBridge' ? BRIDGE_ROOT_HEIGHT : 0, b.z + d / 2);
+    root.setPosition(
+      b.x + w / 2,
+      b.kind === 'woodenBridge' ? BRIDGE_ROOT_HEIGHT : baseElevation,
+      b.z + d / 2,
+    );
     if (b.kind === 'farm') {
       const grid = new Node('FarmGrid');
       grid.setRotationFromEuler(0, b.rotation * 90, 0);
@@ -137,11 +144,14 @@ export class ModelFactory {
     const id = buildingAssetId(b, now);
     const visual = this.assets.create(id, 'BuildingMesh');
     visual.setRotationFromEuler(0, b.rotation * 90, 0);
-    if (b.kind === 'woodenBridge' && terrainVersion === 5) {
+    if (b.kind === 'woodenBridge' && (terrainVersion === 5 || terrainVersion === 6)) {
       const supports = new Node('BridgeSupports');
       supports.setRotationFromEuler(0, b.rotation * 90, 0);
       root.addChild(supports);
-      for (const [index, foot] of bridgeFootings(b, mapSeed).entries()) {
+      for (const [index, foot] of (terrainVersion === 6
+        ? v6BridgeFootings(b, mapSeed)
+        : bridgeFootings(b, mapSeed)
+      ).entries()) {
         const node = this.assets.createRecipe(V5_PIER_FOOT_UNIT, `BridgeFooting${index}`);
         node.setPosition(foot.x, foot.y, foot.z);
         node.setScale(foot.width, foot.height, foot.width);
@@ -160,8 +170,11 @@ export class ModelFactory {
       if (b.dockStyle === 'simple')
         pier.addChild(this.assets.create('dock-pier-extension', 'PierExtension'));
       else this.pier(pier, cfg.depth);
-      if (terrainVersion === 5)
-        for (const [index, foot] of v5PierFootings(b.dockStyle === 'simple', cfg.depth).entries()) {
+      if (terrainVersion === 5 || terrainVersion === 6)
+        for (const [index, foot] of (terrainVersion === 6
+          ? v6PierFootings(b.dockStyle === 'simple', cfg.depth, baseElevation)
+          : v5PierFootings(b.dockStyle === 'simple', cfg.depth)
+        ).entries()) {
           const name = `V5PierFooting${index}`;
           if (b.dockStyle === 'simple') {
             const node = this.assets.createRecipe(V5_PIER_FOOT_UNIT, name);

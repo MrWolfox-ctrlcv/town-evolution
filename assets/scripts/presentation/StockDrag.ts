@@ -49,7 +49,7 @@ export class StockDrag {
             this.parent,
             'TradeTarget',
             b.x + f.width / 2,
-            0.12,
+            (b.baseElevation ?? 0) + 0.12,
             b.z + f.depth / 2 + (side * f.depth) / 2,
             f.width + 0.1,
             0.08,
@@ -62,7 +62,7 @@ export class StockDrag {
             this.parent,
             'TradeTarget',
             b.x + f.width / 2 + (side * f.width) / 2,
-            0.12,
+            (b.baseElevation ?? 0) + 0.12,
             b.z + f.depth / 2,
             0.1,
             0.08,
@@ -143,7 +143,9 @@ export class StockDrag {
       this.parent,
       'ProductDropPreview',
       target.x + 0.5,
-      0.09,
+      (this.session.state.terrainVersion === 6
+        ? (this.town.pickTerrain(this.map.screenRay(point))?.point.y ?? 0)
+        : 0) + 0.09,
       target.z + 0.5,
       0.92,
       0.025,
@@ -159,14 +161,19 @@ export class StockDrag {
     if (buildingId) return this.buildingCommand(buildingId);
     const pile = this.town.pickStack(this.map.screenRay(point));
     const ground = this.map.ground(point);
+    const terrain = this.session.state.terrainVersion === 6 ? this.town.pickTerrain(ray) : null;
     if (ground && this.item === 'sapling' && !pile)
       return { type: 'plantSapling' as const, x: Math.floor(ground.x), z: Math.floor(ground.z) };
     return ground
       ? {
           type: 'dropProduct' as const,
           item: this.item,
-          x: pile?.x ?? Math.floor(ground.x),
-          z: pile?.z ?? Math.floor(ground.z),
+          ...(this.session.state.terrainVersion === 6 &&
+          (this.item === 'soil' || this.item === 'stone')
+            ? { quantity: Math.min(1, this.session.state.inventory[this.item]) }
+            : {}),
+          x: pile?.x ?? terrain?.x ?? Math.floor(ground.x),
+          z: pile?.z ?? terrain?.z ?? Math.floor(ground.z),
         }
       : null;
   }

@@ -1,4 +1,6 @@
 import { V5TreeView } from './V5TreeView';
+import { V6TreeView } from './V6TreeView';
+import { getV6EditSurface } from '../domain/v6-edit-surface';
 import type { WorldViewBounds } from '../application/TreeStreaming';
 import { modelBounds } from './ObjectBounds';
 import type { ObjectTarget } from '../application/ObjectSelection';
@@ -18,7 +20,9 @@ import type { TouchCandidate, TouchPickContext } from './TouchPicking';
 export class GroundObjects {
   private readonly root: Node;
   private drops: LooseDropView | null = null;
-  private v5Trees: V5TreeView | null = null;
+  private v5Trees: V5TreeView | V6TreeView | null = null;
+  private treeVersion = 0;
+  private v6Surface: ReturnType<typeof getV6EditSurface> | null = null;
   private readonly factory = new ModelFactory();
   private signature = '';
   private lifted: string | null = null;
@@ -29,12 +33,14 @@ export class GroundObjects {
     signature: string;
     node: Node;
     surface: ModelPicking;
+    ready: boolean;
   }> = [];
   private trees: Array<{ id: string; signature: string; node: Node; surface: ModelPicking }> = [];
   private readonly natural = new NaturalPicking();
   constructor(
     parent: Node,
     private readonly groundReady: (x: number, z: number) => boolean = () => true,
+    private readonly groundVisible: (x: number, z: number) => boolean = groundReady,
   ) {
     this.root = new Node('GroundObjects');
     parent.addChild(this.root);
@@ -49,19 +55,41 @@ export class GroundObjects {
       this.drops ??= new LooseDropView(this.root);
       this.drops.sync(state, support);
     }
-    if (state.terrainVersion === 5) {
-      this.v5Trees ??= new V5TreeView(this.root, this.groundReady);
+    if (state.terrainVersion === 6) this.v6Surface = getV6EditSurface(state);
+    if (state.terrainVersion === 5 || state.terrainVersion === 6) {
+      if (this.treeVersion !== state.terrainVersion) {
+        this.v5Trees?.dispose();
+        this.v5Trees = null;
+        this.treeVersion = state.terrainVersion;
+      }
+      this.v5Trees ??=
+        state.terrainVersion === 6
+          ? new V6TreeView(
+              this.root,
+              this.groundReady,
+              (x, z) => this.v6Surface!.heightInCell(x, z, Math.floor(x), Math.floor(z)),
+              this.groundVisible,
+            )
+          : new V5TreeView(this.root, this.groundReady);
       this.v5Trees.sync(state, now);
-    } else if (this.v5Trees) {
-      this.v5Trees.dispose();
+    } else {
+      this.v5Trees?.dispose();
       this.v5Trees = null;
+      this.treeVersion = 0;
+      this.v6Surface = null;
     }
-    const trees = state.terrainVersion === 5 ? [] : state.trees;
+    const trees = state.terrainVersion === 5 || state.terrainVersion === 6 ? [] : state.trees;
     const stages = trees.map((tree) =>
       Math.floor(treeGrowthProgress(tree, Math.max(now, state.lastSeenAt)) * 3),
     );
     this.natural.sync(surface, state.naturalResources);
-    const signature = JSON.stringify([state.mapSeed, trees, stages, state.groundStacks]);
+    const signature = JSON.stringify([
+      state.mapSeed,
+      trees,
+      stages,
+      state.groundStacks,
+      ...(state.terrainVersion === 6 ? [support?.revision] : []),
+    ]);
     if (signature === this.signature) return;
     this.signature = signature;
     // Quantity changes and chopping must not rebuild every other tree and its picker.
@@ -91,14 +119,25 @@ export class GroundObjects {
     const oldPiles = new Map(this.piles.map((pile) => [pile.key, pile]));
     this.piles = state.groundStacks.map((pile) => {
       const key = `pile:${pile.x}:${pile.z}`;
-      const signature = `${pile.item}:${pile.amount}`;
+      const elevation =
+        state.terrainVersion === 6
+          ? (support?.height({
+              minX: pile.x + 0.01,
+              minZ: pile.z + 0.01,
+              maxX: pile.x + 0.99,
+              maxZ: pile.z + 0.99,
+            }) ?? null)
+          : 0;
+      const signature = `${pile.item}:${pile.amount}${state.terrainVersion === 6 ? ':' + elevation : ''}`;
       const old = oldPiles.get(key);
       oldPiles.delete(key);
       if (old?.signature === signature) return old;
       old?.node.destroy();
       const node = pileModel(this.factory, pile, key);
       this.root.addChild(node);
-      node.active = this.lifted !== key;
+      if (state.terrainVersion === 6)
+        node.setPosition(node.position.x, (elevation ?? 0) + 0.009, node.position.z);
+      node.active = this.lifted !== key && elevation !== null;
       return {
         key,
         x: pile.x,
@@ -106,6 +145,7 @@ export class GroundObjects {
         signature,
         node,
         surface: new ModelPicking(node),
+        ready: elevation !== null,
       };
     });
     for (const pile of oldPiles.values()) pile.node.destroy();
@@ -113,8 +153,10 @@ export class GroundObjects {
   get loading(): boolean {
     return this.v5Trees?.loading ?? false;
   }
-  frame(bounds: WorldViewBounds): boolean {
-    return this.v5Trees?.frame(bounds) ?? false;
+  frame(bounds: WorldViewBounds, lodSpan?: number): boolean {
+    return this.v5Trees instanceof V6TreeView
+      ? this.v5Trees.frame(bounds, lodSpan)
+      : (this.v5Trees?.frame(bounds) ?? false);
   }
   objectBounds(target: ObjectTarget) {
     if (target.kind === 'tree' && this.v5Trees) return this.v5Trees.bounds(target.id);
@@ -130,12 +172,13 @@ export class GroundObjects {
   }
   setLifted(key: string | null): void {
     this.lifted = key;
-    for (const pile of this.piles) pile.node.active = pile.key !== key;
+    for (const pile of this.piles) pile.node.active = pile.key !== key && pile.ready;
   }
   pickStack(ray: geometry.Ray, exclude?: string) {
     let nearest: { id: string; x: number; z: number; distance: number } | null = null;
     for (const pile of this.piles) {
       if (pile.key === exclude || pile.key === this.lifted) continue;
+      if (this.treeVersion === 6 && (!pile.ready || !this.groundReady(pile.x, pile.z))) continue;
       const distance = pile.surface.distance(ray, nearest?.distance);
       if (
         distance !== null &&
@@ -147,8 +190,15 @@ export class GroundObjects {
     }
     return nearest;
   }
+  private naturalReady(id: string): boolean {
+    if (this.treeVersion !== 6) return true;
+    const owner = this.natural.origin(id);
+    return !!owner && this.groundReady(Math.floor(owner.x), Math.floor(owner.z));
+  }
   pickNatural(ray: geometry.Ray) {
-    return this.natural.pick(ray);
+    const hit = this.natural.pick(ray);
+    // Reject the first blocked surface, never search through it for a farther ID.
+    return hit && this.naturalReady(hit.id) ? hit : null;
   }
   touchCandidates(context: TouchPickContext, exclude?: string): TouchCandidate[] {
     const result: TouchCandidate[] = [
@@ -167,6 +217,8 @@ export class GroundObjects {
       if (pile.key !== exclude && pile.key !== this.lifted && pile.surface.nearScreen(context))
         result.push({
           pick: (ray) => {
+            if (this.treeVersion === 6 && (!pile.ready || !this.groundReady(pile.x, pile.z)))
+              return null;
             const distance = pile.surface.distance(ray);
             return distance === null
               ? null
@@ -177,7 +229,7 @@ export class GroundObjects {
     result.push({
       pick: (ray) => {
         const hit = natural.pick(ray);
-        return hit ? { kind: 'natural', ...hit } : null;
+        return hit && this.naturalReady(hit.id) ? { kind: 'natural', ...hit } : null;
       },
     });
     return result;

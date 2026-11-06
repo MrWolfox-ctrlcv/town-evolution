@@ -1,4 +1,7 @@
-import { cycleTransportTarget } from './RouteActions';
+import { V6TownNavigation } from './V6TownNavigation';
+import { V6_VIEW_TOP } from '../application/CameraFraming';
+import { townUiActions } from './TownUiActions';
+import { materialQuantity } from '../application/MaterialQuantity';
 import { objectTarget, pickObject } from './ObjectContext';
 import { boundsCorners, setObjectSelection } from '../application/ObjectSelection';
 import { Node, geometry } from 'cc';
@@ -12,11 +15,11 @@ import { ToolRouter } from './ToolRouter';
 import { description } from './HudDescription';
 import { DeferredLayout } from '../application/DeferredLayout';
 import { profileFrame } from '../application/ProfileFraming';
-import { nextQuantity, tradeItems } from '../application/CommerceSelection';
+import { tradeItems } from '../application/CommerceSelection';
 import { ObjectDrag } from './ObjectDrag';
 import { MapCamera } from './MapCamera';
 import { actions, rotationAction, type UiHandlers } from './HudActions';
-import { createUiState, focusObject } from './UiContracts';
+import { createUiState } from './UiContracts';
 export class TownController {
   private readonly session: GameSession;
   private readonly ui = createUiState();
@@ -27,6 +30,7 @@ export class TownController {
   private readonly town: TownView;
   private readonly handlers: UiHandlers;
   private elapsed = 0;
+  private readonly v6Navigation: V6TownNavigation | null;
   private readonly deferredLayout = new DeferredLayout();
   constructor(
     parent: Node,
@@ -62,6 +66,9 @@ export class TownController {
         drag: (id, point, ray, screen) => this.drag.move(id, point, ray, screen),
         drop: (id, ray, screen) => this.drag.drop(id, ray, screen),
         cancel: () => this.drag.clear(),
+        ...(session.state.terrainVersion === 6
+          ? { ground: (ray: geometry.Ray) => this.town.pickTerrain(ray)?.point ?? null }
+          : {}),
       },
       this.session.state.terrainVersion,
     );
@@ -69,6 +76,16 @@ export class TownController {
       this.refresh(),
     );
     this.hud.setToolHandlers(this.tools);
+    this.v6Navigation =
+      session.state.terrainVersion === 6
+        ? new V6TownNavigation(
+            this.hud,
+            this.map,
+            this.town,
+            () => this.cancelInput(),
+            () => this.tools.active,
+          )
+        : null;
     this.handlers = {
       command: (command) => this.run(command),
       cancel: () => this.cancel(),
@@ -78,6 +95,7 @@ export class TownController {
         this.refresh();
       },
       overview: () => {
+        if (this.v6Navigation) return this.v6Navigation.overview();
         this.cancelInput();
         this.hud.closeDetails();
         this.map.overview();
@@ -86,45 +104,15 @@ export class TownController {
       save: () => this.save(),
       reset: () => this.reset(),
       ...(menu ? { openSaves: () => menu('saves'), exitToTitle: () => menu('exit') } : {}),
-      switchTown: () => {
-        if (this.session.mode === 'normal' && !this.session.save()) {
-          this.refresh();
-          return;
-        }
-        switchProfile?.(this.ui.profile === 'normal' ? 'demo' : 'normal');
-      },
-      openToolShop: () => {
-        this.ui.toolShopOpen = true;
-        this.refresh();
-      },
-      plantTree: () => {
-        this.ui.plantingTree = true;
-        this.refresh();
-      },
-      openCropShop: () => {
-        this.ui.cropShopOpen = true;
-        this.refresh();
-      },
+      ...townUiActions(
+        this.session,
+        this.ui,
+        this.hud,
+        () => this.refresh(),
+        () => this.cancelInput(),
+        switchProfile,
+      ),
       repurpose: () => this.repurpose(),
-      transportTarget: () => cycleTransportTarget(this.session, this.ui, () => this.refresh()),
-      item: () => {
-        const items = tradeItems(this.session.state);
-        this.ui.tradeItem = items[(items.indexOf(this.ui.tradeItem) + 1) % items.length];
-        this.refresh();
-      },
-      quantity: () => {
-        this.ui.quantity = nextQuantity(this.ui.quantity);
-        this.refresh();
-      },
-      toggleBuildingActions: () => {
-        this.ui.moreBuildingActions = !this.ui.moreBuildingActions;
-        this.refresh();
-      },
-      select: (id) => {
-        this.hud.openDetails();
-        focusObject(this.ui, { kind: 'building', id });
-        this.refresh();
-      },
     };
     this.layout();
     this.map.reset(session.state.terrainVersion, profileFrame(profile, session.state));
@@ -143,6 +131,19 @@ export class TownController {
     this.map.tick();
     if (this.session.state.terrainVersion === 5)
       this.town.frame(this.map.visibleBounds(64), this.map.visibleBounds(4));
+    else if (this.session.state.terrainVersion === 6) {
+      const visible = this.map.visibleBounds(V6_VIEW_TOP),
+        flat = this.map.visibleBounds(0);
+      this.town.frame(
+        visible,
+        visible,
+        Math.max(flat.maxX - flat.minX, flat.maxZ - flat.minZ),
+        (min, max) => this.map.boxVisible(min, max),
+        this.map.maxTerrainError(),
+      );
+      if (!this.tools.checkTerrainGesture()) this.cancelInput();
+    }
+    this.v6Navigation?.tick();
     this.projectSelection();
     this.elapsed += dt;
     if (this.elapsed >= 0.5) {
@@ -181,6 +182,7 @@ export class TownController {
     this.refresh(true);
   }
   dispose(): void {
+    this.v6Navigation?.dispose();
     this.session.setCollectionListener(null);
     this.hud.dispose();
     this.tools.dispose();
@@ -200,8 +202,8 @@ export class TownController {
       state,
       inventory: state.inventory,
       tools: state.tools,
-      summary: `${profileLabel(this.ui.profile)} · 金币 ${state.coins}\n仓储 ${getUsedStorage(state)}/${getCapacity(state)}`,
-      message: this.session.statusMessage,
+      summary: `${profileLabel(this.ui.profile)} · 金币 ${state.coins}\n仓储 ${materialQuantity(getUsedStorage(state))}/${getCapacity(state)}`,
+      message: this.town.surfaceProblem ?? this.session.statusMessage,
       detail: description(this.session, this.ui, this.town.loading),
       contextHeading: this.ui.cropShopOpen || this.ui.toolShopOpen,
       tab: this.ui.tab,
@@ -289,6 +291,7 @@ export class TownController {
         profileFrame(this.ui.profile, this.session.state),
       );
       if (this.ui.profile === 'v5-preview') this.map.overview();
+      this.v6Navigation?.reset();
     }
     this.ui.resetArmed = false;
     this.refresh(true);

@@ -1,3 +1,5 @@
+import { TerrainNavigation } from './TerrainNavigation';
+import type { TerrainNavigationHandlers } from './TerrainNavigation';
 import { hasMultipleContacts } from './InputProvenance';
 import { RadialActions } from './RadialActions';
 import type { ObjectTarget } from '../application/ObjectSelection';
@@ -62,6 +64,7 @@ export class TownHUD {
       this.bottom.cancel();
       this.radial.cancel();
       this.settings.cancelGesture();
+      this.terrainNavigation?.cancel();
     }
   };
   private lastPoint: { x: number; y: number } | null = null;
@@ -73,6 +76,7 @@ export class TownHUD {
     return this.lastPoint;
   }
   private lastData: HudData | null = null;
+  private terrainNavigation: TerrainNavigation | null = null;
   constructor(
     parent: Node,
     explain: (text: string) => void,
@@ -127,6 +131,13 @@ export class TownHUD {
     );
     view.resizeWithBrowserSize(true);
   }
+  setTerrainNavigation(handlers: TerrainNavigationHandlers): void {
+    this.terrainNavigation?.dispose();
+    this.terrainNavigation = new TerrainNavigation(this.canvas, handlers);
+  }
+  terrainStatus(text: string): void {
+    this.terrainNavigation?.render(text);
+  }
   highlightProductDrop(point: { x: number; y: number } | null, valid: boolean): void {
     this.tools.highlightProductDrop(point, valid);
   }
@@ -139,6 +150,7 @@ export class TownHUD {
         this.top.getComponent(UITransform)!.hitTest(new Vec2(point.x, point.y))) ||
       (this.settings.node.activeInHierarchy &&
         this.settings.node.getComponent(UITransform)!.hitTest(new Vec2(point.x, point.y))) ||
+      (this.terrainNavigation?.covers(point) ?? false) ||
       this.tools.covers(point) ||
       this.handbook.covers(point) ||
       this.bottom.covers(point) ||
@@ -148,7 +160,11 @@ export class TownHUD {
   projectObject(points: readonly RadialPoint[], suppressed = false): void {
     this.radial.setSuppressed(suppressed);
     const canvas = this.canvas.getComponent(UITransform)!;
-    const obstacles = [...this.tools.regions(), ...this.handbook.regions()].map((region) => {
+    const obstacles = [
+      ...this.tools.regions(),
+      ...this.handbook.regions(),
+      ...(this.terrainNavigation?.regions() ?? []),
+    ].map((region) => {
       const bounds = region.getBoundingBoxToWorld();
       const lo = canvas.convertToNodeSpaceAR(new Vec3(bounds.xMin, bounds.yMin));
       const hi = canvas.convertToNodeSpaceAR(new Vec3(bounds.xMax, bounds.yMax));
@@ -202,11 +218,13 @@ export class TownHUD {
     this.handbook.dispose();
     this.settings.cancelGesture();
     this.settingsArt.dispose();
+    this.terrainNavigation?.dispose();
   }
   cancelTools(): void {
     this.tools.cancel();
   }
   cancelGestures(): void {
+    this.terrainNavigation?.cancel();
     this.settings.cancelGesture();
     this.handbook.cancelGesture();
     this.bottom.cancel();
@@ -229,7 +247,8 @@ export class TownHUD {
     this.canvas.getComponent(UITransform)!.setContentSize(width, height);
     this.mapInput.getComponent(UITransform)!.setContentSize(layout.mapWidth, layout.mapHeight);
     this.mapInput.setPosition((layout.left - layout.right) / 2, layout.bottom / 2);
-    this.tools.layout(width, height, layout.top, 88, layout.left);
+    this.tools.layout(width, height, this.terrainNavigation ? 136 : layout.top, 88, layout.left);
+    this.terrainNavigation?.layout(width, height);
     this.handbook.layout(width, height, layout.left, layout.bottom);
     this.top.setPosition(layout.summaryX, height / 2 - 26);
     this.resources.layout(layout.summaryWidth);

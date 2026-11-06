@@ -56,10 +56,12 @@ export class TownBootstrap extends Component {
     });
   }
   update(dt: number): void {
+    if (this.flow.tickPreparation() && this.flow.page !== 'preparing') this.queueRender();
     if (this.flow.page === 'game') this.controller?.tick(dt);
     else this.menu.tick(dt);
   }
   onDestroy(): void {
+    this.flow?.preparation.cancel();
     this.releaseInputProvenance?.();
     this.releaseInputProvenance = null;
     this.releaseBrowserInput?.();

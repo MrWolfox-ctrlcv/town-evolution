@@ -1,3 +1,4 @@
+import { materialQuantity } from '../application/MaterialQuantity';
 import { Node, UITransform, EventTouch, Vec2, Graphics, input } from 'cc';
 import { color } from './Palette';
 import { isTouchEvent, hasMultipleContacts, inputOwner } from './InputProvenance';
@@ -131,8 +132,10 @@ export class ToolTray {
       const count = hasUnlimitedDurability(tool) ? '∞' : tools[tool];
       entry.text.string = `${TRAY_LABELS[entry.kind]}${entry.kind === 'fertilizer' ? '×' : '·'}${count}`;
     }
-    for (const entry of this.right.entries)
-      entry.text.string = `${TRAY_LABELS[entry.kind]}×${stock[entry.kind as keyof Stock]}`;
+    for (const entry of this.right.entries) {
+      entry.text.string = `${TRAY_LABELS[entry.kind]}×${materialQuantity(stock[entry.kind as keyof Stock])}`;
+      entry.text.fontSize = entry.text.string.length > 8 ? 8 : 12;
+    }
     this.right.show((e) => e.kind !== 'chilledVegetable' || stock.chilledVegetable > 0);
   }
   cancel(): void {

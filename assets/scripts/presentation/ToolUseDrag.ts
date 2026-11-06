@@ -1,3 +1,6 @@
+import { toolOutline } from './ToolOutline';
+import { terrainHeight } from './TerrainInteraction';
+import { diggingToolCommand } from './DiggingToolCommand';
 import { singleHammerResult, toolFailureMessage } from './SingleHammerPreview';
 import { Node } from 'cc';
 import { EntityAssemblySelection } from '../application/EntityAssemblySelection';
@@ -50,7 +53,7 @@ export class ToolUseDrag {
     if (id !== this.pointer) return;
     const command = this.command(point);
     const reason = command ? this.session.reason(command) : null;
-    this.mark(command, !reason);
+    this.mark(command, !reason, point);
     this.session.message =
       this.mixed.invalid || this.entities.invalid
         ? '材料堆已变化，请重新拖动'
@@ -101,7 +104,7 @@ export class ToolUseDrag {
     this.marker = null;
     this.markerKey = '';
   }
-  private mark(command: Command | null, valid: boolean): void {
+  private mark(command: Command | null, valid: boolean, point: Point): void {
     const resource =
       command?.type === 'gatherNatural'
         ? this.session.state.naturalResources.find((entry) => entry.id === command.resourceId)
@@ -138,8 +141,17 @@ export class ToolUseDrag {
       command?.type === 'useTool' && command.tool === 'wateringCan' && 'sources' in command
         ? this.soil
         : [];
-    const surface = resource ? this.town.naturalOrigin(resource.id) : null;
-    const height = surface?.y ?? 0;
+    const surface = resource
+      ? this.town.naturalOrigin(resource.id)
+      : this.session.state.terrainVersion === 6 &&
+          command?.type === 'useTool' &&
+          command.tool === 'diggingTool'
+        ? (this.town.pickTerrain(this.map.screenRay(point))?.point ?? null)
+        : null;
+    const height =
+      surface?.y ??
+      building?.baseElevation ??
+      (target ? terrainHeight(this.session.state, target.x, target.z) : 0);
     const size = building
       ? footprint(building)
       : {
@@ -166,43 +178,25 @@ export class ToolUseDrag {
     if (!target || (resource && !surface)) return;
     this.marker = new Node('ToolTarget');
     this.parent.addChild(this.marker);
-    const originX = surface?.x ?? target.x + size.width / 2,
-      originZ = surface?.z ?? target.z + size.depth / 2;
+    const originX = (resource ? surface?.x : undefined) ?? target.x + size.width / 2,
+      originZ = (resource ? surface?.z : undefined) ?? target.z + size.depth / 2;
     this.marker.setPosition(originX, height, originZ);
-    const outline = (x: number, z: number, width: number, depth: number, shade: string) => {
-      for (const side of [-1, 1]) {
-        this.factory.shape(
-          this.marker!,
-          'EdgeX',
-          x + width / 2 + side * width * 0.48 - originX,
-          0.14,
-          z + depth / 2 - originZ,
-          0.08,
-          0.06,
-          depth,
-          shade,
-        );
-        this.factory.shape(
-          this.marker!,
-          'EdgeZ',
-          x + width / 2 - originX,
-          0.14,
-          z + depth / 2 + side * depth * 0.48 - originZ,
-          width,
-          0.06,
-          0.08,
-          shade,
-        );
-      }
-    };
+    const outline = toolOutline(this.factory, this.marker, originX, originZ);
     if (selected.length) {
       for (const point of selected) {
-        outline(point.x, point.z, 1, 1, '#84CED0');
+        outline(
+          point.x,
+          point.z,
+          1,
+          1,
+          '#84CED0',
+          terrainHeight(this.session.state, point.x, point.z) - height + 0.14,
+        );
         this.factory.shape(
           this.marker,
           'WaterDrop',
           point.x + 0.5 - originX,
-          0.72,
+          terrainHeight(this.session.state, point.x, point.z) - height + 0.72,
           point.z + 0.5 - originZ,
           0.1,
           0.18,
@@ -219,7 +213,15 @@ export class ToolUseDrag {
     } else {
       outline(target.x, target.z, size.width, size.depth, valid ? '#F0D875' : '#D97168');
       if (command?.type === 'craftMixed')
-        mixedCraftPreview(this.marker, this.factory, command, originX, originZ, valid);
+        mixedCraftPreview(
+          this.marker,
+          this.factory,
+          command,
+          originX,
+          originZ,
+          valid,
+          this.session.state,
+        );
       else if (command?.type === 'hammerAssembly')
         entityAssemblyPreview(
           this.marker,
@@ -243,7 +245,15 @@ export class ToolUseDrag {
           valid,
         );
       else if (this.tool === 'hammer')
-        mixedSourceRings(this.marker, this.factory, this.mixed.selected, originX, originZ, valid);
+        mixedSourceRings(
+          this.marker,
+          this.factory,
+          this.mixed.selected,
+          originX,
+          originZ,
+          valid,
+          this.session.state,
+        );
     }
   }
   private command(point: Point): Command | null {
@@ -254,17 +264,8 @@ export class ToolUseDrag {
       const treeId = this.town.pickTree(ray);
       return treeId ? { type: 'useTool', tool: 'axe', treeId } : null;
     }
-    if (this.tool === 'diggingTool') {
-      const resourceId = this.town.pickNatural(ray);
-      const resource = this.session.state.naturalResources.find((entry) => entry.id === resourceId);
-      if (resource) return { type: 'gatherNatural', resourceId: resource.id };
-      if (this.town.pickBuilding(ray) || this.town.pickTree(ray) || this.town.pickStack(ray))
-        return null;
-      const ground = this.map.ground(point);
-      return ground
-        ? { type: 'useTool', tool: 'diggingTool', x: Math.floor(ground.x), z: Math.floor(ground.z) }
-        : null;
-    }
+    if (this.tool === 'diggingTool')
+      return diggingToolCommand(this.session, this.town, this.map, point, ray);
     if (this.tool === 'wateringCan') {
       const buildingId = this.town.pickBuilding(ray);
       if (buildingId) return { type: 'useTool', tool: 'wateringCan', buildingId };

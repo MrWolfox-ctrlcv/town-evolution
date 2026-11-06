@@ -1,5 +1,6 @@
+import { terrainHeight } from './TerrainInteraction';
 import type { Node } from 'cc';
-import type { Command, GroundStack } from '../domain/game';
+import type { Command, GroundStack, GameState } from '../domain/game';
 import type { ModelFactory } from './ModelFactory';
 /** Graphic-only selected units and result. No recipe text or inventory-derived ingredients. */
 export function mixedCraftPreview(
@@ -9,19 +10,32 @@ export function mixedCraftPreview(
   originX: number,
   originZ: number,
   valid: boolean,
+  state?: GameState,
 ): void {
-  mixedSourceRings(root, factory, command.sources, originX, originZ, valid);
+  mixedSourceRings(root, factory, command.sources, originX, originZ, valid, state);
   for (const source of command.sources) {
     const x = source.x + 0.5 - originX,
       z = source.z + 0.5 - originZ;
     const unit = factory.asset(`pile-${source.item}-1`, 'SelectedMixedUnit');
-    unit.setPosition(x, 0.6, z);
+    unit.setPosition(
+      x,
+      (state?.terrainVersion === 6
+        ? terrainHeight(state, source.x, source.z) - root.position.y
+        : 0) + 0.6,
+      z,
+    );
     unit.setScale(0.65, 0.65, 0.65);
     root.addChild(unit);
   }
   if (valid) {
     const oven = factory.asset('stone-oven', 'MixedCraftResult');
-    oven.setPosition(command.x + 0.5 - originX, 0.025, command.z + 0.5 - originZ);
+    oven.setPosition(
+      command.x + 0.5 - originX,
+      (state?.terrainVersion === 6
+        ? terrainHeight(state, command.x, command.z) - root.position.y
+        : 0) + 0.025,
+      command.z + 0.5 - originZ,
+    );
     root.addChild(oven);
   }
 }
@@ -33,6 +47,7 @@ export function mixedSourceRings(
   originX: number,
   originZ: number,
   valid: boolean,
+  state?: GameState,
 ): void {
   for (const source of sources)
     for (const side of [-1, 1])
@@ -40,7 +55,9 @@ export function mixedSourceRings(
         root,
         'MixedSource',
         source.x + 0.5 - originX + side * 0.46,
-        0.15,
+        (state?.terrainVersion === 6
+          ? terrainHeight(state, source.x, source.z) - root.position.y
+          : 0) + 0.15,
         source.z + 0.5 - originZ,
         0.06,
         0.05,

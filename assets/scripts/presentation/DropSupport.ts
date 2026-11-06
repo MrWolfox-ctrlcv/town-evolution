@@ -5,16 +5,18 @@ import { compileAsset } from '../art/MeshCompiler';
 import { SurfaceSupport } from '../application/SurfaceSupport';
 import type { SupportRect } from '../application/SurfaceSupport';
 const beds = new Map<string, SurfaceSupport>();
+type GroundSupport = Pick<SurfaceSupport, 'height'>;
 /** Ground-only rendered geometry, never crop canopies, box lids or logical resource heights. */
 export class DropSupport {
   revision = 0;
   private coast: SurfaceSupport | null = null;
   private natural: SurfaceSupport | null = null;
   private roads: SurfaceSupport | null = null;
-  private naturalChunks = new Map<string, SurfaceSupport>();
+  private naturalChunks = new Map<string, GroundSupport>();
   private coastChunks = new Map<string, SurfaceSupport>();
   private farms: Building[] = [];
   private farmKey = '';
+  private farmElevations = new Map<string, number>();
   setCoastChunks(changes: readonly { key: string; mesh: MeshData }[]): void {
     const next = new Map(this.coastChunks);
     for (const { key, mesh } of changes) {
@@ -30,10 +32,13 @@ export class DropSupport {
     this.coast = null;
     this.revision++;
   }
-  setNaturalChunks(changes: readonly { key: string; mesh: MeshData }[]): void {
+  setNaturalChunks(
+    changes: readonly { key: string; mesh: MeshData; support?: GroundSupport; detail?: boolean }[],
+  ): void {
     const next = new Map(this.naturalChunks);
-    for (const { key, mesh } of changes) {
-      if (mesh.indices.length) next.set(key, new SurfaceSupport(mesh.positions, mesh.indices));
+    for (const { key, mesh, support, detail } of changes) {
+      if (mesh.indices.length && detail !== false)
+        next.set(key, support ?? new SurfaceSupport(mesh.positions, mesh.indices));
       else next.delete(key);
     }
     this.naturalChunks = next;
@@ -60,14 +65,16 @@ export class DropSupport {
     this[kind] = new SurfaceSupport(mesh.positions, indices, kind === 'coast' ? 16 : 1);
     this.revision++;
   }
-  setFarms(buildings: readonly Building[]): void {
+  setFarms(buildings: readonly Building[], elevation?: (farm: Building) => number): void {
     const farms = buildings.filter((b) => b.kind === 'farm');
+    const heights = new Map(farms.map((b) => [b.id, elevation?.(b) ?? 0]));
     const key = JSON.stringify(
-      farms.map((b) => [b.id, b.x, b.z, b.rotation, b.farmSize, b.irrigated]),
+      farms.map((b) => [b.id, b.x, b.z, b.rotation, b.farmSize, b.irrigated, heights.get(b.id)]),
     );
     if (key !== this.farmKey) {
       this.farmKey = key;
       this.farms = farms;
+      this.farmElevations = heights;
       this.revision++;
     }
   }
@@ -103,14 +110,13 @@ export class DropSupport {
         const mesh = compileAsset(ASSETS[id]!);
         beds.set(id, new SurfaceSupport(mesh.positions, mesh.indices));
       }
-      values.push(
-        beds.get(id)!.height({
-          minX: Math.min(...local.map((p) => p.x)),
-          maxX: Math.max(...local.map((p) => p.x)),
-          minZ: Math.min(...local.map((p) => p.z)),
-          maxZ: Math.max(...local.map((p) => p.z)),
-        }),
-      );
+      const bedHeight = beds.get(id)!.height({
+        minX: Math.min(...local.map((p) => p.x)),
+        maxX: Math.max(...local.map((p) => p.x)),
+        minZ: Math.min(...local.map((p) => p.z)),
+        maxZ: Math.max(...local.map((p) => p.z)),
+      });
+      if (bedHeight !== null) values.push(bedHeight + (this.farmElevations.get(farm.id) ?? 0));
     }
     const finite = values.filter((v): v is number => v != null);
     return finite.length ? Math.max(...finite) : null;

@@ -80,9 +80,10 @@ export class StartScreen {
     if (this.currentPage !== this.flow.page) this.handbook.close();
     this.currentPage = this.flow.page;
     const data = startMenu(this.flow, () => this.handbook.open());
-    this.handbook.setState(
-      this.flow.session?.state ?? this.flow.inspect().state ?? createGame(Date.now()),
-    );
+    if (this.flow.page !== 'preparing')
+      this.handbook.setState(
+        this.flow.session?.state ?? this.flow.inspect().state ?? createGame(Date.now()),
+      );
     const dpr = Math.max(1, screen.devicePixelRatio);
     const width = Math.max(1, screen.windowSize.width / dpr);
     const height = Math.max(1, screen.windowSize.height / dpr);
@@ -171,6 +172,7 @@ export class StartScreen {
     this.handbook.layout(width, height);
   }
   tick(dt: number): void {
+    if (this.flow.page === 'preparing') this.imageMenu.progress(this.flow.preparation.message);
     this.artwork?.tick(dt);
   }
   /** Gameplay must not retain a second island, extra camera or crop updater. */

@@ -37,7 +37,7 @@ export function configureTownLighting(scene: Scene): void {
 }
 
 /** Fit the active world's shadow depth after zoom changes its orthographic camera pose. */
-export function fitTownShadowDepth(camera: Camera): void {
+export function fitTownShadowDepth(camera: Camera, occlusionRange = 32): void {
   if (
     !camera.enabledInHierarchy ||
     !camera.node.activeInHierarchy ||
@@ -50,4 +50,5 @@ export function fitTownShadowDepth(camera: Camera): void {
   // Hidden title and isolated handbook cameras must not overwrite the gameplay range.
   // No fixed upper bound: a narrow-screen overview may legitimately need > 500 units.
   if (sun && sun.shadowDistance !== camera.far) sun.shadowDistance = camera.far;
+  if (sun) sun.shadowInvisibleOcclusionRange = occlusionRange;
 }

@@ -7,7 +7,10 @@ import type { ModelFactory } from './ModelFactory';
 export function pileModel(factory: ModelFactory, pile: GroundStack, name = 'GroundPile'): Node {
   const root = new Node(name);
   root.setPosition(pile.x + 0.5, 0.024, pile.z + 0.5);
-  root.addChild(factory.asset(`pile-${pile.item}-${pile.amount}`, 'HarvestedGoods'));
+  const visualAmount = Number.isInteger(pile.amount)
+    ? pile.amount
+    : Math.max(1, Math.ceil(pile.amount));
+  root.addChild(factory.asset(`pile-${pile.item}-${visualAmount}`, 'HarvestedGoods'));
   return root;
 }
 /** Attached goods wait beside the building, instead of levitating over its roof. */

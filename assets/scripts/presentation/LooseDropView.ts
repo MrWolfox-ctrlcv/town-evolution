@@ -11,12 +11,15 @@ import type { TouchCandidate, TouchPickContext } from './TouchPicking';
 export class LooseDropView {
   private readonly root: Node;
   private readonly factory = new ModelFactory();
-  private entries = new Map<string, { node: Node; surface: ModelPicking; signature: string }>();
+  private entries = new Map<
+    string,
+    { node: Node; surface: ModelPicking; signature: string; ready: boolean }
+  >();
   private key = '';
   private lifted: string | null = null;
   setLifted(id: string | null): void {
     this.lifted = id;
-    for (const [key, entry] of this.entries) entry.node.active = key !== id;
+    for (const [key, entry] of this.entries) entry.node.active = key !== id && entry.ready;
   }
   constructor(parent: Node) {
     this.root = new Node('LooseDrops');
@@ -41,7 +44,8 @@ export class LooseDropView {
       });
       // A missing support is visible and recoverable, never deleted or moved to another tile.
       const y = (height ?? 0.022) + 0.008 - shape.minY * shape.scale;
-      const signature = `${asset}:${p.x}:${p.z}:${y}`;
+      const ready = state.terrainVersion !== 6 || height !== null;
+      const signature = `${asset}:${p.x}:${p.z}:${y}:${ready}`;
       const prior = old.get(drop.id);
       old.delete(drop.id);
       if (prior?.signature === signature) {
@@ -56,8 +60,8 @@ export class LooseDropView {
       model.setScale(shape.scale, shape.scale, shape.scale);
       node.addChild(model);
       this.root.addChild(node);
-      node.active = drop.id !== this.lifted;
-      this.entries.set(drop.id, { node, surface: new ModelPicking(node), signature });
+      node.active = drop.id !== this.lifted && ready;
+      this.entries.set(drop.id, { node, surface: new ModelPicking(node), signature, ready });
     }
     for (const entry of old.values()) entry.node.destroy();
   }

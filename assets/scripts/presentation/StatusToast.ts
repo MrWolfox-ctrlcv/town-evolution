@@ -38,7 +38,8 @@ export class StatusToast {
     this.noticeY = noticeY;
     if (changed) {
       this.message = message;
-      this.warning = /不足|耗尽|已满|满仓|未成熟|无法|失败|损坏|备份|未开放|请先取消/.test(message);
+      this.warning =
+        /不足|耗尽|已满|满仓|未成熟|无法|失败|损坏|备份|未开放|请先取消|地形细节过多/.test(message);
       this.expiry = Date.now() + 4500;
       const shortage = message.match(/仓储空间不足：剩(\d+)，收获需(\d+)/);
       this.heading.string = shortage ? '仓储空间不足' : this.warning ? '暂时无法完成' : '';

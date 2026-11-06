@@ -1,8 +1,12 @@
+import type { WorldBoxTest } from '../application/WorldVisibility';
+import { islandGroundActors, islandGroundLayout } from './IslandGroundActors';
 import { V5IslandView } from './V5IslandView';
+import { V6IslandView } from './V6IslandView';
+import type { SurfaceRay } from '../application/NaturalPicking';
+import { emptyNaturalMesh } from '../art/NaturalMesh';
 import { Node, Mesh, MeshRenderer, Material, Color } from 'cc';
 import { worldMaterial, worldShadows } from './WorldMaterial';
-import { worldMesh } from './WorldMesh';
-import { splitMesh16 } from '../art/MeshChunks';
+import { replaceIslandMesh } from './IslandMeshUpload';
 import { ContinuousResources } from '../art/ContinuousResources';
 import { buildContinuousCoast, coastProtectionSignature } from '../art/ContinuousCoast';
 import type { CoastProtectionSnapshot } from '../art/ContinuousCoast';
@@ -12,17 +16,15 @@ import type { NaturalSurfaceData } from '../art/NaturalSurfaceData';
 import { terrainAt } from '../domain/terrain';
 import { worldSize } from '../domain/world';
 import type { TerrainCell } from '../domain/terrain';
-import { footprint } from '../domain/geometry';
 import type { GameState } from '../domain/types';
 import type { MeshData } from '../art/AssetTypes';
 import { sceneGroundArt } from '../art/SceneGroundArt';
-import { dropRect } from '../application/DropGeometry';
-import { farmBoxCell } from '../domain/game';
 import { DropSupport } from './DropSupport';
 /** Coast/water only rebuild when topology or actual shoreline protection changes. */
 export class IslandView {
   readonly dropSupport = new DropSupport();
   private v5: V5IslandView | null = null;
+  private v6: V6IslandView | null = null;
   private terrainMesh: Mesh[] = [];
   private coastMesh: Mesh[] = [];
   private readonly waterMotion: CoastalWaterMotion;
@@ -70,37 +72,42 @@ export class IslandView {
     this.detailRenderer = layer('IslandGroundDetails');
   }
   private replace(renderer: MeshRenderer, old: Mesh[], data: MeshData): Mesh[] {
-    if (renderer === this.terrainRenderer) this.dropSupport.set('natural', data);
-    if (renderer === this.coastRenderer) this.dropSupport.set('coast', data);
-    if (renderer === this.detailRenderer) this.dropSupport.set('roads', data);
-    renderer.mesh = null;
-    for (const node of this.extraChunks.get(renderer) ?? []) {
-      node.removeFromParent();
-      node.destroy();
-    }
-    this.extraChunks.delete(renderer);
-    old.forEach((mesh) => mesh.destroy());
-    const nodes: Node[] = [];
-    const meshes = splitMesh16(data).map((chunk, index) => {
-      const mesh = worldMesh(chunk);
-      let target = renderer;
-      if (index) {
-        const node = new Node(`TerrainChunk-${index}`);
-        node.layer = renderer.node.layer;
-        renderer.node.addChild(node);
-        nodes.push(node);
-        target = node.addComponent(MeshRenderer);
-        target.setMaterial(this.material, 0);
-        target.shadowCastingMode = renderer.shadowCastingMode;
-        target.receiveShadow = renderer.receiveShadow;
-      }
-      target.mesh = mesh;
-      return mesh;
-    });
-    this.extraChunks.set(renderer, nodes);
-    return meshes;
+    return replaceIslandMesh(
+      renderer,
+      old,
+      data,
+      this.terrainRenderer,
+      this.coastRenderer,
+      this.detailRenderer,
+      this.dropSupport,
+      this.extraChunks,
+      this.material,
+    );
   }
   sync(state: GameState): void {
+    if (state.terrainVersion === 6) {
+      if (!this.v6) {
+        this.v5?.dispose();
+        this.v5 = null;
+        this.clearLegacy();
+        this.dropSupport.set('roads', emptyNaturalMesh());
+        this.v6 = new V6IslandView(
+          this.terrainRenderer,
+          this.waterRenderer,
+          this.material,
+          this.waterMotion,
+          this.dropSupport,
+        );
+      }
+      this.v6.sync(state);
+      this.naturalSurface = this.v6.naturalSurface;
+      return;
+    }
+    if (this.v6) {
+      this.v6.dispose();
+      this.v6 = null;
+    }
+
     if (state.terrainVersion === 5) {
       if (!this.v5) {
         this.clearLegacy();
@@ -142,24 +149,7 @@ export class IslandView {
     }
     const land = (x: number, z: number) => this.surfaceCells.has(`${x},${z}`);
     const surface = (x: number, z: number) => this.surfaceCells.get(`${x},${z}`) ?? null;
-    const buildings = state.buildings.map((b) => [
-      b.kind,
-      b.x,
-      b.z,
-      b.rotation,
-      b.farmSize,
-      footprint(b),
-    ]);
-    const boxRects = state.buildings.flatMap((b) => {
-      const p = farmBoxCell(b);
-      return p ? [{ ...p, width: 1, depth: 1 }] : [];
-    });
-    const dropRects = (state.looseDrops ?? []).map(dropRect);
-    const protectedRects = [
-      ...state.buildings.map((b) => ({ x: b.x, z: b.z, ...footprint(b) })),
-      ...boxRects,
-      ...dropRects,
-    ];
+    const { buildings, boxRects, dropRects, protectedRects } = islandGroundLayout(state);
     const coastInputSignature = JSON.stringify(protectedRects);
     if (!this.coastProtection || coastInputSignature !== this.coastInputSignature) {
       this.coastInputSignature = coastInputSignature;
@@ -206,36 +196,7 @@ export class IslandView {
     ]);
     if (detailSignature === this.detailSignature) return;
     this.detailSignature = detailSignature;
-    const actors = [
-      ...boxRects.map((p) => ({ ...p, tree: false, resource: true, rotation: 0 })),
-      ...dropRects.map((p) => ({ ...p, tree: false, prop: true, rotation: 0 })),
-      ...state.groundStacks.map((p) => ({
-        x: p.x,
-        z: p.z,
-        width: 1,
-        depth: 1,
-        tree: false,
-        prop: true,
-        rotation: 0,
-      })),
-      ...state.buildings.map((b) => ({
-        x: b.x,
-        z: b.z,
-        ...footprint(b),
-        rotation: b.rotation,
-        tree: false,
-      })),
-      ...state.trees.map((t) => ({ x: t.x, z: t.z, width: 1, depth: 1, rotation: 0, tree: true })),
-      ...state.naturalResources.map((r) => ({
-        x: r.x,
-        z: r.z,
-        width: 1,
-        depth: 1,
-        rotation: 0,
-        tree: false,
-        resource: true,
-      })),
-    ];
+    const actors = islandGroundActors(state, boxRects, dropRects);
     this.detailMesh = this.replace(
       this.detailRenderer,
       this.detailMesh,
@@ -245,16 +206,39 @@ export class IslandView {
   frame(
     bounds: { minX: number; minZ: number; maxX: number; maxZ: number },
     budget: { maxPatchBuilds?: number; maxMilliseconds?: number; maxUploadBytes?: number } = {},
+    visible?: WorldBoxTest,
+    lodSpan?: number,
+    maxError?: number,
   ): boolean {
+    if (this.v6) {
+      const changed = this.v6.frame(bounds, budget, visible, lodSpan, maxError);
+      if (changed) this.naturalSurface = this.v6.naturalSurface;
+      return changed;
+    }
     const changed = this.v5?.frame(bounds, budget) ?? false;
     if (changed) this.naturalSurface = this.v5!.naturalSurface;
     return changed;
   }
+  pickTerrain(ray: SurfaceRay) {
+    return this.v6?.pickTerrain(ray) ?? null;
+  }
+  terrainDistance(ray: SurfaceRay): number | null {
+    return this.v6?.terrainDistance(ray) ?? null;
+  }
   isGroundReady(x: number, z: number): boolean {
-    return this.v5?.isGroundReady(x, z) ?? true;
+    return this.v6?.isGroundReady(x, z) ?? this.v5?.isGroundReady(x, z) ?? true;
+  }
+  surfaceStatus() {
+    return this.v6?.surfaceStatus() ?? null;
+  }
+  isGroundVisible(x: number, z: number): boolean {
+    return this.v6?.isGroundVisible(x, z) ?? this.isGroundReady(x, z);
+  }
+  surfaceProblem(): string | null {
+    return this.v6?.surfaceProblem() ?? null;
   }
   isLoading(): boolean {
-    return this.v5?.isLoading() ?? false;
+    return this.v6?.isLoading() ?? this.v5?.isLoading() ?? false;
   }
   private clearLegacy(): void {
     this.topologySignature = '';
@@ -277,6 +261,8 @@ export class IslandView {
     this.detailMesh = [];
   }
   dispose(): void {
+    this.v6?.dispose();
+    this.v6 = null;
     this.v5?.dispose();
     this.v5 = null;
     this.surfaceCells.clear();

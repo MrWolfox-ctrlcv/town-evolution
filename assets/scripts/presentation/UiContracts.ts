@@ -4,6 +4,8 @@ import type { HudTab } from './TownHUD';
 import { setObjectSelection } from '../application/ObjectSelection';
 import type { ObjectTarget, ObjectSelectionState } from '../application/ObjectSelection';
 export interface UiState extends ObjectSelectionState {
+  terrainMode: 'farm' | 'dig' | 'fill';
+  terrainMaterial: 'soil' | 'stone';
   profile: import('../application/TownProfiles').TownProfile;
   tab: HudTab;
   resetArmed: boolean;
@@ -32,6 +34,8 @@ export interface UiHandlers {
   repurpose: () => void;
   item: () => void;
   quantity: () => void;
+  terrainMode?: (mode: UiState['terrainMode']) => void;
+  terrainMaterial?: () => void;
   transportTarget?: () => void;
   toggleBuildingActions: () => void;
   select: (id: string) => void;
@@ -40,6 +44,8 @@ export interface UiHandlers {
 export function createUiState(): UiState {
   return {
     profile: 'normal',
+    terrainMode: 'farm',
+    terrainMaterial: 'soil',
     tab: 'manage',
     selected: null,
     resetArmed: false,

@@ -16,6 +16,8 @@ export class TownObjectPicking {
       exclude?: string,
     ) => { id: string; distance: number } | null,
     private readonly buildingSurfaces: () => Iterable<{ id: string; surface: ModelPicking }>,
+    private readonly terrainDistance?: (ray: geometry.Ray) => number | null,
+    private readonly usable?: (hit: VisibleHit) => boolean,
   ) {}
   clear(): void {
     this.cache = new WeakMap();
@@ -37,6 +39,8 @@ export class TownObjectPicking {
     if (pile) hit = nearerHit(hit, { kind: 'pile', ...pile });
     if (natural) hit = nearerHit(hit, { kind: 'natural', ...natural });
     if (drop) hit = nearerHit(hit, { kind: 'drop', ...drop });
+    const groundDistance = this.terrainDistance?.(ray);
+    if (hit && groundDistance != null && hit.distance > groundDistance + 0.015) hit = null;
     // Any exact center hit wins, even when it is not usable by the current tool.
     if (!hit && context) {
       const candidates: TouchCandidate[] = ground.touchCandidates(context, exclude);
@@ -48,8 +52,19 @@ export class TownObjectPicking {
               return distance === null ? null : { kind: 'building', id: building.id, distance };
             },
           });
-      hit = nearbyTouchHit(context, candidates);
+      hit = nearbyTouchHit(
+        context,
+        candidates.map((candidate) => ({
+          ...candidate,
+          pick: (sample) => {
+            const result = candidate.pick(sample),
+              ground = this.terrainDistance?.(sample);
+            return result && ground != null && result.distance > ground + 0.015 ? null : result;
+          },
+        })),
+      );
     }
+    if (hit && this.usable && !this.usable(hit)) hit = null;
     if (context) {
       const entries = cached ?? new Map<string, VisibleHit | null>();
       entries.set(key, hit);

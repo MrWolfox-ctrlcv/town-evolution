@@ -1,3 +1,5 @@
+import { materialQuantity } from '../application/MaterialQuantity';
+import { terrainContact, terrainHeight } from './TerrainInteraction';
 import { dropSnapshot } from '../application/DropSnapshot';
 import { Node, Vec3 } from 'cc';
 import type { geometry } from 'cc';
@@ -62,7 +64,11 @@ export class DropDrag {
       this.height = Math.max(0.45, (this.town.dropOrigin(id)?.y ?? 0) + 0.25);
       this.town.setLiftedDrop(id);
     }
-    this.ghost!.setPosition(point.x + this.offset.x, this.height, point.z + this.offset.z);
+    this.ghost!.setPosition(
+      point.x + this.offset.x,
+      this.session.state.terrainVersion === 6 ? point.y + 0.45 : this.height,
+      point.z + this.offset.z,
+    );
     const command = this.command(ray, screen),
       reason = this.invalid
         ? '地上物品已变化，请重新拖动'
@@ -79,7 +85,11 @@ export class DropDrag {
       const target = command.target,
         at =
           target.type === 'ground'
-            ? { x: target.x + 0.5, z: target.z + 0.5, y: 0.09 }
+            ? {
+                x: target.x + 0.5,
+                z: target.z + 0.5,
+                y: terrainHeight(this.session.state, target.x, target.z) + 0.09,
+              }
             : { ...dropPosition(target.drop), y: this.town.dropOrigin(target.drop.id)?.y ?? 0.09 };
       const span = target.type === 'ground' ? 0.95 : 0.3;
       this.marker = this.factory.shape(
@@ -102,7 +112,7 @@ export class DropDrag {
           this.parent,
           'CompostDropTarget',
           b.x + size.width / 2,
-          0.12,
+          (b.baseElevation ?? 0) + 0.12,
           b.z + size.depth / 2,
           size.width,
           0.025,
@@ -194,9 +204,12 @@ export class DropDrag {
     const target = c.target.type === 'drop' ? c.target.drop : c.target.stack;
     if (!target) return '松手放到地上';
     const { transferAmount: amount, remaining: left } = dropMovePlan(this.session.state, c);
-    return left ? `合并${amount}份 · 余下${left}份留原地` : `松手合并${amount}份`;
+    return left
+      ? `合并${materialQuantity(amount)}份 · 余下${materialQuantity(left)}份留原地`
+      : `松手合并${materialQuantity(amount)}份`;
   }
   private ground(ray: geometry.Ray): Vec3 | null {
+    if (this.session.state.terrainVersion === 6) return terrainContact(this.town, ray);
     if (Math.abs(ray.d.y) < 0.00001) return null;
     const t = -ray.o.y / ray.d.y;
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);

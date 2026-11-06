@@ -106,6 +106,9 @@ export class SettingsPanel {
     });
     this.buttons.slice(data.actions.length).forEach((button) => button.set(null));
   }
+  progress(text: string): void {
+    this.detail.string = text;
+  }
   private guarded(action: MenuAction): MenuAction {
     const blocked = this.flow.storageWarning && !READ_ONLY_ACTIONS.has(action.id);
     return {
