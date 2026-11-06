@@ -1,3 +1,4 @@
+import { validItemAmount } from '../v6-material-amount';
 import { assertGroundCell as tile } from '../ground-placement';
 import { planLooseDrops } from '../loose-drops';
 import type { GameState, Command } from '../types';
@@ -6,7 +7,7 @@ import { ITEM_KEYS } from '../crops';
 import { FOUNDATION, useDurability, stackLimitFor } from '../foundation';
 import { toolCraftPlan } from '../tool-crafting';
 import { isTreeMature } from '../nursery';
-import { requireRule, integer } from '../guards';
+import { requireRule } from '../guards';
 import { preserveTradeTile } from '../geometry';
 import { getCapacity, getUsedStorage, nextId, spend, find } from '../state';
 export function placeTree(s: GameState, c: Extract<Command, { type: 'placeTree' }>): string[] {
@@ -25,7 +26,9 @@ export function transferGround(
   tile(s, c.x, c.z);
   const amount = c.quantity ?? 1;
   requireRule(
-    ITEM_KEYS.includes(c.item) && integer(amount, stackLimitFor(c.item)) && amount > 0,
+    ITEM_KEYS.includes(c.item) &&
+      validItemAmount(amount, c.item, s.terrainVersion, stackLimitFor(c.item)) &&
+      amount > 0,
     '产品或数量无效',
   );
   const pile = s.groundStacks.find((p) => p.x === c.x && p.z === c.z);
