@@ -1,26 +1,14 @@
-import type { GameState, Command, Building } from '../types';
-import { isLandCell } from '../island';
+import { assertGroundCell as tile } from '../ground-placement';
+import { planLooseDrops } from '../loose-drops';
+import type { GameState, Command } from '../types';
 import { CONFIG, MAX_VALUE } from '../config';
 import { ITEM_KEYS } from '../crops';
-import { FOUNDATION, useDurability } from '../foundation';
+import { FOUNDATION, useDurability, stackLimitFor } from '../foundation';
+import { toolCraftPlan } from '../tool-crafting';
+import { isTreeMature } from '../nursery';
 import { requireRule, integer } from '../guards';
-import { footprint, validatePlacement, preserveTradeTile } from '../geometry';
+import { preserveTradeTile } from '../geometry';
 import { getCapacity, getUsedStorage, nextId, spend, find } from '../state';
-function tile(s: GameState, x: number, z: number): void {
-  requireRule(
-    integer(x, CONFIG.gridSize - 1) && integer(z, CONFIG.gridSize - 1),
-    '请选择地图内的地块',
-  );
-  requireRule(isLandCell(x, z, s.mapSeed), '此处是水域');
-  requireRule(!s.trees.some((t) => t.x === x && t.z === z), '此地块有树木');
-  requireRule(
-    !s.buildings.some((b) => {
-      const d = footprint(b);
-      return x >= b.x && x < b.x + d.width && z >= b.z && z < b.z + d.depth;
-    }),
-    '此地块有建筑',
-  );
-}
 export function placeTree(s: GameState, c: Extract<Command, { type: 'placeTree' }>): string[] {
   tile(s, c.x, c.z);
   requireRule(!s.groundStacks.some((p) => p.x === c.x && p.z === c.z), '此地块堆有产品');
@@ -37,13 +25,16 @@ export function transferGround(
   tile(s, c.x, c.z);
   const amount = c.quantity ?? 1;
   requireRule(
-    ITEM_KEYS.includes(c.item) && integer(amount, FOUNDATION.stackLimit) && amount > 0,
+    ITEM_KEYS.includes(c.item) && integer(amount, stackLimitFor(c.item)) && amount > 0,
     '产品或数量无效',
   );
   const pile = s.groundStacks.find((p) => p.x === c.x && p.z === c.z);
   if (c.type === 'dropProduct') {
     requireRule(!pile || pile.item === c.item, '每格只能堆同一种产品');
-    requireRule((pile?.amount ?? 0) + amount <= FOUNDATION.stackLimit, '每格最多堆5份');
+    requireRule(
+      (pile?.amount ?? 0) + amount <= stackLimitFor(c.item),
+      `此产品每格最多堆${stackLimitFor(c.item)}份`,
+    );
     requireRule(s.inventory[c.item] >= amount, '库存不足');
     s.inventory[c.item] -= amount;
     if (pile) pile.amount += amount;
@@ -61,39 +52,37 @@ export function transferGround(
 export function applyTool(
   s: GameState,
   c: Extract<Command, { type: 'useTool'; tool: 'axe' | 'saw' }>,
+  now: number,
 ): string[] {
   if (c.tool === 'axe') {
     const tree = s.trees.find((t) => t.id === c.treeId);
     requireRule(tree, '此处没有树木');
-    requireRule(getUsedStorage(s) + FOUNDATION.treeYield <= getCapacity(s), '仓库空间不足');
+    requireRule(isTreeMature(tree, now), '树苗尚未长成树木');
+    requireRule(
+      getUsedStorage(s) + FOUNDATION.treeYield + FOUNDATION.treeSeedYield <= getCapacity(s),
+      '仓库需留出4份空间，木材和树种将一起收获',
+    );
     useDurability(s, 'axe');
     s.inventory.wood += FOUNDATION.treeYield;
+    s.inventory.treeSeed += FOUNDATION.treeSeedYield;
     s.trees = s.trees.filter((t) => t !== tree);
-    return ['获得1份木材，请从产品栏拖到地上叠放'];
+    return ['获得2份木材和2份树种，请从产品栏拖到地上叠放'];
   }
-  requireRule(c.tool === 'saw', '此工具配方尚未开放');
-  tile(s, c.x, c.z);
-  const pile = s.groundStacks.find((p) => p.x === c.x && p.z === c.z);
-  requireRule(
-    pile?.item === 'wood' && pile.amount >= FOUNDATION.warehouseWood,
-    '请在同一地块叠放至少3份木材',
-  );
-  const remainder = pile.amount - FOUNDATION.warehouseWood;
-  const warehouse: Building = {
-    id: nextId(s, 'b'),
-    kind: 'warehouse',
-    x: c.x,
-    z: c.z,
-    rotation: 0,
-  };
+  return craftGroundTool(s, c);
+}
+export function craftGroundTool(
+  s: GameState,
+  c: Extract<Command, { type: 'useTool'; tool: 'saw' | 'hammer'; x: number }>,
+): string[] {
+  const plan = toolCraftPlan(s, c.tool, c.x, c.z);
+  requireRule(!plan.reason && plan.building, plan.reason ?? '此处无法放置');
+  const pile = s.groundStacks.find((p) => p.x === c.x && p.z === c.z)!;
+  const amount = pile.amount;
+  const building = { ...plan.building, id: nextId(s, 'b') };
   s.groundStacks = s.groundStacks.filter((p) => p !== pile);
-  validatePlacement(s, warehouse);
-  s.buildings.push(warehouse);
-  preserveTradeTile(s);
-  requireRule(getUsedStorage(s) + remainder <= getCapacity(s), '余料无法退回仓库');
-  useDurability(s, 'saw');
-  s.inventory.wood += remainder;
-  return [remainder ? `建成仓库，${remainder}份余料已退回库存` : '已用3份木材建成仓库'];
+  s.buildings.push(building);
+  useDurability(s, c.tool);
+  return [`已用${amount}份木材制成${CONFIG.buildings[building.kind].label}`];
 }
 
 /** Move the whole pile without routing through warehouse capacity. */
@@ -106,7 +95,7 @@ export function moveStack(s: GameState, c: Extract<Command, { type: 'moveStack' 
   const target = s.groundStacks.find((p) => p.x === c.x && p.z === c.z);
   requireRule(!target || target.item === source.item, '每格只能堆同一种产品');
   if (target) {
-    const transferred = Math.min(FOUNDATION.stackLimit - target.amount, source.amount);
+    const transferred = Math.min(stackLimitFor(source.item) - target.amount, source.amount);
     requireRule(transferred > 0, '目标产品堆已满');
     target.amount += transferred;
     source.amount -= transferred;
@@ -127,7 +116,9 @@ export function pickupStack(s: GameState, c: Extract<Command, { type: 'pickupSta
   if (c.warehouseId !== undefined) {
     const warehouse = find(s, c.warehouseId);
     requireRule(
-      ['warehouse', 'expandedWarehouse', 'coldWarehouse'].includes(warehouse.kind),
+      ['warehouse', 'expandedWarehouse', 'coldWarehouse', 'transportWarehouse'].includes(
+        warehouse.kind,
+      ),
       '请拖到仓库或产品栏回收',
     );
   }
@@ -138,4 +129,27 @@ export function pickupStack(s: GameState, c: Extract<Command, { type: 'pickupSta
   s.inventory[pile.item] += pile.amount;
   s.groundStacks = s.groundStacks.filter((p) => p !== pile);
   return ['已将整堆产品收回仓库'];
+}
+
+/** Digging clears a soil mound for nine soil; rock columns yield one stone cube per action. */
+export function gatherNatural(
+  s: GameState,
+  c: Extract<Command, { type: 'gatherNatural' }>,
+): string[] {
+  const resource = s.naturalResources.find((p) => p.id === c.resourceId);
+  requireRule(resource, '此处没有可采集的天然资源');
+  const amount = resource.kind === 'soil' ? 9 : 1;
+  const plan = planLooseDrops(
+    s,
+    resource.kind,
+    amount,
+    { x6: resource.x * 6 + 3, z6: resource.z * 6 + 3 },
+    { type: 'natural', resourceId: resource.id, kind: resource.kind },
+  );
+  useDurability(s, 'diggingTool');
+  s.looseDrops = plan.drops;
+  s.nextId = plan.nextId;
+  resource.amount -= resource.kind === 'soil' ? resource.amount : 1;
+  if (resource.amount === 0) s.naturalResources = s.naturalResources.filter((p) => p !== resource);
+  return [`${amount}份${resource.kind === 'soil' ? '土料' : '石料'}已落在附近，请手动拾取`];
 }

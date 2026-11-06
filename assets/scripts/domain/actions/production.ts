@@ -1,6 +1,18 @@
+import { farmCellAtSixths } from '../farm-coordinates';
+import { planLooseDrops, cropDropAnchor } from '../loose-drops';
+import { depositLocalContainer } from '../local-container';
 import type { GameState, Command, Item, Job } from '../types';
+import { collectNursery } from './nursery';
+import { farmCellCount } from '../farming';
 import { useDurability } from '../foundation';
-import { CROPS, isCrop, cropJobYield, MAX_CROP_DURATION, MAX_CROP_YIELD } from '../crops';
+import {
+  CROPS,
+  isCrop,
+  cropSupportsField,
+  cropJobYield,
+  MAX_CROP_DURATION,
+  MAX_CROP_YIELD,
+} from '../crops';
 import { CONFIG, MAX_TIME } from '../config';
 import { requireRule, integer } from '../guards';
 import { find, nextId, getCapacity, getUsedStorage } from '../state';
@@ -21,6 +33,7 @@ export function collect(
 ): string[] {
   const events: string[] = [];
   const b = find(s, command.buildingId);
+  if (b.kind === 'nursery') return collectNursery(s, b.id, effectiveNow);
   if (b.kind === 'farm')
     return harvestCell(s, { ...command, type: 'harvestCell', cell: 0 }, effectiveNow);
   const job = b.job;
@@ -37,8 +50,9 @@ export function collect(
 
 function cells(s: GameState, id: string, cell: number): (Job | null)[] {
   const farm = find(s, id);
-  requireRule(farm.kind === 'farm' && farm.cropJobs?.length === 9, '请选择菜地小格');
-  requireRule(integer(cell, 8), '菜地小格编号无效');
+  const count = farmCellCount(farm);
+  requireRule(farm.kind === 'farm' && farm.cropJobs?.length === count, '请选择菜地小格');
+  requireRule(integer(cell, count - 1), '菜地小格编号无效');
   return farm.cropJobs;
 }
 export function plantCell(
@@ -48,8 +62,16 @@ export function plantCell(
 ): string[] {
   const jobs = cells(s, c.buildingId, c.cell);
   requireRule(!jobs[c.cell], '此小格已经种植');
+  requireRule(
+    !s.looseDrops.some((drop) => farmCellAtSixths(find(s, c.buildingId), drop) === c.cell),
+    '请先拾取此小格的掉落物再播种',
+  );
   const crop = c.crop ?? 'vegetable';
   requireRule(isCrop(crop), '此作物不能种植');
+  requireRule(
+    cropSupportsField(crop, find(s, c.buildingId).irrigated),
+    `${CROPS[crop].label}只能种在${CROPS[crop].field === 'water' ? '水田，不能种在旱田' : '旱田，不能种在水田'}`,
+  );
   requireRule(
     integer(CROPS[crop].durationMs, MAX_CROP_DURATION) &&
       CROPS[crop].durationMs > 0 &&
@@ -80,14 +102,31 @@ export function harvestCell(
     job = jobs[c.cell];
   requireRule(job, '此小格没有作物');
   requireRule(now >= job.readyAt, '此小格作物尚未成熟');
-  const amount = cropJobYield(job);
-  requireRule(
-    getUsedStorage(s) + amount <= getCapacity(s),
-    `仓储空间不足：剩${getCapacity(s) - getUsedStorage(s)}，收获需${amount}；请先出售或扩建`,
-  );
-  useDurability(s, 'sickle');
-  const crop = job.crop ?? 'vegetable';
-  s.inventory[crop] += amount;
+  const amount = cropJobYield(job),
+    crop = job.crop ?? 'vegetable',
+    farm = find(s, c.buildingId);
+  if (farm.collectionBox) {
+    const box = farm.collectionBox;
+    const container = depositLocalContainer(
+      { capacity: box.capacity, stock: box.stock },
+      crop,
+      amount,
+    );
+    useDurability(s, 'sickle');
+    farm.collectionBox = { crateId: box.crateId, ...container };
+  } else {
+    const plan = planLooseDrops(s, crop, amount, cropDropAnchor(farm, c.cell), {
+      type: 'crop',
+      buildingId: farm.id,
+      cell: c.cell,
+      jobId: job.id,
+    });
+    useDurability(s, 'sickle');
+    s.looseDrops = plan.drops;
+    s.nextId = plan.nextId;
+  }
   jobs[c.cell] = null;
-  return [`收获${amount}份${CROPS[crop].label}`];
+  return [
+    `收获${amount}份${CROPS[crop].label}${farm.collectionBox ? '，已放入田箱' : '，已落在地上'}`,
+  ];
 }

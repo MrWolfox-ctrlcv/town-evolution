@@ -10,7 +10,7 @@ export function sell(
   const events: string[] = [];
   requireRule(
     s.buildings.some((b) => b.kind === 'orderBoard'),
-    '请先建造订单板',
+    '暂无订单板，普通建造已暂停',
   );
   requireRule(ITEM_KEYS.includes(command.orderId), '订单不存在');
   const order = ORDERS[command.orderId];
