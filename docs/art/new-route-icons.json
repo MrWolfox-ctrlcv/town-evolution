@@ -1,0 +1,50 @@
+[
+  {
+    "name": "rice",
+    "source": "exec-0ec26f99-9d7f-47a2-8ed0-b678106337ac.png",
+    "sha256": "da028099796bec363bae3fe4d4d663fff2e5b07745760fe14fa4aba494a1490f",
+    "size": [1312, 1199],
+    "alpha": [0, 255],
+    "region": [61, 15, 1154, 1149]
+  },
+  {
+    "name": "sapling",
+    "source": "exec-507e4c73-089e-40cb-914a-83c0c9aa5c8b.png",
+    "sha256": "055c26ff6f17f6b8687a151ffba727f26cb1ab382eeaba5e3080067d99911a65",
+    "size": [1254, 1254],
+    "alpha": [0, 255],
+    "region": [256, 115, 726, 1056]
+  },
+  {
+    "name": "milled-rice",
+    "source": "exec-8ac36f62-c904-464f-b754-adb81c78c64a.png",
+    "sha256": "14fc8c854001f0a9555516c1221a1d3e1be2a756d16739037b15cc21cbb7ddfd",
+    "size": [1262, 1246],
+    "alpha": [0, 255],
+    "region": [123, 91, 1004, 1106]
+  },
+  {
+    "name": "flour",
+    "source": "exec-a35cdbe4-61b0-418d-9a67-0a7311dd461b.png",
+    "sha256": "d7301e972fdafe755125904f2c5c3737b0a31d77687074cfcc627e8ee41c826d",
+    "size": [1312, 1199],
+    "alpha": [0, 255],
+    "region": [211, 116, 854, 974]
+  },
+  {
+    "name": "bread",
+    "source": "exec-fd97d9ea-21d7-4b19-8062-fb0ca666c914.png",
+    "sha256": "93d012576bec0e53e79b9527f98a68ff03d0f849a498f2bcdeeed525e4473b12",
+    "size": [1536, 1024],
+    "alpha": [0, 254],
+    "region": [352, 174, 834, 686]
+  },
+  {
+    "name": "roasted-carrot",
+    "source": "exec-bd1b0db5-a0cb-492d-bbb3-f992a38792bb.png",
+    "sha256": "48ae3174c22dd2100b832bcb05446b63ffab651f9c8b9bc606757d56bbcf6ed1",
+    "size": [1536, 1024],
+    "alpha": [0, 254],
+    "region": [325, 53, 1005, 918]
+  }
+]
