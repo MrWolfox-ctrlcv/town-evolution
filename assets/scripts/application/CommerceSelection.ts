@@ -40,8 +40,16 @@ export function tradeItems(state: GameState): Item[] {
     state.inventory.chilledVegetable > 0 ||
     Object.values(state.commerce.dockCargo).some((cargo) => cargo.chilledVegetable > 0) ||
     Object.values(state.commerce.shipments).some((ship) => ship.cargo.chilledVegetable > 0);
-  const items: Item[] = ['vegetable', 'wheat', 'lettuce'];
-  for (const item of ['wood', 'stone'] as const)
+  const items: Item[] = ['vegetable', 'wheat', 'lettuce', 'rice'];
+  for (const item of [
+    'wood',
+    'stone',
+    'soil',
+    'milledRice',
+    'flour',
+    'bread',
+    'roastedCarrot',
+  ] as const)
     if (
       state.inventory[item] > 0 ||
       Object.values(state.commerce.dockCargo).some((cargo) => cargo[item] > 0) ||
@@ -50,4 +58,15 @@ export function tradeItems(state: GameState): Item[] {
       items.push(item);
   if (legacy) items.push('chilledVegetable');
   return items;
+}
+
+/** Stable destination cycling is separate from commands and does not send any cargo. */
+export function nextTransportTarget(state: GameState, current: string | null): string | null {
+  const targets = state.buildings.filter((b) => b.kind === 'shop' || b.kind === 'dock');
+  // The menu already displays the first destination when selection is absent or removed.
+  const currentIndex = Math.max(
+    0,
+    targets.findIndex((b) => b.id === current),
+  );
+  return targets[(currentIndex + 1) % targets.length]?.id ?? null;
 }

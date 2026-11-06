@@ -18,8 +18,10 @@ export class TapGesture {
     return this.dragging;
   }
 
-  end(id: number): boolean {
+  end(id: number, point?: { x: number; y: number }): boolean {
     if (id !== this.active) return false;
+    // Release can carry movement for which the platform delivered no MOVE.
+    if (point) this.move(id, point);
     const isTap = !this.dragging;
     this.cancel();
     return isTap;

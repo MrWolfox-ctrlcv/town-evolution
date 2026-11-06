@@ -28,5 +28,9 @@ export function hudLayout(width: number, height: number, actionCount = 4, _hasMe
     panelY: -height / 2 + 92 + panelHeight / 2,
     summaryWidth: Math.min(width - 88, 320),
     summaryX: -36,
+    settingsX: width / 2 - 40,
+    settingsY: height / 2 - 28,
+    settingsWidth: 56,
+    settingsHeight: 44,
   };
 }

@@ -1,6 +1,7 @@
-import { footprint } from '../domain/game';
+import { footprint, farmBoxCell } from '../domain/game';
 import type { Command, GameState, Item, Tool } from '../domain/game';
 import { farmCellCenter } from './FarmCells';
+import type { SurfacePoint } from './NaturalPicking';
 export interface CollectionGain {
   kind: Item | Tool;
   amount: number;
@@ -26,10 +27,17 @@ export function collectionGains(before: GameState, after: GameState): Collection
 /** World collection origins; purchases/replenishment instead use the actual clicked UI point. */
 export function collectionOrigin(
   event: CollectionEvent,
+  naturalOrigin?: (id: string) => SurfacePoint | null,
+  dropOrigin?: (id: string) => SurfacePoint | null,
 ): { x: number; y: number; z: number } | null {
   const { command: c, before } = event;
+  if (c.type === 'pickupDrop') return dropOrigin?.(c.dropId) ?? null;
   if (c.type === 'pickupProduct' || c.type === 'pickupStack')
     return { x: c.x + 0.5, y: 0.4, z: c.z + 0.5 };
+  if (c.type === 'gatherNatural') {
+    const resource = before.naturalResources.find((item) => item.id === c.resourceId);
+    return resource ? (naturalOrigin?.(resource.id) ?? null) : null;
+  }
   if (c.type === 'useTool') {
     if (c.tool === 'saw') return { x: c.x + 0.5, y: 0.4, z: c.z + 0.5 };
     if (c.tool === 'axe') {
@@ -40,6 +48,10 @@ export function collectionOrigin(
   if ('buildingId' in c) {
     const b = before.buildings.find((item) => item.id === c.buildingId);
     if (!b) return null;
+    if (c.type === 'withdrawFarmBox') {
+      const box = farmBoxCell(b);
+      return box ? { x: box.x + 0.5, y: 0.6, z: box.z + 0.5 } : null;
+    }
     if (c.type === 'harvestCell') return { ...farmCellCenter(b, c.cell), y: 0.3 };
     const f = footprint(b);
     return { x: b.x + f.width / 2, y: b.kind === 'farm' ? 0.3 : 1, z: b.z + f.depth / 2 };

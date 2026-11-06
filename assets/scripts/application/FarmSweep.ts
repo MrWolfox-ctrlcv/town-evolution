@@ -1,3 +1,4 @@
+import { farmCellCount } from '../domain/farming';
 import type { Command, GameState, Crop } from '../domain/game';
 export type FarmTool = 'plant' | 'harvest';
 /** Each cell is attempted once per gesture, including rejected/full-storage attempts. */
@@ -11,11 +12,11 @@ export class FarmSweep {
     this.visited.clear();
   }
   command(state: GameState, buildingId: string | null, cell: number): Command | null {
-    if (!this.tool || !buildingId || !Number.isInteger(cell) || cell < 0 || cell > 8) return null;
+    if (!this.tool || !buildingId || !Number.isInteger(cell) || cell < 0) return null;
     const key = `${buildingId}:${cell}`;
     if (this.visited.has(key)) return null;
     const b = state.buildings.find((item) => item.id === buildingId);
-    if (!b || b.kind !== 'farm') return null;
+    if (!b || b.kind !== 'farm' || cell >= farmCellCount(b)) return null;
     if (this.tool === 'harvest' && !b.cropJobs?.[cell]) return null;
     this.visited.add(key);
     return this.tool === 'plant'

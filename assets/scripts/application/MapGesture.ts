@@ -1,6 +1,7 @@
 export interface Point {
   x: number;
   y: number;
+  touch?: boolean;
 }
 interface Pointer {
   point: Point;
@@ -40,6 +41,9 @@ export class MapGesture {
       this.mode = this.pointers.size === 2 ? 'pinch' : 'blocked';
     }
   }
+  get interacting(): boolean {
+    return this.pointers.size > 0;
+  }
   has(id: number): boolean {
     return this.pointers.has(id);
   }
@@ -47,6 +51,14 @@ export class MapGesture {
     this.handlers.cancel();
     this.candidate = null;
     this.mode = 'blocked';
+  }
+  /** A missed release is cancellation, never a tap/drop. Held partners stay blocked. */
+  discard(id: number): void {
+    if (!this.pointers.delete(id)) return;
+    this.handlers.cancel();
+    this.candidate = null;
+    this.origin = null;
+    this.mode = this.pointers.size ? 'blocked' : 'pending';
   }
   move(id: number, point: Point, ui: Point): void {
     const old = this.pointers.get(id);
@@ -84,8 +96,16 @@ export class MapGesture {
     this.mode = 'drag';
     this.handlers.drag(this.candidate, [...this.pointers.values()][0]!.point);
   }
-  end(id: number, point: Point): void {
+  end(id: number, point: Point, ui: Point = point): void {
     if (!this.pointers.has(id)) return;
+    // A delayed release must not turn an unobserved swipe into a tap or a new
+    // long-press drop. Already-established drags keep their normal release path.
+    if (
+      this.mode === 'pending' &&
+      this.origin &&
+      Math.hypot(ui.x - this.origin.ui.x, ui.y - this.origin.ui.y) > 12
+    )
+      this.interrupt();
     this.poll();
     if (this.pointers.size === 1) {
       if (this.mode === 'pending') this.handlers.tap(point);
