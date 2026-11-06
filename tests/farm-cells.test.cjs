@@ -1,6 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { farmCellAt } = require('../.domain-build/application/FarmCells.js');
+const {
+  farmCellAt,
+  farmCellAtHit,
+  farmCellCenter,
+} = require('../.domain-build/application/FarmCells.js');
 const farm = { id: 'f', kind: 'farm', x: 4, z: 6, rotation: 0 };
 test('all nine soil cell centers are distinct and row-major', () => {
   for (let row = 0; row < 3; row++)
@@ -27,6 +31,32 @@ test('outside, non-farm and invalid points cannot target a cell', () => {
   ])
     assert.equal(farmCellAt(farm, p), null);
   assert.equal(farmCellAt({ ...farm, kind: 'warehouse' }, { x: 5, z: 7 }), null);
+});
+test('visible hit parameter resolves the same cell for scaled rays and every farm rotation', () => {
+  for (const farmSize of [3, 6])
+    for (const rotation of [0, 1, 2, 3]) {
+      const building = { ...farm, farmSize, rotation };
+      for (let cell = 0; cell < farmSize * farmSize; cell++) {
+        const center = farmCellCenter(building, cell);
+        for (const scale of [0.25, 1, 4])
+          assert.equal(
+            farmCellAtHit(
+              building,
+              { o: { x: center.x + 15, z: center.z + 18 }, d: { x: -15 * scale, z: -18 * scale } },
+              1 / scale,
+            ),
+            cell,
+          );
+      }
+    }
+});
+test('invalid or behind-ray surface hits cannot resolve a farm cell', () => {
+  const ray = { o: { x: 4.25, z: 6.25 }, d: { x: 0, z: 0 } };
+  assert.equal(farmCellAtHit(farm, ray, 0), 0);
+  for (const distance of [-1, NaN, Infinity, -Infinity])
+    assert.equal(farmCellAtHit(farm, ray, distance), null);
+  assert.equal(farmCellAtHit(farm, { ...ray, d: { x: NaN, z: 0 } }, 1), null);
+  assert.equal(farmCellAtHit(farm, { ...ray, o: { x: Infinity, z: 6.25 } }, 1), null);
 });
 
 const { farmStages, farmBed, cropCell } = require('../.domain-build/art/FarmCellKit.js');
@@ -78,7 +108,7 @@ test('all crop stages have distinct canonical meshes inside their soil cell', ()
   for (const crop of ['vegetable', 'wheat', 'lettuce']) {
     for (const stage of ['seedling', 'young', 'ready']) {
       const recipe = cropCell(stage, crop);
-      assert.deepEqual(ASSETS[recipe.id], recipe);
+      assert.deepEqual(ASSETS[recipe.id], { ...recipe, category: 'crops' });
       for (const part of recipe.parts) {
         assert.ok(Math.abs(part.position[0]) + part.size[0] / 2 < 1 / 3);
         assert.ok(Math.abs(part.position[2]) + part.size[2] / 2 < 1 / 3);

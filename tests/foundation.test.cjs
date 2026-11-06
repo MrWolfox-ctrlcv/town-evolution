@@ -7,6 +7,7 @@ const {
   exportSave,
   getCapacity,
   ITEM_KEYS,
+  CONFIG,
   isLandCell,
 } = require('../.domain-build/domain/game.js');
 function run(s, c, t = s.lastSeenAt) {
@@ -31,28 +32,30 @@ const pickup = (item, quantity = 1, x = 2, z = 5) => ({
   x,
   z,
 });
-test('products transfer between inventory and same-item ground stacks, capped at five', () => {
-  let s = createGame(0);
-  s.inventory.wood = 6;
+test('wood transfers between inventory and same-item ground stacks, capped at six', () => {
+  let s = createGame(0, undefined, 1);
+  s.inventory.wood = 7;
   s.inventory.stone = 1;
-  s = run(s, drop('wood', 5));
+  s = run(s, drop('wood', 6));
   assert.equal(s.inventory.wood, 1);
-  assert.equal(s.groundStacks[0].amount, 5);
+  assert.equal(s.groundStacks[0].amount, 6);
   fail(s, drop('wood'));
   fail(s, drop('stone'));
   fail(s, drop('bogus'));
   fail(s, drop('wood', 0));
   s = run(s, pickup('wood', 2));
   assert.equal(s.inventory.wood, 3);
-  assert.equal(s.groundStacks[0].amount, 3);
-  s = run(s, pickup('wood', 3));
-  assert.equal(s.inventory.wood, 6);
+  assert.equal(s.groundStacks[0].amount, 4);
+  s = run(s, pickup('wood', 4));
+  assert.equal(s.inventory.wood, 7);
   assert.equal(s.groundStacks.length, 0);
   fail(s, pickup('wood'));
   assert.deepEqual(importSave(exportSave(s), 0), s);
 });
 test('all products can be placed and picked up without converting their identity', () => {
   let s = createGame(0);
+  s.trees = [];
+  s.naturalResources = [];
   for (const item of ITEM_KEYS) s.inventory[item] = 1;
   for (const [x, item] of ITEM_KEYS.entries()) s = run(s, drop(item, 1, x + 6, 5));
   assert.equal(s.groundStacks.length, ITEM_KEYS.length);
@@ -60,101 +63,169 @@ test('all products can be placed and picked up without converting their identity
   for (const [x, item] of ITEM_KEYS.entries()) s = run(s, pickup(item, 1, x + 6, 5));
   for (const item of ITEM_KEYS) assert.equal(s.inventory[item], 1);
 });
-test('axe spends one durability per tree, yields inventory wood and never duplicates chopped trees', () => {
+test('axe has unlimited durability, yields inventory wood and never duplicates chopped trees', () => {
   let s = createGame(0);
   const count = s.trees.length;
   const id = s.trees[0].id;
   s = run(s, { type: 'useTool', tool: 'axe', treeId: id });
-  assert.equal(s.tools.axe, 9);
-  assert.equal(s.inventory.wood, 1);
+  assert.equal(s.tools.axe, 10);
+  assert.equal(s.inventory.wood, 2);
+  assert.equal(s.inventory.treeSeed, 2);
   assert.equal(s.trees.length, count - 1);
   assert.equal(s.groundStacks.length, 0);
   fail(s, { type: 'useTool', tool: 'axe', treeId: id });
   const noAxe = { ...s, tools: { ...s.tools, axe: 0 } };
-  fail(noAxe, { type: 'useTool', tool: 'axe', treeId: s.trees[0].id });
+  const unlimited = run(noAxe, { type: 'useTool', tool: 'axe', treeId: s.trees[0].id });
+  assert.equal(unlimited.tools.axe, 0);
+  assert.equal(unlimited.inventory.wood, 4);
+  assert.equal(unlimited.inventory.treeSeed, 4);
   const full = { ...s, inventory: { ...s.inventory, wood: 15, vegetable: 1 } };
   fail(full, { type: 'useTool', tool: 'axe', treeId: s.trees[0].id });
 });
-test('three manually stacked woods and saw construct warehouse without charging money', () => {
-  let s = createGame(0);
-  for (const tree of [...s.trees].slice(0, 3))
+test('four manually stacked woods and hammer construct a house without charging money', () => {
+  let s = createGame(0, undefined, 1);
+  for (const tree of [...s.trees].slice(0, 2))
     s = run(s, { type: 'useTool', tool: 'axe', treeId: tree.id });
-  assert.equal(s.inventory.wood, 3);
-  fail(s, { type: 'useTool', tool: 'saw', x: 2, z: 5 });
-  for (let i = 0; i < 3; i++) s = run(s, drop('wood'));
+  assert.equal(s.inventory.wood, 4);
+  fail(s, { type: 'useTool', tool: 'hammer', x: 2, z: 5 });
+  for (let i = 0; i < 4; i++) s = run(s, drop('wood'));
   const before = s;
-  s = run(s, { type: 'useTool', tool: 'saw', x: 2, z: 5 });
+  s = run(s, { type: 'useTool', tool: 'hammer', x: 2, z: 5 });
   assert.equal(s.coins, before.coins);
-  assert.equal(s.tools.saw, 9);
-  assert.equal(s.tools.axe, 7);
+  assert.equal(s.tools.hammer, 10);
+  assert.equal(s.tools.axe, 10);
   assert.equal(s.inventory.wood, 0);
+  assert.equal(s.inventory.treeSeed, 4);
   assert.equal(s.groundStacks.length, 0);
-  assert.equal(getCapacity(s), 32);
-  assert.equal(s.buildings.at(-1).kind, 'warehouse');
+  assert.equal(getCapacity(s), 16);
+  assert.equal(s.buildings.at(-1).kind, 'house');
   assert.deepEqual(importSave(exportSave(s), 0), s);
-  fail(s, { type: 'useTool', tool: 'saw', x: 2, z: 5 });
+  fail(s, { type: 'useTool', tool: 'hammer', x: 2, z: 5 });
 });
-test('four or five stacked woods consume exactly three and return surplus to new storage', () => {
-  for (const amount of [4, 5]) {
-    let s = createGame(0);
-    s.inventory.wood = amount;
-    s = run(s, drop('wood', amount));
-    s = run(s, { type: 'useTool', tool: 'saw', x: 2, z: 5 });
-    assert.equal(s.inventory.wood, amount - 3);
-    assert.equal(s.groundStacks.length, 0);
-    assert.equal(s.tools.saw, 9);
-  }
+test('wood crafting rejects unspecified counts atomically for each tool', () => {
+  for (const [tool, counts] of [
+    ['saw', [1, 2, 5, 6]],
+    ['hammer', [5, 6]],
+  ])
+    for (const amount of counts) {
+      let s = createGame(0, undefined, 1);
+      s.inventory.wood = amount;
+      s = run(s, drop('wood', amount));
+      fail(s, { type: 'useTool', tool, x: 2, z: 5 });
+      assert.equal(s.groundStacks[0].amount, amount);
+      assert.equal(s.tools[tool], 10);
+    }
 });
-test('invalid warehouse footprint, obstructing tree or another stack leaves material and tool intact', () => {
-  let s = createGame(0);
-  s.inventory.wood = 5;
-  s.inventory.stone = 1;
-  // A valid shore cell whose 2x2 recipe would extend into the water.
-  const edge = [];
-  for (let z = 1; z < 23; z++)
-    for (let x = 1; x < 23; x++)
+test('invalid house footprint, obstructing tree or another stack leaves material and tool intact', () => {
+  const fresh = () => {
+    const state = createGame(0);
+    state.trees = [];
+    state.naturalResources = [];
+    state.inventory.wood = 5;
+    state.inventory.stone = 4;
+    return state;
+  };
+  let s = fresh();
+  const anchors = [
+    [0, 0],
+    [-1, 0],
+    [0, -1],
+    [-1, -1],
+  ];
+  const dryFootprint = (x, z) =>
+    [0, 1].every((dx) =>
+      [0, 1].every(
+        (dz) =>
+          x + dx >= 0 &&
+          x + dx < CONFIG.gridSize &&
+          z + dz >= 0 &&
+          z + dz < CONFIG.gridSize &&
+          isLandCell(x + dx, z + dz, s.mapSeed, s.terrainVersion, s.landExtensions),
+      ),
+    );
+  // The generated shore is broad enough for alternate anchors. A legitimate
+  // connected one-cell extension supplies a narrow coast without forged water.
+  let narrowCoast = false;
+  for (let z = 1; z < CONFIG.gridSize - 1 && !narrowCoast; z++)
+    for (let x = 1; x < CONFIG.gridSize - 1 && !narrowCoast; x++) {
+      if (isLandCell(x, z, s.mapSeed, s.terrainVersion)) continue;
       if (
-        isLandCell(x, z, s.mapSeed) &&
-        !isLandCell(x + 1, z + 1, s.mapSeed) &&
-        dispatch(s, drop('wood', 3, x, z), 0).ok
+        ![
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ].some(([dx, dz]) => isLandCell(x + dx, z + dz, s.mapSeed, s.terrainVersion))
+      )
+        continue;
+      s.landExtensions = [{ x, z }];
+      narrowCoast = anchors.every(([dx, dz]) => !dryFootprint(x + dx, z + dz));
+    }
+  assert.ok(narrowCoast, 'A connected narrow extension can be placed');
+  s = importSave(exportSave(s), 0);
+  // A valid shore cell with no fully dry containing 2x2 anchor, not merely
+  // water southeast of the old fixed origin.
+  const edge = [];
+  for (let z = 0; z < CONFIG.gridSize; z++)
+    for (let x = 0; x < CONFIG.gridSize; x++)
+      if (
+        isLandCell(x, z, s.mapSeed, s.terrainVersion, s.landExtensions) &&
+        anchors.every(([dx, dz]) => !dryFootprint(x + dx, z + dz)) &&
+        dispatch(s, drop('wood', 4, x, z), 0).ok
       )
         edge.push([x, z]);
-  assert.ok(edge.length);
+  assert.ok(edge.length, 'The coast has a drop cell with all four house anchors blocked by water');
   const [x, z] = edge[0];
-  s = run(s, drop('wood', 3, x, z));
-  fail(s, { type: 'useTool', tool: 'saw', x, z });
-  s = run(s, pickup('wood', 3, x, z));
-  s = run(s, { type: 'placeTree', x: 9, z: 5 });
-  s = run(s, drop('wood', 3, 8, 5));
-  fail(s, { type: 'useTool', tool: 'saw', x: 8, z: 5 });
-  s = run(s, pickup('wood', 3, 8, 5));
-  s = run(s, drop('wood', 3));
-  s = run(s, drop('stone', 1, 3, 5));
-  fail(s, { type: 'useTool', tool: 'saw', x: 2, z: 5 });
-  const broken = { ...s, tools: { ...s.tools, saw: 0 } };
-  fail(broken, { type: 'useTool', tool: 'saw', x: 2, z: 5 });
+  s = run(s, drop('wood', 4, x, z));
+  fail(s, { type: 'useTool', tool: 'hammer', x, z });
+  assert.equal(s.groundStacks[0].amount, 4);
+  assert.equal(s.tools.hammer, 10);
+  s = run(s, pickup('wood', 4, x, z));
+
+  const blockers = [
+    [9, 7],
+    [11, 7],
+    [10, 6],
+    [10, 8],
+  ];
+  s = fresh();
+  for (const [x, z] of blockers) s = run(s, { type: 'placeTree', x, z });
+  s = run(s, drop('wood', 4, 10, 7));
+  fail(s, { type: 'useTool', tool: 'hammer', x: 10, z: 7 });
+  assert.equal(s.groundStacks[0].amount, 4);
+  assert.equal(s.tools.hammer, 10);
+  s = run(s, pickup('wood', 4, 10, 7));
+
+  s = fresh();
+  s = run(s, drop('wood', 4, 10, 7));
+  for (const [x, z] of blockers) s = run(s, drop('stone', 1, x, z));
+  fail(s, { type: 'useTool', tool: 'hammer', x: 10, z: 7 });
+  assert.equal(s.groundStacks.find((pile) => pile.item === 'wood').amount, 4);
+  assert.equal(s.tools.hammer, 10);
+  let broken = { ...s, tools: { ...s.tools, hammer: 0 } };
+  fail(broken, { type: 'useTool', tool: 'hammer', x: 10, z: 7 });
   fail(s, drop('wood', 1, 3, 3));
-  fail(s, { type: 'moveBuilding', buildingId: 'b2', x: 2, z: 5 });
+  fail(s, { type: 'moveBuilding', buildingId: 'b2', x: 10, z: 7 });
+  // Zero saved durability is still unlimited: clearing every blocker allows it.
+  for (const [x, z] of blockers) broken = run(broken, pickup('stone', 1, x, z));
+  broken = run(broken, { type: 'useTool', tool: 'hammer', x: 10, z: 7 });
+  assert.equal(broken.tools.hammer, 0);
+  assert.equal(broken.buildings.at(-1).kind, 'house');
+  assert.deepEqual(importSave(exportSave(broken), 0), broken);
 });
-test('sickle wear applies only to successful mature-cell harvest, with visible purchase and emergency recovery', () => {
+test('sickle can harvest with saved zero durability; unnecessary replenishment never spends resources', () => {
   let s = run(createGame(0), { type: 'plantCell', buildingId: 'b2', cell: 0 });
   fail(s, { type: 'harvestCell', buildingId: 'b2', cell: 0 }, 1000);
   assert.equal(s.tools.sickle, 90);
   s = { ...s, tools: { ...s.tools, sickle: 0 } };
-  fail(s, { type: 'harvestCell', buildingId: 'b2', cell: 0 }, 15000);
-  s = run(s, { type: 'buyTool', tool: 'sickle' });
-  assert.equal(s.coins, 110);
-  assert.equal(s.tools.sickle, 90);
+  fail(s, { type: 'buyTool', tool: 'sickle' });
   s = run(s, { type: 'harvestCell', buildingId: 'b2', cell: 0 }, 15000);
-  assert.equal(s.tools.sickle, 89);
+  assert.equal(s.coins, 120);
+  assert.equal(s.tools.sickle, 0);
   assert.equal(s.tools.fertilizer, 5);
-  let poor = { ...s, coins: 0, tools: { ...s.tools, sickle: 0 } };
-  poor = run(poor, { type: 'recoverTool', tool: 'sickle' });
-  assert.equal(poor.tools.sickle, 90);
-  assert.equal(poor.coins, 0);
-  poor = importSave(exportSave(poor), 15000);
-  poor.tools.sickle = 0;
+  const poor = importSave(exportSave({ ...s, coins: 0 }), 15000);
   fail(poor, { type: 'recoverTool', tool: 'sickle' });
+  assert.equal(poor.toolRecoveryAvailable.sickle, true);
   fail(s, { type: 'buyTool', tool: 'wateringCan' });
   fail(s, { type: 'useTool', tool: 'hammer', x: 2, z: 5 });
 });
@@ -170,7 +241,8 @@ test('obsolete test save is rejected rather than reinterpreted as natural terrai
   assert.equal(s.coins, 115);
   assert.equal(s.trees.length, count + 1);
   s = run(s, { type: 'useTool', tool: 'axe', treeId: s.trees.at(-1).id });
-  assert.equal(s.inventory.wood, 1);
+  assert.equal(s.inventory.wood, 2);
+  assert.equal(s.inventory.treeSeed, 2);
   assert.deepEqual(importSave(exportSave(s), 0), s);
 });
 test('malformed durability, stacks, ids and overlaps reject without silent reset', () => {
@@ -184,7 +256,7 @@ test('malformed durability, stacks, ids and overlaps reject without silent reset
       s.trees[0].x = 3;
       s.trees[0].z = 3;
     },
-    (s) => (s.groundStacks = [{ x: 2, z: 5, item: 'wood', amount: 6 }]),
+    (s) => (s.groundStacks = [{ x: 2, z: 5, item: 'wood', amount: 7 }]),
     (s) => (s.groundStacks = [{ x: s.trees[0].x, z: s.trees[0].z, item: 'wood', amount: 1 }]),
     (s) => (s.groundStacks = [{ x: 3, z: 3, item: 'wood', amount: 1 }]),
   ]) {
@@ -208,10 +280,11 @@ test('ground crops are recoverable seed sources, not eligible for another emerge
 function crowdedTown(emptyCells) {
   const s = createGame(0);
   s.trees = [];
+  s.naturalResources = [];
   s.groundStacks = [];
   s.buildings = [{ id: 'b1', kind: 'warehouse', x: 3, z: 3, rotation: 0 }];
-  for (let z = 0; z < 24; z++)
-    for (let x = 0; x < 24; x++) {
+  for (let z = 0; z < CONFIG.gridSize; z++)
+    for (let x = 0; x < CONFIG.gridSize; x++) {
       if (
         !isLandCell(x, z, s.mapSeed) ||
         (x >= 3 && x < 5 && z >= 3 && z < 5) ||
@@ -229,10 +302,11 @@ test('tree and product placement cannot consume the last trade-recovery tile', (
   s = importSave(exportSave(s), 0);
   fail(s, { type: 'placeTree', x: 8, z: 5 });
   fail(s, drop('wood', 1, 8, 5));
-  const recovered = run(s, { type: 'place', kind: 'orderBoard', x: 8, z: 5 });
+  fail(s, { type: 'place', kind: 'orderBoard', x: 8, z: 5 });
+  const recovered = run(s, { type: 'repurposeToBoard', buildingId: 'b2' });
   assert.equal(recovered.coins, 120);
 });
-test('saw recipe cannot fill final four cells without a trade facility', () => {
+test('hammer house recipe cannot fill final four cells without a trade facility', () => {
   let s = crowdedTown([
     [8, 5],
     [9, 5],
@@ -240,17 +314,18 @@ test('saw recipe cannot fill final four cells without a trade facility', () => {
     [9, 6],
   ]);
   s.coins = 0;
-  s.groundStacks = [{ x: 8, z: 5, item: 'wood', amount: 3 }];
+  s.groundStacks = [{ x: 8, z: 5, item: 'wood', amount: 4 }];
   s = importSave(exportSave(s), 0);
   const nextId = s.nextId;
-  fail(s, { type: 'useTool', tool: 'saw', x: 8, z: 5 });
-  assert.equal(s.groundStacks[0].amount, 3);
-  assert.equal(s.tools.saw, 10);
+  fail(s, { type: 'useTool', tool: 'hammer', x: 8, z: 5 });
+  assert.equal(s.groundStacks[0].amount, 4);
+  assert.equal(s.tools.hammer, 10);
   assert.equal(s.nextId, nextId);
-  const withBoard = run(s, { type: 'place', kind: 'orderBoard', x: 9, z: 6 });
+  fail(s, { type: 'place', kind: 'orderBoard', x: 9, z: 6 });
+  const withBoard = run(s, { type: 'repurposeToBoard', buildingId: 'b2' });
   assert.equal(withBoard.coins, 0);
 });
-test('ordinary construction counts trees and product stacks when reserving the final empty tile', () => {
+test('crowded legacy towns cannot construct even free boards but retain explicit repurpose recovery', () => {
   let s = crowdedTown([
     [8, 5],
     [9, 5],
@@ -265,6 +340,7 @@ test('ordinary construction counts trees and product stacks when reserving the f
   ];
   s = importSave(exportSave(s), 0);
   fail(s, { type: 'place', kind: 'cooler', x: 9, z: 6 });
-  const withBoard = run(s, { type: 'place', kind: 'orderBoard', x: 9, z: 6 });
+  fail(s, { type: 'place', kind: 'orderBoard', x: 9, z: 6 });
+  const withBoard = run(s, { type: 'repurposeToBoard', buildingId: 'b2' });
   assert.equal(withBoard.coins, 120);
 });

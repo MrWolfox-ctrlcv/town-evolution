@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { withLegacyBuilding } = require('./helpers/legacy-town.cjs');
 const g = require('../.domain-build/domain/game.js');
 const { validatePlacement } = require('../.domain-build/domain/geometry.js');
 
@@ -30,16 +31,15 @@ function fixture() {
   return state;
 }
 
-test('automatic placement and relocation reach all four shores while preserving cargo and save', () => {
+test('existing dock relocation reaches all four shores while preserving cargo and save', () => {
   let state = fixture();
   const sites = shoreSites(state);
   const unique = [0, 1, 2, 3].map((direction) =>
     sites.find((s) => s.facings.length === 1 && s.facings[0] === direction),
   );
   assert.ok(unique.every(Boolean), 'fixture has single-facing shores in every direction');
-  let r = result(state, { type: 'place', kind: 'dock', x: unique[0].x, z: unique[0].z });
-  assert.equal(r.ok, true, r.error);
-  state = r.state;
+  state = withLegacyBuilding(state, { kind: 'dock', x: unique[0].x, z: unique[0].z });
+  let r;
   const id = state.buildings.at(-1).id;
   r = result(state, {
     type: 'dockTransfer',
@@ -80,9 +80,8 @@ test('rotation skips blocked directions and explains when no other facing is pos
   const start = corner?.facings.find((f) => !corner.facings.includes((f + 1) % 4));
   const expected = corner?.facings.find((f) => f !== start);
   assert.ok(corner, 'corner requires skipping an invalid next direction');
-  let r = result(state, { type: 'place', kind: 'dock', x: corner.x, z: corner.z, rotation: start });
-  assert.equal(r.ok, true, r.error);
-  state = r.state;
+  state = withLegacyBuilding(state, { kind: 'dock', x: corner.x, z: corner.z, rotation: start });
+  let r;
   const id = state.buildings.at(-1).id;
   r = result(state, { type: 'rotateBuilding', buildingId: id });
   assert.equal(r.ok, true, r.error);
@@ -100,13 +99,24 @@ test('rotation skips blocked directions and explains when no other facing is pos
   assert.equal(JSON.stringify(state), before);
 });
 
-test('explicit invalid facing is rejected and never silently reoriented', () => {
+test('shore geometry distinguishes an explicit invalid facing from the one valid direction', () => {
   const state = fixture();
   const shore = shoreSites(state).find((s) => s.facings.length === 1);
-  const rotation = (shore.facings[0] + 1) % 4;
-  const before = JSON.stringify(state);
-  const r = result(state, { type: 'place', kind: 'dock', x: shore.x, z: shore.z, rotation });
+  assert.ok(shore);
+  for (let rotation = 0; rotation < 4; rotation++) {
+    const dock = { kind: 'dock', x: shore.x, z: shore.z, rotation };
+    assert.equal(g.isDockShore(dock, state.mapSeed), rotation === shore.facings[0]);
+  }
+  const saved = withLegacyBuilding(state, {
+    kind: 'dock',
+    x: shore.x,
+    z: shore.z,
+    rotation: shore.facings[0],
+  });
+  const before = JSON.stringify(saved);
+  const r = result(saved, { type: 'rotateBuilding', buildingId: saved.buildings.at(-1).id });
   assert.equal(r.ok, false);
-  assert.equal(r.state, state);
-  assert.equal(JSON.stringify(state), before);
+  assert.match(r.error, /长按移动到其他岸边/);
+  assert.equal(r.state, saved);
+  assert.equal(JSON.stringify(saved), before);
 });

@@ -3,20 +3,26 @@ const assert = require('node:assert/strict');
 const { ASSETS, cropStage } = require('../.domain-build/art/AssetCatalog');
 const { compileAsset } = require('../.domain-build/art/MeshCompiler');
 test('all canonical assets compile into finite indexed vertex-colored meshes within budgets', () => {
-  assert.equal(Object.keys(ASSETS).length, 63);
+  assert.equal(Object.keys(ASSETS).length, 222);
   for (const asset of Object.values(ASSETS)) {
     const m = compileAsset(asset),
       n = m.positions.length / 3;
     assert.equal(m.normals.length, n * 3);
     assert.equal(m.colors.length, n * 4);
     // A pile merges up to five harvested units into one cached draw call.
-    const budget = asset.id.startsWith('pile-')
-      ? 6000
-      : asset.id.startsWith('crop-cell-')
-        ? 6500
-        : 1500;
+    const bridge = /^wooden-bridge-(?:[7-9]|1[0-6])$/.test(asset.id);
+    const budget = bridge
+      ? 18500
+      : asset.id.startsWith('pile-')
+        ? 6000
+        : asset.id.startsWith('crop-cell-')
+          ? 6500
+          : asset.category === 'buildings'
+            ? 3000
+            : 1500;
     assert.ok(m.indices.length / 3 < budget, asset.id);
-    assert.ok(n < 6000, asset.id);
+    assert.ok(n < (bridge ? 25000 : 6000), asset.id);
+    if (bridge) assert.ok(asset.parts.length <= 500, asset.id);
     assert.ok([...m.positions, ...m.normals, ...m.colors].every(Number.isFinite), asset.id);
     assert.ok(
       m.colors.every((v) => v >= 0 && v <= 1),
@@ -45,6 +51,8 @@ test('all canonical assets compile into finite indexed vertex-colored meshes wit
 });
 test('all gameplay assets fit existing occupied cell bounds without changing economic footprint', () => {
   for (const id of [
+    'house',
+    'crate',
     'shop',
     'order-board',
     'dock',
@@ -73,8 +81,8 @@ test('warehouse evolution retains identical shell roof and main door scale', () 
         base.parts.find((p) => p.name === name),
       );
     assert.deepEqual(
-      variant.parts.find((p) => p.name === 'teal-double-door').size,
-      base.parts.find((p) => p.name === 'teal-double-door').size,
+      variant.parts.find((p) => p.name === 'home-door').size,
+      base.parts.find((p) => p.name === 'home-door').size,
     );
   }
 });
@@ -91,10 +99,16 @@ test('exported glTF buffers and accessors are self-contained and agree with cano
     const g = JSON.parse(fs.readFileSync(`art/exports/${asset.id}.gltf`, 'utf8'));
     const bytes = Buffer.from(g.buffers[0].uri.split(',')[1], 'base64');
     assert.equal(g.asset.version, '2.0');
+    assert.equal(g.nodes[0].extras.category, asset.category);
     assert.equal(bytes.length, g.buffers[0].byteLength);
     assert.equal(g.meshes.length, 1);
-    assert.equal(g.meshes[0].primitives.length, 1);
-    assert.equal(g.materials.length, 1);
+    const textured = asset.parts.some((p) => p.texture);
+    assert.equal(
+      g.meshes[0].primitives.length,
+      textured && asset.parts.some((p) => !p.texture) ? 2 : 1,
+    );
+    assert.ok(g.accessors.every((a) => a.count > 0));
+    assert.equal(g.materials.length, textured ? 2 : 1);
     const expected = compileAsset(asset);
     for (const [i, field] of ['positions', 'normals', 'colors', 'indices'].entries()) {
       const a = g.accessors[i],
@@ -125,13 +139,13 @@ test('exported glTF buffers and accessors are self-contained and agree with cano
   }
 });
 test('commerce silhouettes share the palette and retain the modular shop core', () => {
-  for (const name of ['cream-walls', 'terracotta-gable', 'roof-ridge', 'loading-deck'])
+  for (const name of ['cream-walls', 'terracotta-gable', 'roof-ridge', 'home-door'])
     assert.deepEqual(
       ASSETS.shop.parts.find((p) => p.name === name),
       ASSETS['warehouse-base'].parts.find((p) => p.name === name),
     );
   assert.equal(ASSETS.shop.parts.filter((p) => p.name === 'awning-stripe').length, 5);
-  assert.equal(ASSETS['order-board'].parts.filter((p) => p.name === 'paper').length, 3);
+  assert.equal(ASSETS['order-board'].parts.filter((p) => p.name === 'board-plank').length, 2);
   assert.equal(ASSETS.dock.parts.filter((p) => p.name === 'bollard').length, 4);
   assert.ok(compileAsset(ASSETS['order-board']).max[0] < 0.5);
 });

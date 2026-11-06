@@ -1,36 +1,25 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { pickupDrops } = require('./helpers/loose-output.cjs');
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const { withLegacyBuildingAtFreeCell } = require('./helpers/legacy-town.cjs');
 const {
   createGame,
   dispatch,
   importSave,
   exportSave,
   COMMERCE,
+  ITEM_KEYS,
 } = require('../.domain-build/domain/game.js');
-const { SAVE_KEY, BACKUP_KEY, loadGame, saveGame } = require('../.domain-build/domain/storage.js');
-
-const { validatePlacement } = require('../.domain-build/domain/geometry.js');
 const {
-  CONFIG,
-  isDockShore,
-  isLandCell,
-  landCellCount,
-} = require('../.domain-build/domain/game.js');
-function place(s, kind) {
-  for (let z = 0; z < CONFIG.gridSize; z++) {
-    for (let x = 0; x < CONFIG.gridSize; x++) {
-      const b = { id: `b${s.nextId}`, kind, x, z, rotation: 0 };
-      try {
-        validatePlacement(s, b);
-      } catch {
-        continue;
-      }
-      if (kind === 'dock' && !isDockShore(b, s.mapSeed)) continue;
-      return run(s, { type: 'place', kind, x, z });
-    }
-  }
-  assert.fail(`No legal placement for ${kind}`);
-}
+  SAVE_KEY,
+  BACKUP_KEY,
+  loadGame,
+  saveGame,
+  resetSave,
+} = require('../.domain-build/domain/storage.js');
+
+const { CONFIG, isLandCell, landCellCount } = require('../.domain-build/domain/game.js');
 
 function run(s, c, now = s.lastSeenAt) {
   const before = JSON.stringify(s),
@@ -48,10 +37,21 @@ function fail(s, c, now = s.lastSeenAt) {
 }
 function setup() {
   let s = createGame(0);
-  for (const kind of ['shop', 'orderBoard', 'dock']) s = place(s, kind);
+  for (const kind of ['shop', 'orderBoard', 'dock']) s = withLegacyBuildingAtFreeCell(s, kind);
   return {
     ...s,
-    inventory: { vegetable: 12, chilledVegetable: 4, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 12,
+      chilledVegetable: 4,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
 }
 const shop = (side, quantity, item = 'vegetable') => ({
@@ -121,7 +121,18 @@ test('staging moves cargo, never sells, returns are atomic on full warehouse', (
   s = run(s, transfer('stage', 8));
   s = {
     ...s,
-    inventory: { vegetable: 16, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 16,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   fail(s, transfer('return', 1));
   fail(s, transfer('stage', 9));
@@ -142,7 +153,18 @@ test('ship snapshots in-transit cargo; collect once after30s, independently of w
   fail(s, ship(2));
   s = {
     ...s,
-    inventory: { vegetable: 16, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 16,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   s = run(s, collect(), 30100);
   assert.equal(s.coins, 88);
@@ -161,7 +183,7 @@ test('overflow settlement keeps shipment recoverable, offline import unlocks set
   s = run(s, collect(), 0);
   assert.equal(s.coins, 64); // monotonic clock
 });
-test('old test saves are rejected on import and cleared by the authorized storage reset', () => {
+test('old saves are preserved until explicit reset and reset retains their raw backup', () => {
   for (let version = 1; version <= 7; version++) {
     const old = { ...createGame(100), schemaVersion: version };
     const raw = JSON.stringify(old);
@@ -176,14 +198,16 @@ test('old test saves are rejected on import and cleared by the authorized storag
       setItem: (k, v) => map.set(k, v),
       removeItem: (k) => map.delete(k),
     };
-    assert.equal(loadGame(storage, 100).status, 'empty');
-    assert.equal(map.has(SAVE_KEY), false);
-    assert.equal(map.has(BACKUP_KEY), false);
+    assert.equal(loadGame(storage, 100).status, 'corrupt');
+    assert.equal(map.get(SAVE_KEY), raw);
+    assert.equal(map.get(BACKUP_KEY), raw);
     assert.equal(map.get('unrelated'), 'keep');
     const fresh = createGame(100);
-    saveGame(storage, fresh);
+    assert.throws(() => saveGame(storage, fresh));
+    resetSave(storage, fresh);
+    assert.equal(map.get(`${SAVE_KEY}.before-reset`), raw);
     assert.deepEqual(loadGame(storage, 100).state, fresh);
-    assert.equal(JSON.parse(map.get(SAVE_KEY)).schemaVersion, 8);
+    assert.equal(JSON.parse(map.get(SAVE_KEY)).schemaVersion, 10);
   }
 });
 test('current save strict validation rejects malformed cargo, facilities, shipment rewards/tokens/times', () => {
@@ -195,12 +219,16 @@ test('current save strict validation rejects malformed cargo, facilities, shipme
     (x) => (x.commerce.dockCargo.b5.vegetable = -1),
     (x) =>
       (x.commerce.dockCargo.missing = {
+        ...emptyStock(),
         vegetable: 0,
         chilledVegetable: 0,
         wheat: 0,
         lettuce: 0,
         wood: 0,
         stone: 0,
+        soil: 0,
+        mud: 0,
+        treeSeed: 0,
       }),
     (x) => delete x.commerce.shopStock.b3,
     (x) => (x.commerce.shopStock.b3.vegetable = 9),
@@ -216,11 +244,38 @@ test('current save strict validation rejects malformed cargo, facilities, shipme
   }
   assert.equal(COMMERCE.shippingDurationMs, 30000);
 });
+test('schema10 commerce stocks require every product key across shops, docks and shipments', () => {
+  const state = run(run(setup(), transfer('stage', 4)), ship());
+  const saved = exportSave(state);
+  for (const owner of ['shopStock', 'dockCargo', 'shipments'])
+    for (const item of ITEM_KEYS) {
+      const raw = JSON.parse(saved);
+      const stock =
+        owner === 'shipments'
+          ? raw.commerce.shipments.b5.cargo
+          : raw.commerce[owner][owner === 'shopStock' ? 'b3' : 'b5'];
+      delete stock[item];
+      const text = JSON.stringify(raw);
+      assert.throws(() => importSave(text, 0), `${owner}.${item}`);
+      assert.equal(JSON.stringify(raw), text);
+    }
+});
 test('purchase money limits, empty shipments and wrong facilities never mutate state', () => {
   let s = {
     ...setup(),
     coins: 0,
-    inventory: { vegetable: 0, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 0,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   fail(s, shop('buy', 1));
   fail(s, ship());
@@ -241,7 +296,7 @@ test('purchase money limits, empty shipments and wrong facilities never mutate s
 });
 test('two docks keep independent cargo and shipment receipts', () => {
   let s = { ...setup(), coins: 100 };
-  s = place(s, 'dock');
+  s = withLegacyBuildingAtFreeCell(s, 'dock');
   s = run(s, transfer('stage', 4));
   s = run(s, ship());
   s = run(s, { ...transfer('stage', 4, 'chilledVegetable'), buildingId: 'b6' });
@@ -302,33 +357,47 @@ test('mixed commerce command sequences conserve goods and preserve rejected snap
     assert.deepEqual(importSave(exportSave(s), s.lastSeenAt), s);
   }
 });
-test('zero-coin current towns can build a free board and recover income', () => {
+test('zero-coin legacy towns recover income by repurposing an idle farm, not new construction', () => {
   let s = createGame(0);
-  for (let i = 0; i < 6; i++) s = place(s, 'farm');
+  for (let i = 0; i < 6; i++) s = withLegacyBuildingAtFreeCell(s, 'farm');
   assert.equal(s.coins, 0);
   s = importSave(exportSave(s), 0);
-  assert.equal(s.coins, 0);
-  s = place(s, 'orderBoard');
+  fail(s, { type: 'place', kind: 'orderBoard', x: 12, z: 12 });
+  s = run(s, { type: 'repurposeToBoard', buildingId: 'b3' });
   assert.equal(s.coins, 0);
   assert.equal(s.inventory.vegetable, 1);
   const board = s.buildings.find((b) => b.kind === 'orderBoard');
   for (const t of [0, 15000, 30000, 45000, 60000, 75000, 90000]) {
     s = run(s, { type: 'start', buildingId: 'b2' }, t);
     s = run(s, { type: 'collect', buildingId: 'b2' }, t + 15000);
+    s = pickupDrops(s);
   }
   s = run(s, { type: 'orderFulfill', buildingId: board.id, orderId: 'vegetable', offerId: 1 });
   assert.equal(s.coins, 56);
   assert.equal(s.inventory.vegetable, 0);
-  s = place(s, 'orderBoard');
-  assert.equal(s.coins, 56);
+  fail(s, { type: 'place', kind: 'orderBoard', x: 12, z: 12 });
   assert.equal(s.commerce.offerId, 2);
+  assert.deepEqual(importSave(exportSave(s), s.lastSeenAt), s);
 });
+
 function fullCurrentTown(lastCellEmpty = false) {
   const s = createGame(0);
   s.coins = 0;
   s.buildings = [];
   s.trees = [];
-  s.inventory = { vegetable: 0, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 };
+  s.naturalResources = [];
+  s.inventory = {
+    ...emptyStock(),
+    vegetable: 0,
+    chilledVegetable: 0,
+    wheat: 0,
+    lettuce: 0,
+    wood: 0,
+    stone: 0,
+    soil: 0,
+    mud: 0,
+    treeSeed: 0,
+  };
   for (let z = 0; z < CONFIG.gridSize; z++)
     for (let x = 0; x < CONFIG.gridSize; x++) {
       if (!isLandCell(x, z, s.mapSeed)) continue;
@@ -338,7 +407,7 @@ function fullCurrentTown(lastCellEmpty = false) {
   s.nextId = s.buildings.length + 1;
   return importSave(JSON.stringify(s), 0);
 }
-test('last free island tile is reserved for the free order board', () => {
+test('last free island tile cannot bypass paused construction with a free order board', () => {
   let s = { ...fullCurrentTown(true), coins: 40 };
   let cell;
   for (let z = 0; z < CONFIG.gridSize; z++)
@@ -348,9 +417,12 @@ test('last free island tile is reserved for the free order board', () => {
     }
   assert.ok(cell);
   fail(s, { type: 'place', kind: 'cooler', ...cell });
-  s = run(s, { type: 'place', kind: 'orderBoard', ...cell });
+  fail(s, { type: 'place', kind: 'orderBoard', ...cell });
   assert.equal(s.coins, 40);
-  assert.equal(s.buildings.length, landCellCount(s.mapSeed));
+  assert.equal(s.buildings.length, landCellCount(s.mapSeed) - 1);
+  const recovered = run(s, { type: 'repurposeToBoard', buildingId: 'b1' });
+  assert.equal(recovered.buildings[0].kind, 'orderBoard');
+  assert.equal(recovered.coins, 40);
 });
 test('explicit full-island recovery keeps id, location, goods and coins', () => {
   const s = fullCurrentTown(),
@@ -370,16 +442,16 @@ test('repurpose refuses active farm and warehouse, permits idle farm without ref
   fail(run(s, { type: 'start', buildingId: 'b2' }), command);
   fail(s, { ...command, buildingId: 'b1' });
   fail(s, { ...command, buildingId: 'missing' });
-  const withFarm = place(s, 'farm');
+  const withFarm = withLegacyBuildingAtFreeCell(s, 'farm');
   const next = run(withFarm, command);
   assert.equal(next.buildings[1].kind, 'orderBoard');
   assert.equal(next.coins, 100);
   assert.deepEqual(next.inventory, s.inventory);
 });
 
-test('recovery cannot remove the last farm after spending all starting coins', () => {
+test('legacy recovery cannot remove the last farm after all starting coins were spent', () => {
   let s = createGame(0);
-  for (let i = 0; i < 3; i++) s = place(s, 'cooler');
+  for (let i = 0; i < 3; i++) s = withLegacyBuildingAtFreeCell(s, 'cooler');
   assert.equal(s.coins, 0);
   fail(s, { type: 'repurposeToBoard', buildingId: 'b2' });
   s = run(s, { type: 'repurposeToBoard', buildingId: 'b3' });
@@ -387,6 +459,7 @@ test('recovery cannot remove the last farm after spending all starting coins', (
   for (const t of [0, 15000, 30000, 45000, 60000, 75000, 90000]) {
     s = run(s, { type: 'start', buildingId: 'b2' }, t);
     s = run(s, { type: 'collect', buildingId: 'b2' }, t + 15000);
+    s = pickupDrops(s);
   }
   s = run(s, { type: 'orderFulfill', buildingId: 'b3', orderId: 'vegetable', offerId: 1 });
   assert.equal(s.coins, 56);

@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { withLegacyBuilding } = require('./helpers/legacy-town.cjs');
 const {
   createGame,
   dispatch,
@@ -10,8 +11,8 @@ const {
   ITEM_KEYS,
 } = require('../.domain-build/domain/game');
 const { GameSession } = require('../.domain-build/application/GameSession');
-const stock = (values = {}) =>
-  Object.fromEntries(ITEM_KEYS.map((item) => [item, values[item] ?? 0]));
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const stock = (values = {}) => ({ ...emptyStock(), ...values });
 const transfer = (type, item, quantity = 1, buildingId = 'b1') => ({
   type,
   item,
@@ -92,7 +93,7 @@ test('full inventory rejects withdrawal without losing mounted materials; freein
   assert.equal(s.inventory.stone, 1);
   assert.equal(getUsedStorage(s), getCapacity(s));
 });
-test('hammer consumes exactly two mounted wood and one durability while retaining surplus and currency', () => {
+test('hammer consumes exactly two mounted wood, retaining durability, surplus and currency', () => {
   const before = ready();
   const s = run(before, hammer, 150);
   assert.equal(s.buildings.find((b) => b.id === 'b1').kind, 'expandedWarehouse');
@@ -100,7 +101,7 @@ test('hammer consumes exactly two mounted wood and one durability while retainin
   assert.equal(s.fusion.attachments.b1.stone, 2);
   assert.equal(total(s, 'wood'), total(before, 'wood') - 2);
   assert.equal(total(s, 'stone'), total(before, 'stone'));
-  assert.equal(s.tools.hammer, before.tools.hammer - 1);
+  assert.equal(s.tools.hammer, before.tools.hammer);
   assert.equal(s.coins, before.coins);
   assert.equal(getCapacity(s), 32);
   assert.deepEqual(s.fusion.discoveries['expand-warehouse'], { count: 1, firstDiscoveredAt: 150 });
@@ -113,9 +114,6 @@ test('hammer consumes exactly two mounted wood and one durability while retainin
   assert.equal(exact.fusion.attachments.b1, undefined);
 });
 test('hammer failures preserve materials, durability, buildings, coins and recipe records', () => {
-  const broken = ready();
-  broken.tools.hammer = 0;
-  fail(broken, hammer);
   let insufficient = createGame(0);
   insufficient.inventory.wood = 1;
   insufficient = run(insufficient, transfer('attachMaterial', 'wood'));
@@ -152,16 +150,19 @@ test('successful recipes count once per commit; previews and failures do not dis
   s = run(s, { type: 'useTool', tool: 'axe', treeId: ids[1] }, 300);
   assert.deepEqual(s.fusion.discoveries['gather-wood'], { count: 2, firstDiscoveredAt: 200 });
   fail(s, { type: 'useTool', tool: 'axe', treeId: ids[0] });
-  s = run(s, { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' });
+  fail(s, { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' });
   assert.equal(
     s.fusion.discoveries['expand-warehouse'],
     undefined,
-    'coin shortcut is not material recipe discovery',
+    'paused coin upgrade is not material recipe discovery',
   );
 });
 test('old schema8 missing fusion imports additively without changing town, jobs or inventory', () => {
   let s = run(createGame(100), { type: 'plantCell', buildingId: 'b2', cell: 0 });
   const raw = JSON.parse(exportSave(s));
+  raw.schemaVersion = 8;
+  for (const item of ['rice', 'sapling', 'milledRice', 'flour', 'bread'])
+    delete raw.inventory[item];
   delete raw.fusion;
   const restored = importSave(JSON.stringify(raw), 100);
   assert.deepEqual(restored.fusion, { attachments: {}, discoveries: {} });
@@ -178,10 +179,10 @@ test('malformed fusion rejects rather than silently discarding material or disco
     (s) => (s.fusion.attachments.missing = stock({ wood: 1 })),
     (s) => (s.fusion.attachments.b1 = stock()),
     (s) => (s.fusion.attachments.b1 = stock({ wood: 6 })),
-    (s) => (s.fusion.attachments.b1 = stock({ wood: 3, stone: 3 })),
+    (s) => (s.fusion.attachments.b1 = stock({ wood: 3, stone: 3, soil: 0, treeSeed: 0 })),
     (s) => (s.fusion.attachments.b1.wood = -1),
     (s) => (s.fusion.attachments.b1.wood = 1.5),
-    (s) => delete s.fusion.attachments.b1.wood,
+    ...ITEM_KEYS.map((item) => (s) => delete s.fusion.attachments.b1[item]),
     (s) => (s.fusion.attachments.b1.unknown = 1),
     (s) => (s.fusion.discoveries.unknown = { count: 1, firstDiscoveredAt: 0 }),
     (s) => (s.fusion.discoveries['gather-wood'] = { count: 0, firstDiscoveredAt: 0 }),
@@ -199,7 +200,7 @@ test('malformed fusion rejects rather than silently discarding material or disco
 });
 function mergeTown() {
   let s = createGame(100);
-  s = run(s, { type: 'place', kind: 'cooler', x: 5, z: 3 });
+  s = withLegacyBuilding(s, { kind: 'cooler', x: 5, z: 3 });
   s.inventory.wood = 4;
   s.inventory.stone = 2;
   s = run(s, transfer('attachMaterial', 'wood', 2));
@@ -218,11 +219,38 @@ test('combining either drag direction and adjacent combine retain both buildings
       s.buildings.some((b) => b.id === 'b3'),
       false,
     );
-    assert.deepEqual(s.fusion.attachments.b1, stock({ wood: 2, stone: 2 }));
+    assert.deepEqual(s.fusion.attachments.b1, stock({ wood: 2, stone: 2, soil: 0, treeSeed: 0 }));
     assert.equal(s.fusion.attachments.b3, undefined);
     for (const item of ITEM_KEYS) assert.equal(total(s, item), total(before, item));
     assert.equal(s.fusion.discoveries['merge-cold'].count, 1);
+    assert.ok(
+      dispatch(before, command, before.lastSeenAt).events.every(
+        (event) => !event.includes('图鉴新发现'),
+      ),
+      'legacy combination is preserved without announcing a hidden handbook entry',
+    );
     assert.deepEqual(importSave(exportSave(s), 100), s);
+  }
+});
+test('legacy combination increments existing records without losing their original discovery time', () => {
+  for (const count of [7, 1_000_000_000]) {
+    const before = mergeTown();
+    before.fusion.discoveries['merge-cold'] = { count, firstDiscoveredAt: 25 };
+    before.fusion.discoveries['gather-wood'] = { count: 2, firstDiscoveredAt: 50 };
+    const snapshot = exportSave(before);
+    const result = dispatch(before, { type: 'combine', warehouseId: 'b1', coolerId: 'b3' }, 200);
+    assert.equal(result.ok, true, result.error);
+    assert.deepEqual(result.state.fusion.discoveries['merge-cold'], {
+      count: Math.min(count + 1, 1_000_000_000),
+      firstDiscoveredAt: 25,
+    });
+    assert.deepEqual(result.state.fusion.discoveries['gather-wood'], {
+      count: 2,
+      firstDiscoveredAt: 50,
+    });
+    assert.ok(result.events.every((event) => !event.includes('图鉴新发现')));
+    assert.equal(exportSave(before), snapshot);
+    assert.deepEqual(importSave(exportSave(result.state), 200), result.state);
   }
 });
 test('merge over attachment limit and unaffordable merge are atomic', () => {

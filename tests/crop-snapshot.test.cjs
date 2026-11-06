@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { looseAmount, pickupDrops } = require('./helpers/loose-output.cjs');
 const {
   createGame,
   dispatch,
@@ -56,6 +57,9 @@ test('crop purchase and planted snapshots retain configured duration and yield a
     assert.equal(early.ok, false);
     assert.equal(early.state, state);
     state = run(state, harvest, 31000);
+    assert.equal(state.inventory.wheat, 0);
+    assert.equal(looseAmount(state, 'wheat'), 4);
+    state = pickupDrops(state);
     assert.equal(state.inventory.wheat, 4);
   }));
 
@@ -64,6 +68,10 @@ test('schema 8 crop jobs without snapshots preserve legacy 15 second and two ite
     let state = run(createGame(0), { type: 'buyCrop', item: 'wheat', quantity: 1 });
     state = run(state, plant);
     const raw = JSON.parse(exportSave(state));
+    raw.schemaVersion = 8;
+    delete raw.looseDrops;
+    for (const item of ['rice', 'sapling', 'milledRice', 'flour', 'bread'])
+      delete raw.inventory[item];
     delete raw.buildings[1].cropJobs[0].durationMs;
     delete raw.buildings[1].cropJobs[0].yield;
     Object.assign(CROPS.wheat, { durationMs: 30000, yield: 4, buy: 12 });
@@ -72,6 +80,9 @@ test('schema 8 crop jobs without snapshots preserve legacy 15 second and two ite
     assert.equal(state.buildings[1].cropJobs[0].readyAt, 15000);
     assert.equal(dispatch(state, harvest, 14999).ok, false);
     state = run(state, harvest, 15000);
+    assert.equal(state.inventory.wheat, 0);
+    assert.equal(looseAmount(state, 'wheat'), 2);
+    state = pickupDrops(state);
     assert.equal(state.inventory.wheat, 2);
   }));
 

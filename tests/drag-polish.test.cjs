@@ -1,11 +1,13 @@
+const { looseAmount, pickupDrops } = require('./helpers/loose-output.cjs');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { withLegacyBuilding } = require('./helpers/legacy-town.cjs');
 const { sampleStroke } = require('../.domain-build/application/StrokeSampling.js');
 const { DeferredLayout } = require('../.domain-build/application/DeferredLayout.js');
 const { FarmSweep } = require('../.domain-build/application/FarmSweep.js');
 const { createGame, dispatch } = require('../.domain-build/domain/game.js');
 test('fast sparse stroke samples intervening farms once, including reverse sweep', () => {
-  let state = dispatch(createGame(0), { type: 'place', kind: 'farm', x: 8, z: 6 }, 0).state;
+  let state = withLegacyBuilding(createGame(0), { kind: 'farm', x: 8, z: 6 });
   const ids = ['b2', state.buildings.at(-1).id];
   state.inventory.vegetable = 2;
   for (const id of ids)
@@ -35,7 +37,12 @@ test('fast sparse stroke samples intervening farms once, including reverse sweep
     }
   }
   assert.equal(started, 2);
+  assert.equal(state.inventory.vegetable, 0);
+  assert.equal(looseAmount(state, 'vegetable'), 4);
+  assert.deepEqual(state.looseDrops.map((drop) => drop.source.buildingId).sort(), ids.sort());
+  state = pickupDrops(state);
   assert.equal(state.inventory.vegetable, 4);
+  assert.equal(looseAmount(state, 'vegetable'), 0);
 });
 test('sampling includes release endpoint, guards invalid input and caps huge jumps', () => {
   assert.deepEqual(sampleStroke(null, { x: 5, y: 6 }), [{ x: 5, y: 6 }]);

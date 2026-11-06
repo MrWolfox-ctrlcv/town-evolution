@@ -1,5 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const { withLegacyBuilding, withLegacyExpansion } = require('./helpers/legacy-town.cjs');
 const {
   createGame,
   dispatch,
@@ -9,17 +11,20 @@ const {
 } = require('../.domain-build/domain/game.js');
 
 function fixture() {
-  const result = dispatch(createGame(0), { type: 'place', kind: 'cooler', x: 2, z: 5 }, 0);
-  assert.equal(result.ok, true);
-  result.state.inventory = {
+  const state = withLegacyBuilding(createGame(0), { kind: 'cooler', x: 2, z: 5 });
+  state.inventory = {
+    ...emptyStock(),
     vegetable: 4,
     chilledVegetable: 2,
     wheat: 0,
     lettuce: 0,
     wood: 0,
     stone: 0,
+    soil: 0,
+    mud: 0,
+    treeSeed: 0,
   };
-  return result.state;
+  return state;
 }
 function reject(state, command) {
   const snapshot = JSON.stringify(state);
@@ -73,13 +78,8 @@ test('dragMerge rejects incompatible, self, missing and upgraded inputs atomical
   ]) {
     reject(state, { type: 'dragMerge', sourceId, targetId });
   }
-  const expanded = dispatch(
-    state,
-    { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' },
-    0,
-  );
-  assert.equal(expanded.ok, true);
-  reject(expanded.state, { type: 'dragMerge', sourceId: 'b3', targetId: 'b1' });
+  const expanded = withLegacyExpansion(state);
+  reject(expanded, { type: 'dragMerge', sourceId: 'b3', targetId: 'b1' });
 });
 
 test('dragMerge insufficient funds keeps both buildings and all fields untouched', () => {

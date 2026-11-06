@@ -1,5 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { looseAmount, pickupDrops } = require('./helpers/loose-output.cjs');
 const { FarmSweep } = require('../.domain-build/application/FarmSweep.js');
 const { createGame, dispatch, exportSave } = require('../.domain-build/domain/game.js');
 test('plant sweep consumes one per distinct cell and never repeats within gesture', () => {
@@ -28,13 +29,14 @@ test('harvest targets only swept mature cells and yields two each', () => {
   const sweep = new FarmSweep();
   sweep.begin('harvest');
   for (const cell of [0, 8]) state = dispatch(state, sweep.command(state, 'b2', cell), 15000).state;
-  assert.equal(state.inventory.vegetable, 4);
+  assert.equal(state.inventory.vegetable, 0);
+  assert.equal(looseAmount(state, 'vegetable'), 4);
   assert.ok(state.buildings.find((b) => b.id === 'b2').cropJobs[1]);
   assert.equal(sweep.command(state, 'b2', 0), null);
   assert.equal(sweep.command(state, 'b1', 0), null);
   assert.equal(sweep.command(state, 'b2', 9), null);
 });
-test('full storage, invalid and immature cells are atomic and retried only next gesture', () => {
+test('immature cells are atomic and retried next gesture; full storage keeps harvested goods on ground', () => {
   let state = createGame(0);
   state = dispatch(state, { type: 'plantCell', buildingId: 'b2', cell: 4 }, 0).state;
   const sweep = new FarmSweep();
@@ -45,11 +47,19 @@ test('full storage, invalid and immature cells are atomic and retried only next 
   assert.equal(sweep.command(state, 'b2', 4), null);
   sweep.begin('harvest');
   state.inventory.vegetable = 16;
-  assert.equal(dispatch(state, sweep.command(state, 'b2', 4), 15000).ok, false);
-  assert.ok(state.buildings.find((b) => b.id === 'b2').cropJobs[4]);
-  state.inventory.vegetable = 0;
-  sweep.begin('harvest');
-  state = dispatch(state, sweep.command(state, 'b2', 4), 15000).state;
+  const result = dispatch(state, sweep.command(state, 'b2', 4), 15000);
+  assert.equal(result.ok, true, result.error);
+  state = result.state;
+  assert.equal(state.buildings.find((b) => b.id === 'b2').cropJobs[4], null);
+  assert.equal(state.inventory.vegetable, 16);
+  assert.equal(looseAmount(state, 'vegetable'), 2);
+  const fullSnapshot = exportSave(state);
+  const blocked = dispatch(state, { type: 'pickupDrop', dropId: state.looseDrops[0].id }, 15000);
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.state, state);
+  assert.equal(exportSave(state), fullSnapshot);
+  state = { ...state, inventory: { ...state.inventory, vegetable: 0 } };
+  state = pickupDrops(state);
   assert.equal(state.inventory.vegetable, 2);
 });
 
@@ -72,6 +82,8 @@ test('crop selection stays fixed through each sweep and harvest restores matchin
   sweep.begin('harvest');
   for (const cell of [0, 1, 8])
     state = dispatch(state, sweep.command(state, 'b2', cell), 15000).state;
-  assert.equal(state.inventory.wheat, 4);
-  assert.equal(state.inventory.lettuce, 2);
+  assert.equal(state.inventory.wheat, 0);
+  assert.equal(state.inventory.lettuce, 0);
+  assert.equal(looseAmount(state, 'wheat'), 4);
+  assert.equal(looseAmount(state, 'lettuce'), 2);
 });

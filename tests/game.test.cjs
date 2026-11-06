@@ -1,5 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { looseAmount, pickupDrops } = require('./helpers/loose-output.cjs');
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const { withLegacyBuilding, withLegacyExpansion } = require('./helpers/legacy-town.cjs');
 const {
   CONFIG,
   createGame,
@@ -9,6 +12,8 @@ const {
   getUsedStorage,
   exportSave,
   importSave,
+  worldSize,
+  ITEM_KEYS,
 } = require('../.domain-build/domain/game.js');
 function run(s, command, now = 0) {
   const r = dispatch(s, command, now);
@@ -26,7 +31,7 @@ function fail(s, command, now = 0) {
 function withBoard(s) {
   return s.buildings.some((b) => b.kind === 'orderBoard')
     ? s
-    : run(s, { type: 'place', kind: 'orderBoard', x: 2, z: 5 }, s.lastSeenAt);
+    : withLegacyBuilding(s, { kind: 'orderBoard', x: 2, z: 5 });
 }
 // A trusted fixture representing an already-started pre-retirement cold task.
 function legacyColdJob(s, now) {
@@ -38,7 +43,8 @@ function legacyColdJob(s, now) {
 }
 function harvest(s, now = 0) {
   s = run(s, { type: 'start', buildingId: 'b2' }, now);
-  return run(s, { type: 'collect', buildingId: 'b2' }, now + CONFIG.cropDurationMs);
+  s = run(s, { type: 'collect', buildingId: 'b2' }, now + CONFIG.cropDurationMs);
+  return pickupDrops(s);
 }
 
 test('initial map provides a viable production and storage loop', () => {
@@ -47,53 +53,85 @@ test('initial map provides a viable production and storage loop', () => {
   assert.equal(s.coins, 120);
   assert.equal(getUsedStorage(s), 1);
 });
-test('placement spends exactly once and does not mutate input', () => {
-  const s = createGame(0),
-    next = run(s, { type: 'place', kind: 'cooler', x: 5, z: 3 });
-  assert.equal(s.coins, 120);
-  assert.equal(next.coins, 80);
-  assert.equal(next.buildings.length, 3);
-  assert.equal(next.nextId, 4);
-  fail(next, { type: 'place', kind: 'cooler', x: 5, z: 3 });
+test('all ordinary construction is paused, including free boards, without spending or allocating', () => {
+  for (const coins of [0, 120, 1000000]) {
+    const s = { ...createGame(0), coins };
+    for (const kind of Object.keys(CONFIG.buildings)) {
+      const position = kind === 'dock' ? { x: 2, z: 7 } : { x: 8, z: 6 };
+      const result = fail(s, { type: 'place', kind, ...position }, 15000);
+      assert.match(result.error, /暂停|合成/);
+      assert.equal(s.nextId, 3);
+      assert.equal(s.lastSeenAt, 0);
+      assert.deepEqual(s.fusion.discoveries, {});
+    }
+    const result = fail(
+      s,
+      { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' },
+      15000,
+    );
+    assert.match(result.error, /暂停|合成/);
+    assert.equal(getCapacity(s), 16);
+  }
 });
-test('rejects overlap, fractional, outside and invalid placement', () => {
-  const s = createGame(0);
-  for (const [x, z] of [
-    [3, 3],
-    [24, 24],
-    [-1, 0],
-    [1.2, 0],
-    [NaN, 0],
-    [Infinity, 0],
-  ])
-    fail(s, { type: 'place', kind: 'farm', x, z });
-  fail(s, { type: 'place', kind: 'coldWarehouse', x: 2, z: 5 });
-  fail(s, { type: 'place', kind: 'farm', x: 2, z: 5, rotation: 4 });
-});
-test('insufficient funds rejects atomically including next id', () => {
-  const s = { ...createGame(0), coins: 0 };
-  fail(s, { type: 'place', kind: 'farm', x: 2, z: 5 });
-  fail(s, { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' });
+test('existing-save geometry still rejects overlapping, fractional, outside and invalid buildings', () => {
+  for (const version of [1, 2, 3, 4]) {
+    const initial = withLegacyBuilding(createGame(0, 42173, version), { kind: 'farm', x: 8, z: 6 });
+    assert.deepEqual(importSave(exportSave(initial), 0), initial);
+    const size = worldSize(version);
+    assert.equal(size, version === 4 ? 192 : 40);
+    for (const [x, z] of [
+      [3, 3],
+      [size, size],
+      [-1, 0],
+      [1.2, 0],
+      [NaN, 0],
+      [Infinity, 0],
+    ]) {
+      const malformed = structuredClone(initial);
+      Object.assign(malformed.buildings.at(-1), { x, z });
+      assert.throws(() => importSave(JSON.stringify(malformed), 0));
+    }
+    const malformed = structuredClone(initial);
+    malformed.buildings.at(-1).rotation = 4;
+    assert.throws(() => importSave(JSON.stringify(malformed), 0));
+  }
 });
 test('cannot start twice or collect early; completed task collects once', () => {
   let s = run(createGame(0), { type: 'start', buildingId: 'b2' });
   fail(s, { type: 'start', buildingId: 'b2' });
   fail(s, { type: 'collect', buildingId: 'b2' }, 14999);
   s = run(s, { type: 'collect', buildingId: 'b2' }, 15000);
-  assert.equal(s.inventory.vegetable, 2);
+  assert.equal(s.inventory.vegetable, 0);
+  assert.equal(looseAmount(s, 'vegetable'), 2);
   fail(s, { type: 'collect', buildingId: 'b2' }, 15000);
+  s = pickupDrops(s);
+  assert.equal(s.inventory.vegetable, 2);
 });
-test('full warehouse keeps ready task intact until space is freed', () => {
+test('harvest remains on the ground when the warehouse is full until pickup space is freed', () => {
   let s = {
     ...createGame(0),
-    inventory: { vegetable: 16, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 16,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   s = run(s, { type: 'start', buildingId: 'b2' }, 75000);
-  fail(s, { type: 'collect', buildingId: 'b2' }, 90000);
-  assert.ok(s.buildings.find((b) => b.id === 'b2').cropJobs[0]);
+  s = run(s, { type: 'collect', buildingId: 'b2' }, 90000);
+  assert.equal(s.buildings.find((b) => b.id === 'b2').cropJobs[0], null);
+  assert.equal(s.inventory.vegetable, 15);
+  assert.equal(looseAmount(s, 'vegetable'), 2);
+  fail(s, { type: 'pickupDrop', dropId: s.looseDrops[0].id }, 90000);
   s = withBoard(s);
   s = run(s, { type: 'sell', orderId: 'vegetable' }, 90000);
-  s = run(s, { type: 'collect', buildingId: 'b2' }, 90000);
+  s = pickupDrops(s);
   assert.equal(s.inventory.vegetable, 13);
 });
 test('order consumes inventory and grants exact reward', () => {
@@ -106,17 +144,19 @@ test('order consumes inventory and grants exact reward', () => {
   fail(s, { type: 'sell', orderId: 'vegetable' }, 15000);
   fail(s, { type: 'sell', orderId: 'bogus' }, 15000);
 });
-test('warehouse expansion preserves identity/stock and is not repeatable', () => {
+test('previously expanded warehouses preserve identity and stock while coin upgrades stay paused', () => {
   const base = harvest(createGame(0));
-  const s = run(base, { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' }, 15000);
+  fail(base, { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' }, 15000);
+  const s = withLegacyExpansion(base);
   assert.equal(getCapacity(s), 32);
   assert.equal(s.coins, 80);
   assert.equal(s.inventory.vegetable, 2);
   assert.equal(s.buildings[0].id, 'b1');
+  assert.deepEqual(importSave(exportSave(s), 15000), s);
   fail(s, { type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' }, 15000);
 });
 test('legacy combination preserves warehouse but new cold production is disabled', () => {
-  let s = run(createGame(0), { type: 'place', kind: 'cooler', x: 5, z: 3 });
+  let s = withLegacyBuilding(createGame(0), { kind: 'cooler', x: 5, z: 3 });
   s = run(s, { type: 'combine', warehouseId: 'b1', coolerId: 'b3' });
   assert.equal(s.coins, 60);
   assert.equal(s.buildings.length, 2);
@@ -139,7 +179,7 @@ test('combination rejects remote and diagonal cooler without consuming it', () =
     [8, 5],
     [5, 5],
   ]) {
-    const s = run(createGame(0), { type: 'place', kind: 'cooler', x, z });
+    const s = withLegacyBuilding(createGame(0), { kind: 'cooler', x, z });
     fail(s, { type: 'combine', warehouseId: 'b1', coolerId: 'b3' });
   }
 });
@@ -155,8 +195,11 @@ test('offline time completes only scheduled task, never auto-repeats', () => {
   s = importSave(exportSave(s), 1000000000);
   assert.equal(s.inventory.vegetable, 0);
   s = run(s, { type: 'collect', buildingId: 'b2' }, 1000000000);
-  assert.equal(s.inventory.vegetable, 2);
+  assert.equal(s.inventory.vegetable, 0);
+  assert.equal(looseAmount(s, 'vegetable'), 2);
   assert.equal(s.buildings[1].cropJobs[0], null);
+  s = pickupDrops(s);
+  assert.equal(s.inventory.vegetable, 2);
 });
 test('valid save round trips and rejects unsupported version', () => {
   const s = createGame(10);
@@ -173,16 +216,27 @@ test('malformed saves cannot create invalid inventory, map, ids, times or jobs',
     (s) => (s.buildings[1].kind = '__proto__'),
     (s) => (s.buildings[1].id = 'b1'),
     (s) => (s.nextId = 1),
-    (s) => (s.buildings[0].x = 24),
+    (s) => (s.buildings[0].x = worldSize(s.terrainVersion)),
     (s) => (s.buildings[0].rotation = 4),
     (s) => (s.lastSeenAt = -1),
     (s) => (s.buildings[0].job = { id: 'j5', startedAt: 0, readyAt: 15000 }),
     (s) => (s.buildings[1].job = { id: 'j5', startedAt: 0, readyAt: 1 }),
   ];
-  for (const mutate of alterations) {
-    const s = createGame(0);
-    mutate(s);
-    assert.throws(() => importSave(JSON.stringify(s), 0));
+  for (const version of [1, 2, 3, 4])
+    for (const mutate of alterations) {
+      const s = createGame(0, 42173, version);
+      mutate(s);
+      assert.throws(() => importSave(JSON.stringify(s), 0));
+    }
+});
+test('schema10 requires every inventory key and does not silently apply legacy defaults', () => {
+  const saved = exportSave(createGame(100));
+  for (const item of ITEM_KEYS) {
+    const raw = JSON.parse(saved);
+    delete raw.inventory[item];
+    const text = JSON.stringify(raw);
+    assert.throws(() => importSave(text, 100), item);
+    assert.equal(JSON.stringify(raw), text);
   }
 });
 test('invalid operation/time and missing target reject safely', () => {
@@ -195,7 +249,6 @@ test('invalid operation/time and missing target reject safely', () => {
 });
 test('100 repeated complete loops preserve storage and money invariants', () => {
   let s = createGame(0);
-  s.tools.sickle = 1000; // Isolate economic invariant from the separately tested wear system.
   for (let i = 0; i < 100; i++) {
     while (s.inventory.vegetable < 5) s = harvest(s, s.lastSeenAt);
     s = withBoard(s);
@@ -207,14 +260,25 @@ test('100 repeated complete loops preserve storage and money invariants', () => 
   assert.ok(getUsedStorage(s) >= 1 && getUsedStorage(s) <= 3);
 });
 test('cold output blocked by full storage preserves job without taking more inputs', () => {
-  let s = run(createGame(0), { type: 'place', kind: 'cooler', x: 5, z: 3 });
+  let s = withLegacyBuilding(createGame(0), { kind: 'cooler', x: 5, z: 3 });
   s = run(s, { type: 'combine', warehouseId: 'b1', coolerId: 'b3' });
   s = harvest(s);
   fail(s, { type: 'start', buildingId: 'b1' }, 15000);
   s = legacyColdJob(s, 15000); // 2 vegetables remain; output will be 2
   s = {
     ...s,
-    inventory: { vegetable: 16, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 16,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   }; // simulate other farms filling storage during processing
   fail(s, { type: 'collect', buildingId: 'b1' }, 25000);
   assert.ok(s.buildings[0].job);
@@ -232,7 +296,18 @@ test('maximum counter/time limits reject atomically', () => {
   s = {
     ...withBoard(createGame(0)),
     coins: 1000000000,
-    inventory: { vegetable: 4, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 4,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   fail(s, { type: 'sell', orderId: 'vegetable' });
 });

@@ -1,5 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const { withLegacyBuilding } = require('./helpers/legacy-town.cjs');
 const { createGame, dispatch, exportSave, importSave } = require('../.domain-build/domain/game.js');
 function run(s, c) {
   const r = dispatch(s, c, s.lastSeenAt);
@@ -15,8 +17,19 @@ function fail(s, c) {
 }
 test('moving planted farm preserves all nine jobs, currency and identity', () => {
   let s = {
-    ...createGame(0),
-    inventory: { vegetable: 9, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    ...createGame(0, 1, 1),
+    inventory: {
+      ...emptyStock(),
+      vegetable: 9,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   for (let cell = 0; cell < 9; cell++) s = run(s, { type: 'plantCell', buildingId: 'b2', cell });
   const original = JSON.parse(JSON.stringify(s));
@@ -28,7 +41,7 @@ test('moving planted farm preserves all nine jobs, currency and identity', () =>
   assert.deepEqual(importSave(exportSave(s), 0), s);
 });
 test('invalid move rejects without modifying position, tasks or resources', () => {
-  const s = run(createGame(0), { type: 'plantCell', buildingId: 'b2', cell: 4 });
+  const s = run(createGame(0, 1, 1), { type: 'plantCell', buildingId: 'b2', cell: 4 });
   for (const [x, z] of [
     [3, 3],
     [24, 24],
@@ -41,7 +54,7 @@ test('invalid move rejects without modifying position, tasks or resources', () =
   fail(s, { type: 'moveBuilding', buildingId: 'missing', x: 2, z: 5 });
 });
 test('moving dock preserves staged and in-transit cargo and receipts', () => {
-  let s = run(createGame(0), { type: 'place', kind: 'dock', x: 2, z: 7 });
+  let s = withLegacyBuilding(createGame(0, 1, 1), { kind: 'dock', x: 2, z: 7 });
   s = run(s, {
     type: 'dockTransfer',
     buildingId: 'b3',

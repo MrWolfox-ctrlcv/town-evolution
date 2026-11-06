@@ -1,5 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const { withLegacyBuilding } = require('./helpers/legacy-town.cjs');
 const { createGame, dispatch } = require('../.domain-build/domain/game.js');
 const {
   tradeQuantity,
@@ -7,12 +9,12 @@ const {
   stockDropCommand,
 } = require('../.domain-build/application/CommerceSelection.js');
 function facilities() {
-  let state = createGame(0);
+  let state = createGame(0, 1, 1);
   for (const [kind, x, z] of [
     ['shop', 2, 5],
     ['dock', 7, 18],
   ])
-    state = dispatch(state, { type: 'place', kind, x, z }, 0).state;
+    state = withLegacyBuilding(state, { kind, x, z });
   return state;
 }
 test('quantity selector cycles explicit 1,4,all and uses correct inventory source', () => {
@@ -48,11 +50,32 @@ test('inventory drop sells exactly1 at shop; dock stages1 without reward', () =>
 
 test('legacy cold clearance appears only when actual player goods remain', () => {
   const { tradeItems } = require('../.domain-build/application/CommerceSelection.js');
-  const state = createGame(0);
-  assert.deepEqual(tradeItems(state), ['vegetable', 'wheat', 'lettuce']);
+  const state = createGame(0, 1, 1);
+  assert.deepEqual(tradeItems(state), ['vegetable', 'wheat', 'lettuce', 'rice']);
   state.inventory.chilledVegetable = 1;
   assert.ok(tradeItems(state).includes('chilledVegetable'));
   state.inventory.chilledVegetable = 0;
-  state.commerce.dockCargo.old = { vegetable: 0, wheat: 0, lettuce: 0, chilledVegetable: 2 };
+  state.commerce.dockCargo.old = { ...emptyStock(), chilledVegetable: 2 };
   assert.ok(tradeItems(state).includes('chilledVegetable'));
+});
+
+test('owned materials and processed goods appear in trading choices without exposing non-tradable items', () => {
+  const { tradeItems } = require('../.domain-build/application/CommerceSelection.js');
+  for (const item of ['wood', 'stone', 'soil', 'milledRice', 'flour', 'bread'])
+    for (const owner of ['inventory', 'dockCargo', 'shipments']) {
+      const state = createGame(0, 1, 1);
+      assert.equal(tradeItems(state).includes(item), false);
+      const stock = { ...emptyStock(), [item]: 2 };
+      if (owner === 'inventory') state.inventory = stock;
+      else if (owner === 'dockCargo') state.commerce.dockCargo.old = stock;
+      else state.commerce.shipments.old = { cargo: stock };
+      const snapshot = JSON.stringify(state);
+      assert.equal(tradeItems(state).includes(item), true);
+      assert.equal(JSON.stringify(state), snapshot, 'Reading choices never mutates stock');
+      stock[item] = 0;
+      assert.equal(tradeItems(state).includes(item), false);
+    }
+  const state = createGame(0, 1, 1);
+  for (const item of ['sapling', 'treeSeed', 'mud']) state.inventory[item] = 2;
+  assert.deepEqual(tradeItems(state), ['vegetable', 'wheat', 'lettuce', 'rice']);
 });
