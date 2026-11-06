@@ -1,0 +1,2733 @@
+{
+  "schemaVersion": 8,
+  "fusion": {
+    "attachments": {},
+    "discoveries": {}
+  },
+  "mapSeed": 42173,
+  "terrainVersion": 2,
+  "landExtensions": [],
+  "tools": {
+    "sickle": 90,
+    "wateringCan": 10,
+    "fertilizer": 5,
+    "hammer": 10,
+    "saw": 10,
+    "axe": 10,
+    "diggingTool": 10
+  },
+  "toolRecoveryAvailable": {
+    "sickle": true,
+    "wateringCan": false,
+    "fertilizer": false,
+    "hammer": false,
+    "saw": true,
+    "axe": true,
+    "diggingTool": false
+  },
+  "trees": [
+    {
+      "id": "t5",
+      "x": 30,
+      "z": 31
+    },
+    {
+      "id": "t6",
+      "x": 32,
+      "z": 23
+    },
+    {
+      "id": "t7",
+      "x": 33,
+      "z": 17
+    },
+    {
+      "id": "t8",
+      "x": 25,
+      "z": 17
+    },
+    {
+      "id": "t9",
+      "x": 7,
+      "z": 20
+    },
+    {
+      "id": "t10",
+      "x": 23,
+      "z": 7
+    },
+    {
+      "id": "t11",
+      "x": 21,
+      "z": 4
+    },
+    {
+      "id": "t12",
+      "x": 8,
+      "z": 19
+    },
+    {
+      "id": "t13",
+      "x": 31,
+      "z": 15
+    },
+    {
+      "id": "t14",
+      "x": 30,
+      "z": 18
+    },
+    {
+      "id": "t15",
+      "x": 17,
+      "z": 31
+    },
+    {
+      "id": "t16",
+      "x": 33,
+      "z": 15
+    },
+    {
+      "id": "t17",
+      "x": 19,
+      "z": 11
+    },
+    {
+      "id": "t18",
+      "x": 34,
+      "z": 14
+    },
+    {
+      "id": "t19",
+      "x": 30,
+      "z": 11
+    },
+    {
+      "id": "t20",
+      "x": 28,
+      "z": 29
+    },
+    {
+      "id": "t21",
+      "x": 31,
+      "z": 8
+    },
+    {
+      "id": "t22",
+      "x": 34,
+      "z": 11
+    },
+    {
+      "id": "t23",
+      "x": 24,
+      "z": 34
+    },
+    {
+      "id": "t24",
+      "x": 28,
+      "z": 27
+    },
+    {
+      "id": "t25",
+      "x": 23,
+      "z": 32
+    },
+    {
+      "id": "t26",
+      "x": 24,
+      "z": 13
+    },
+    {
+      "id": "t27",
+      "x": 31,
+      "z": 22
+    },
+    {
+      "id": "t28",
+      "x": 19,
+      "z": 27
+    },
+    {
+      "id": "t29",
+      "x": 33,
+      "z": 25
+    },
+    {
+      "id": "t30",
+      "x": 30,
+      "z": 20
+    },
+    {
+      "id": "t31",
+      "x": 16,
+      "z": 33
+    },
+    {
+      "id": "t32",
+      "x": 28,
+      "z": 18
+    },
+    {
+      "id": "t33",
+      "x": 28,
+      "z": 20
+    },
+    {
+      "id": "t34",
+      "x": 6,
+      "z": 18
+    },
+    {
+      "id": "t35",
+      "x": 27,
+      "z": 31
+    },
+    {
+      "id": "t36",
+      "x": 19,
+      "z": 13
+    },
+    {
+      "id": "t37",
+      "x": 33,
+      "z": 12
+    },
+    {
+      "id": "t38",
+      "x": 23,
+      "z": 5
+    },
+    {
+      "id": "t39",
+      "x": 32,
+      "z": 26
+    },
+    {
+      "id": "t40",
+      "x": 32,
+      "z": 16
+    },
+    {
+      "id": "t41",
+      "x": 6,
+      "z": 26
+    },
+    {
+      "id": "t42",
+      "x": 5,
+      "z": 22
+    },
+    {
+      "id": "t43",
+      "x": 16,
+      "z": 27
+    },
+    {
+      "id": "t44",
+      "x": 29,
+      "z": 17
+    },
+    {
+      "id": "t45",
+      "x": 15,
+      "z": 29
+    },
+    {
+      "id": "t46",
+      "x": 25,
+      "z": 32
+    },
+    {
+      "id": "t47",
+      "x": 21,
+      "z": 31
+    },
+    {
+      "id": "t48",
+      "x": 31,
+      "z": 19
+    },
+    {
+      "id": "t49",
+      "x": 5,
+      "z": 17
+    },
+    {
+      "id": "t50",
+      "x": 31,
+      "z": 10
+    },
+    {
+      "id": "t51",
+      "x": 20,
+      "z": 32
+    },
+    {
+      "id": "t52",
+      "x": 30,
+      "z": 25
+    },
+    {
+      "id": "t53",
+      "x": 21,
+      "z": 27
+    },
+    {
+      "id": "t54",
+      "x": 18,
+      "z": 12
+    },
+    {
+      "id": "t55",
+      "x": 19,
+      "z": 29
+    },
+    {
+      "id": "t56",
+      "x": 29,
+      "z": 19
+    },
+    {
+      "id": "t57",
+      "x": 34,
+      "z": 16
+    },
+    {
+      "id": "t58",
+      "x": 7,
+      "z": 25
+    },
+    {
+      "id": "t59",
+      "x": 17,
+      "z": 28
+    },
+    {
+      "id": "t60",
+      "x": 32,
+      "z": 21
+    },
+    {
+      "id": "t61",
+      "x": 32,
+      "z": 11
+    },
+    {
+      "id": "t62",
+      "x": 4,
+      "z": 18
+    },
+    {
+      "id": "t63",
+      "x": 21,
+      "z": 8
+    },
+    {
+      "id": "t64",
+      "x": 33,
+      "z": 20
+    }
+  ],
+  "naturalResources": [
+    {
+      "id": "n17_5",
+      "kind": "soil",
+      "x": 17,
+      "z": 5,
+      "amount": 2
+    },
+    {
+      "id": "n18_5",
+      "kind": "soil",
+      "x": 18,
+      "z": 5,
+      "amount": 2
+    },
+    {
+      "id": "n19_5",
+      "kind": "soil",
+      "x": 19,
+      "z": 5,
+      "amount": 2
+    },
+    {
+      "id": "n20_5",
+      "kind": "soil",
+      "x": 20,
+      "z": 5,
+      "amount": 1
+    },
+    {
+      "id": "n12_6",
+      "kind": "soil",
+      "x": 12,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n13_6",
+      "kind": "soil",
+      "x": 13,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n14_6",
+      "kind": "soil",
+      "x": 14,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n15_6",
+      "kind": "soil",
+      "x": 15,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n16_6",
+      "kind": "soil",
+      "x": 16,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n17_6",
+      "kind": "soil",
+      "x": 17,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n18_6",
+      "kind": "soil",
+      "x": 18,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n19_6",
+      "kind": "soil",
+      "x": 19,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n20_6",
+      "kind": "soil",
+      "x": 20,
+      "z": 6,
+      "amount": 2
+    },
+    {
+      "id": "n12_7",
+      "kind": "soil",
+      "x": 12,
+      "z": 7,
+      "amount": 2
+    },
+    {
+      "id": "n13_7",
+      "kind": "soil",
+      "x": 13,
+      "z": 7,
+      "amount": 2
+    },
+    {
+      "id": "n14_7",
+      "kind": "soil",
+      "x": 14,
+      "z": 7,
+      "amount": 2
+    },
+    {
+      "id": "n15_7",
+      "kind": "soil",
+      "x": 15,
+      "z": 7,
+      "amount": 1
+    },
+    {
+      "id": "n16_7",
+      "kind": "soil",
+      "x": 16,
+      "z": 7,
+      "amount": 1
+    },
+    {
+      "id": "n17_7",
+      "kind": "soil",
+      "x": 17,
+      "z": 7,
+      "amount": 1
+    },
+    {
+      "id": "n18_7",
+      "kind": "soil",
+      "x": 18,
+      "z": 7,
+      "amount": 2
+    },
+    {
+      "id": "n19_7",
+      "kind": "soil",
+      "x": 19,
+      "z": 7,
+      "amount": 2
+    },
+    {
+      "id": "n20_7",
+      "kind": "soil",
+      "x": 20,
+      "z": 7,
+      "amount": 2
+    },
+    {
+      "id": "n25_7",
+      "kind": "soil",
+      "x": 25,
+      "z": 7,
+      "amount": 1
+    },
+    {
+      "id": "n12_8",
+      "kind": "soil",
+      "x": 12,
+      "z": 8,
+      "amount": 2
+    },
+    {
+      "id": "n13_8",
+      "kind": "soil",
+      "x": 13,
+      "z": 8,
+      "amount": 1
+    },
+    {
+      "id": "n14_8",
+      "kind": "soil",
+      "x": 14,
+      "z": 8,
+      "amount": 1
+    },
+    {
+      "id": "n18_8",
+      "kind": "soil",
+      "x": 18,
+      "z": 8,
+      "amount": 1
+    },
+    {
+      "id": "n19_8",
+      "kind": "soil",
+      "x": 19,
+      "z": 8,
+      "amount": 1
+    },
+    {
+      "id": "n12_9",
+      "kind": "soil",
+      "x": 12,
+      "z": 9,
+      "amount": 2
+    },
+    {
+      "id": "n13_9",
+      "kind": "soil",
+      "x": 13,
+      "z": 9,
+      "amount": 1
+    },
+    {
+      "id": "n12_10",
+      "kind": "soil",
+      "x": 12,
+      "z": 10,
+      "amount": 2
+    },
+    {
+      "id": "n13_10",
+      "kind": "soil",
+      "x": 13,
+      "z": 10,
+      "amount": 1
+    },
+    {
+      "id": "n12_11",
+      "kind": "soil",
+      "x": 12,
+      "z": 11,
+      "amount": 2
+    },
+    {
+      "id": "n13_11",
+      "kind": "soil",
+      "x": 13,
+      "z": 11,
+      "amount": 2
+    },
+    {
+      "id": "n14_11",
+      "kind": "soil",
+      "x": 14,
+      "z": 11,
+      "amount": 1
+    },
+    {
+      "id": "n15_11",
+      "kind": "soil",
+      "x": 15,
+      "z": 11,
+      "amount": 2
+    },
+    {
+      "id": "n16_11",
+      "kind": "soil",
+      "x": 16,
+      "z": 11,
+      "amount": 1
+    },
+    {
+      "id": "n17_11",
+      "kind": "soil",
+      "x": 17,
+      "z": 11,
+      "amount": 1
+    },
+    {
+      "id": "n7_12",
+      "kind": "soil",
+      "x": 7,
+      "z": 12,
+      "amount": 1
+    },
+    {
+      "id": "n8_12",
+      "kind": "soil",
+      "x": 8,
+      "z": 12,
+      "amount": 1
+    },
+    {
+      "id": "n9_12",
+      "kind": "soil",
+      "x": 9,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n10_12",
+      "kind": "soil",
+      "x": 10,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n11_12",
+      "kind": "soil",
+      "x": 11,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n12_12",
+      "kind": "soil",
+      "x": 12,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n13_12",
+      "kind": "soil",
+      "x": 13,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n14_12",
+      "kind": "soil",
+      "x": 14,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n15_12",
+      "kind": "soil",
+      "x": 15,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n16_12",
+      "kind": "soil",
+      "x": 16,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n17_12",
+      "kind": "soil",
+      "x": 17,
+      "z": 12,
+      "amount": 2
+    },
+    {
+      "id": "n7_13",
+      "kind": "soil",
+      "x": 7,
+      "z": 13,
+      "amount": 1
+    },
+    {
+      "id": "n8_13",
+      "kind": "soil",
+      "x": 8,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n9_13",
+      "kind": "soil",
+      "x": 9,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n10_13",
+      "kind": "soil",
+      "x": 10,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n11_13",
+      "kind": "soil",
+      "x": 11,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n12_13",
+      "kind": "soil",
+      "x": 12,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n13_13",
+      "kind": "soil",
+      "x": 13,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n14_13",
+      "kind": "soil",
+      "x": 14,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n15_13",
+      "kind": "soil",
+      "x": 15,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n16_13",
+      "kind": "soil",
+      "x": 16,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n17_13",
+      "kind": "soil",
+      "x": 17,
+      "z": 13,
+      "amount": 2
+    },
+    {
+      "id": "n20_13",
+      "kind": "soil",
+      "x": 20,
+      "z": 13,
+      "amount": 1
+    },
+    {
+      "id": "n28_13",
+      "kind": "soil",
+      "x": 28,
+      "z": 13,
+      "amount": 1
+    },
+    {
+      "id": "n8_14",
+      "kind": "soil",
+      "x": 8,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n9_14",
+      "kind": "soil",
+      "x": 9,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n10_14",
+      "kind": "soil",
+      "x": 10,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n11_14",
+      "kind": "soil",
+      "x": 11,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n12_14",
+      "kind": "soil",
+      "x": 12,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n13_14",
+      "kind": "soil",
+      "x": 13,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n14_14",
+      "kind": "soil",
+      "x": 14,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n15_14",
+      "kind": "soil",
+      "x": 15,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n16_14",
+      "kind": "soil",
+      "x": 16,
+      "z": 14,
+      "amount": 2
+    },
+    {
+      "id": "n17_14",
+      "kind": "stone",
+      "x": 17,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n18_14",
+      "kind": "stone",
+      "x": 18,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n19_14",
+      "kind": "stone",
+      "x": 19,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n20_14",
+      "kind": "stone",
+      "x": 20,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n21_14",
+      "kind": "stone",
+      "x": 21,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n27_14",
+      "kind": "soil",
+      "x": 27,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n28_14",
+      "kind": "soil",
+      "x": 28,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n29_14",
+      "kind": "soil",
+      "x": 29,
+      "z": 14,
+      "amount": 1
+    },
+    {
+      "id": "n8_15",
+      "kind": "soil",
+      "x": 8,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n9_15",
+      "kind": "soil",
+      "x": 9,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n10_15",
+      "kind": "soil",
+      "x": 10,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n11_15",
+      "kind": "soil",
+      "x": 11,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n12_15",
+      "kind": "soil",
+      "x": 12,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n13_15",
+      "kind": "soil",
+      "x": 13,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n14_15",
+      "kind": "soil",
+      "x": 14,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n15_15",
+      "kind": "soil",
+      "x": 15,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n16_15",
+      "kind": "stone",
+      "x": 16,
+      "z": 15,
+      "amount": 1
+    },
+    {
+      "id": "n17_15",
+      "kind": "stone",
+      "x": 17,
+      "z": 15,
+      "amount": 1
+    },
+    {
+      "id": "n18_15",
+      "kind": "stone",
+      "x": 18,
+      "z": 15,
+      "amount": 1
+    },
+    {
+      "id": "n19_15",
+      "kind": "stone",
+      "x": 19,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n20_15",
+      "kind": "stone",
+      "x": 20,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n21_15",
+      "kind": "stone",
+      "x": 21,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n22_15",
+      "kind": "stone",
+      "x": 22,
+      "z": 15,
+      "amount": 1
+    },
+    {
+      "id": "n23_15",
+      "kind": "stone",
+      "x": 23,
+      "z": 15,
+      "amount": 1
+    },
+    {
+      "id": "n27_15",
+      "kind": "soil",
+      "x": 27,
+      "z": 15,
+      "amount": 1
+    },
+    {
+      "id": "n28_15",
+      "kind": "soil",
+      "x": 28,
+      "z": 15,
+      "amount": 2
+    },
+    {
+      "id": "n8_16",
+      "kind": "soil",
+      "x": 8,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n9_16",
+      "kind": "soil",
+      "x": 9,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n10_16",
+      "kind": "soil",
+      "x": 10,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n11_16",
+      "kind": "soil",
+      "x": 11,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n12_16",
+      "kind": "soil",
+      "x": 12,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n13_16",
+      "kind": "soil",
+      "x": 13,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n14_16",
+      "kind": "soil",
+      "x": 14,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n15_16",
+      "kind": "stone",
+      "x": 15,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n16_16",
+      "kind": "stone",
+      "x": 16,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n17_16",
+      "kind": "stone",
+      "x": 17,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n18_16",
+      "kind": "stone",
+      "x": 18,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n19_16",
+      "kind": "stone",
+      "x": 19,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n20_16",
+      "kind": "stone",
+      "x": 20,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n21_16",
+      "kind": "stone",
+      "x": 21,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n22_16",
+      "kind": "stone",
+      "x": 22,
+      "z": 16,
+      "amount": 2
+    },
+    {
+      "id": "n23_16",
+      "kind": "stone",
+      "x": 23,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n24_16",
+      "kind": "stone",
+      "x": 24,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n26_16",
+      "kind": "soil",
+      "x": 26,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n27_16",
+      "kind": "soil",
+      "x": 27,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n28_16",
+      "kind": "soil",
+      "x": 28,
+      "z": 16,
+      "amount": 1
+    },
+    {
+      "id": "n9_17",
+      "kind": "soil",
+      "x": 9,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n10_17",
+      "kind": "soil",
+      "x": 10,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n11_17",
+      "kind": "soil",
+      "x": 11,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n12_17",
+      "kind": "soil",
+      "x": 12,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n13_17",
+      "kind": "soil",
+      "x": 13,
+      "z": 17,
+      "amount": 2
+    },
+    {
+      "id": "n14_17",
+      "kind": "stone",
+      "x": 14,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n15_17",
+      "kind": "stone",
+      "x": 15,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n16_17",
+      "kind": "stone",
+      "x": 16,
+      "z": 17,
+      "amount": 2
+    },
+    {
+      "id": "n17_17",
+      "kind": "stone",
+      "x": 17,
+      "z": 17,
+      "amount": 2
+    },
+    {
+      "id": "n18_17",
+      "kind": "stone",
+      "x": 18,
+      "z": 17,
+      "amount": 3
+    },
+    {
+      "id": "n19_17",
+      "kind": "stone",
+      "x": 19,
+      "z": 17,
+      "amount": 3
+    },
+    {
+      "id": "n20_17",
+      "kind": "stone",
+      "x": 20,
+      "z": 17,
+      "amount": 3
+    },
+    {
+      "id": "n21_17",
+      "kind": "stone",
+      "x": 21,
+      "z": 17,
+      "amount": 3
+    },
+    {
+      "id": "n22_17",
+      "kind": "stone",
+      "x": 22,
+      "z": 17,
+      "amount": 2
+    },
+    {
+      "id": "n23_17",
+      "kind": "stone",
+      "x": 23,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n24_17",
+      "kind": "stone",
+      "x": 24,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n26_17",
+      "kind": "soil",
+      "x": 26,
+      "z": 17,
+      "amount": 1
+    },
+    {
+      "id": "n13_18",
+      "kind": "stone",
+      "x": 13,
+      "z": 18,
+      "amount": 1
+    },
+    {
+      "id": "n14_18",
+      "kind": "stone",
+      "x": 14,
+      "z": 18,
+      "amount": 1
+    },
+    {
+      "id": "n15_18",
+      "kind": "stone",
+      "x": 15,
+      "z": 18,
+      "amount": 2
+    },
+    {
+      "id": "n16_18",
+      "kind": "stone",
+      "x": 16,
+      "z": 18,
+      "amount": 2
+    },
+    {
+      "id": "n17_18",
+      "kind": "stone",
+      "x": 17,
+      "z": 18,
+      "amount": 3
+    },
+    {
+      "id": "n18_18",
+      "kind": "stone",
+      "x": 18,
+      "z": 18,
+      "amount": 3
+    },
+    {
+      "id": "n19_18",
+      "kind": "stone",
+      "x": 19,
+      "z": 18,
+      "amount": 4
+    },
+    {
+      "id": "n20_18",
+      "kind": "stone",
+      "x": 20,
+      "z": 18,
+      "amount": 4
+    },
+    {
+      "id": "n21_18",
+      "kind": "stone",
+      "x": 21,
+      "z": 18,
+      "amount": 3
+    },
+    {
+      "id": "n22_18",
+      "kind": "stone",
+      "x": 22,
+      "z": 18,
+      "amount": 3
+    },
+    {
+      "id": "n23_18",
+      "kind": "stone",
+      "x": 23,
+      "z": 18,
+      "amount": 2
+    },
+    {
+      "id": "n24_18",
+      "kind": "stone",
+      "x": 24,
+      "z": 18,
+      "amount": 1
+    },
+    {
+      "id": "n25_18",
+      "kind": "stone",
+      "x": 25,
+      "z": 18,
+      "amount": 1
+    },
+    {
+      "id": "n26_18",
+      "kind": "soil",
+      "x": 26,
+      "z": 18,
+      "amount": 1
+    },
+    {
+      "id": "n13_19",
+      "kind": "stone",
+      "x": 13,
+      "z": 19,
+      "amount": 1
+    },
+    {
+      "id": "n14_19",
+      "kind": "stone",
+      "x": 14,
+      "z": 19,
+      "amount": 1
+    },
+    {
+      "id": "n15_19",
+      "kind": "stone",
+      "x": 15,
+      "z": 19,
+      "amount": 2
+    },
+    {
+      "id": "n16_19",
+      "kind": "stone",
+      "x": 16,
+      "z": 19,
+      "amount": 2
+    },
+    {
+      "id": "n17_19",
+      "kind": "stone",
+      "x": 17,
+      "z": 19,
+      "amount": 3
+    },
+    {
+      "id": "n18_19",
+      "kind": "stone",
+      "x": 18,
+      "z": 19,
+      "amount": 4
+    },
+    {
+      "id": "n19_19",
+      "kind": "stone",
+      "x": 19,
+      "z": 19,
+      "amount": 4
+    },
+    {
+      "id": "n20_19",
+      "kind": "stone",
+      "x": 20,
+      "z": 19,
+      "amount": 4
+    },
+    {
+      "id": "n21_19",
+      "kind": "stone",
+      "x": 21,
+      "z": 19,
+      "amount": 3
+    },
+    {
+      "id": "n22_19",
+      "kind": "stone",
+      "x": 22,
+      "z": 19,
+      "amount": 3
+    },
+    {
+      "id": "n23_19",
+      "kind": "stone",
+      "x": 23,
+      "z": 19,
+      "amount": 2
+    },
+    {
+      "id": "n24_19",
+      "kind": "stone",
+      "x": 24,
+      "z": 19,
+      "amount": 1
+    },
+    {
+      "id": "n25_19",
+      "kind": "stone",
+      "x": 25,
+      "z": 19,
+      "amount": 1
+    },
+    {
+      "id": "n26_19",
+      "kind": "soil",
+      "x": 26,
+      "z": 19,
+      "amount": 1
+    },
+    {
+      "id": "n9_20",
+      "kind": "soil",
+      "x": 9,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n10_20",
+      "kind": "soil",
+      "x": 10,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n11_20",
+      "kind": "soil",
+      "x": 11,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n13_20",
+      "kind": "stone",
+      "x": 13,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n14_20",
+      "kind": "stone",
+      "x": 14,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n15_20",
+      "kind": "stone",
+      "x": 15,
+      "z": 20,
+      "amount": 2
+    },
+    {
+      "id": "n16_20",
+      "kind": "stone",
+      "x": 16,
+      "z": 20,
+      "amount": 2
+    },
+    {
+      "id": "n17_20",
+      "kind": "stone",
+      "x": 17,
+      "z": 20,
+      "amount": 3
+    },
+    {
+      "id": "n18_20",
+      "kind": "stone",
+      "x": 18,
+      "z": 20,
+      "amount": 4
+    },
+    {
+      "id": "n19_20",
+      "kind": "stone",
+      "x": 19,
+      "z": 20,
+      "amount": 4
+    },
+    {
+      "id": "n20_20",
+      "kind": "stone",
+      "x": 20,
+      "z": 20,
+      "amount": 4
+    },
+    {
+      "id": "n21_20",
+      "kind": "stone",
+      "x": 21,
+      "z": 20,
+      "amount": 3
+    },
+    {
+      "id": "n22_20",
+      "kind": "stone",
+      "x": 22,
+      "z": 20,
+      "amount": 3
+    },
+    {
+      "id": "n23_20",
+      "kind": "stone",
+      "x": 23,
+      "z": 20,
+      "amount": 2
+    },
+    {
+      "id": "n24_20",
+      "kind": "stone",
+      "x": 24,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n25_20",
+      "kind": "stone",
+      "x": 25,
+      "z": 20,
+      "amount": 1
+    },
+    {
+      "id": "n6_21",
+      "kind": "soil",
+      "x": 6,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n7_21",
+      "kind": "soil",
+      "x": 7,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n8_21",
+      "kind": "soil",
+      "x": 8,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n9_21",
+      "kind": "soil",
+      "x": 9,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n10_21",
+      "kind": "soil",
+      "x": 10,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n11_21",
+      "kind": "soil",
+      "x": 11,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n13_21",
+      "kind": "stone",
+      "x": 13,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n14_21",
+      "kind": "stone",
+      "x": 14,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n15_21",
+      "kind": "stone",
+      "x": 15,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n16_21",
+      "kind": "stone",
+      "x": 16,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n17_21",
+      "kind": "stone",
+      "x": 17,
+      "z": 21,
+      "amount": 3
+    },
+    {
+      "id": "n18_21",
+      "kind": "stone",
+      "x": 18,
+      "z": 21,
+      "amount": 3
+    },
+    {
+      "id": "n19_21",
+      "kind": "stone",
+      "x": 19,
+      "z": 21,
+      "amount": 3
+    },
+    {
+      "id": "n20_21",
+      "kind": "stone",
+      "x": 20,
+      "z": 21,
+      "amount": 3
+    },
+    {
+      "id": "n21_21",
+      "kind": "stone",
+      "x": 21,
+      "z": 21,
+      "amount": 3
+    },
+    {
+      "id": "n22_21",
+      "kind": "stone",
+      "x": 22,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n23_21",
+      "kind": "stone",
+      "x": 23,
+      "z": 21,
+      "amount": 2
+    },
+    {
+      "id": "n24_21",
+      "kind": "stone",
+      "x": 24,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n25_21",
+      "kind": "stone",
+      "x": 25,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n26_21",
+      "kind": "soil",
+      "x": 26,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n28_21",
+      "kind": "soil",
+      "x": 28,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n29_21",
+      "kind": "soil",
+      "x": 29,
+      "z": 21,
+      "amount": 1
+    },
+    {
+      "id": "n7_22",
+      "kind": "soil",
+      "x": 7,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n8_22",
+      "kind": "soil",
+      "x": 8,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n9_22",
+      "kind": "soil",
+      "x": 9,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n10_22",
+      "kind": "soil",
+      "x": 10,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n11_22",
+      "kind": "soil",
+      "x": 11,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n12_22",
+      "kind": "soil",
+      "x": 12,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n13_22",
+      "kind": "stone",
+      "x": 13,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n14_22",
+      "kind": "stone",
+      "x": 14,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n15_22",
+      "kind": "stone",
+      "x": 15,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n16_22",
+      "kind": "stone",
+      "x": 16,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n17_22",
+      "kind": "stone",
+      "x": 17,
+      "z": 22,
+      "amount": 3
+    },
+    {
+      "id": "n18_22",
+      "kind": "stone",
+      "x": 18,
+      "z": 22,
+      "amount": 3
+    },
+    {
+      "id": "n19_22",
+      "kind": "stone",
+      "x": 19,
+      "z": 22,
+      "amount": 3
+    },
+    {
+      "id": "n20_22",
+      "kind": "stone",
+      "x": 20,
+      "z": 22,
+      "amount": 3
+    },
+    {
+      "id": "n21_22",
+      "kind": "stone",
+      "x": 21,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n22_22",
+      "kind": "stone",
+      "x": 22,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n23_22",
+      "kind": "stone",
+      "x": 23,
+      "z": 22,
+      "amount": 2
+    },
+    {
+      "id": "n24_22",
+      "kind": "stone",
+      "x": 24,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n25_22",
+      "kind": "stone",
+      "x": 25,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n26_22",
+      "kind": "soil",
+      "x": 26,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n27_22",
+      "kind": "soil",
+      "x": 27,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n28_22",
+      "kind": "soil",
+      "x": 28,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n29_22",
+      "kind": "soil",
+      "x": 29,
+      "z": 22,
+      "amount": 1
+    },
+    {
+      "id": "n8_23",
+      "kind": "soil",
+      "x": 8,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n9_23",
+      "kind": "soil",
+      "x": 9,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n10_23",
+      "kind": "soil",
+      "x": 10,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n11_23",
+      "kind": "soil",
+      "x": 11,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n12_23",
+      "kind": "soil",
+      "x": 12,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n13_23",
+      "kind": "soil",
+      "x": 13,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n14_23",
+      "kind": "stone",
+      "x": 14,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n15_23",
+      "kind": "stone",
+      "x": 15,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n16_23",
+      "kind": "stone",
+      "x": 16,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n17_23",
+      "kind": "stone",
+      "x": 17,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n18_23",
+      "kind": "stone",
+      "x": 18,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n19_23",
+      "kind": "stone",
+      "x": 19,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n20_23",
+      "kind": "stone",
+      "x": 20,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n21_23",
+      "kind": "stone",
+      "x": 21,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n22_23",
+      "kind": "stone",
+      "x": 22,
+      "z": 23,
+      "amount": 2
+    },
+    {
+      "id": "n23_23",
+      "kind": "stone",
+      "x": 23,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n24_23",
+      "kind": "stone",
+      "x": 24,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n25_23",
+      "kind": "soil",
+      "x": 25,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n26_23",
+      "kind": "soil",
+      "x": 26,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n27_23",
+      "kind": "soil",
+      "x": 27,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n28_23",
+      "kind": "soil",
+      "x": 28,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n29_23",
+      "kind": "soil",
+      "x": 29,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n30_23",
+      "kind": "soil",
+      "x": 30,
+      "z": 23,
+      "amount": 1
+    },
+    {
+      "id": "n8_24",
+      "kind": "soil",
+      "x": 8,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n9_24",
+      "kind": "soil",
+      "x": 9,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n10_24",
+      "kind": "soil",
+      "x": 10,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n11_24",
+      "kind": "soil",
+      "x": 11,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n12_24",
+      "kind": "soil",
+      "x": 12,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n13_24",
+      "kind": "soil",
+      "x": 13,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n14_24",
+      "kind": "stone",
+      "x": 14,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n15_24",
+      "kind": "stone",
+      "x": 15,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n16_24",
+      "kind": "stone",
+      "x": 16,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n17_24",
+      "kind": "stone",
+      "x": 17,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n18_24",
+      "kind": "stone",
+      "x": 18,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n19_24",
+      "kind": "stone",
+      "x": 19,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n20_24",
+      "kind": "stone",
+      "x": 20,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n21_24",
+      "kind": "stone",
+      "x": 21,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n22_24",
+      "kind": "stone",
+      "x": 22,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n23_24",
+      "kind": "stone",
+      "x": 23,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n24_24",
+      "kind": "soil",
+      "x": 24,
+      "z": 24,
+      "amount": 2
+    },
+    {
+      "id": "n25_24",
+      "kind": "soil",
+      "x": 25,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n26_24",
+      "kind": "soil",
+      "x": 26,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n27_24",
+      "kind": "soil",
+      "x": 27,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n28_24",
+      "kind": "soil",
+      "x": 28,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n29_24",
+      "kind": "soil",
+      "x": 29,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n30_24",
+      "kind": "soil",
+      "x": 30,
+      "z": 24,
+      "amount": 1
+    },
+    {
+      "id": "n9_25",
+      "kind": "soil",
+      "x": 9,
+      "z": 25,
+      "amount": 2
+    },
+    {
+      "id": "n10_25",
+      "kind": "soil",
+      "x": 10,
+      "z": 25,
+      "amount": 2
+    },
+    {
+      "id": "n11_25",
+      "kind": "soil",
+      "x": 11,
+      "z": 25,
+      "amount": 2
+    },
+    {
+      "id": "n12_25",
+      "kind": "soil",
+      "x": 12,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n13_25",
+      "kind": "soil",
+      "x": 13,
+      "z": 25,
+      "amount": 2
+    },
+    {
+      "id": "n14_25",
+      "kind": "soil",
+      "x": 14,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n15_25",
+      "kind": "stone",
+      "x": 15,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n16_25",
+      "kind": "stone",
+      "x": 16,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n17_25",
+      "kind": "stone",
+      "x": 17,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n18_25",
+      "kind": "stone",
+      "x": 18,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n19_25",
+      "kind": "stone",
+      "x": 19,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n20_25",
+      "kind": "stone",
+      "x": 20,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n21_25",
+      "kind": "stone",
+      "x": 21,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n22_25",
+      "kind": "stone",
+      "x": 22,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n23_25",
+      "kind": "soil",
+      "x": 23,
+      "z": 25,
+      "amount": 2
+    },
+    {
+      "id": "n24_25",
+      "kind": "soil",
+      "x": 24,
+      "z": 25,
+      "amount": 2
+    },
+    {
+      "id": "n25_25",
+      "kind": "soil",
+      "x": 25,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n26_25",
+      "kind": "soil",
+      "x": 26,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n27_25",
+      "kind": "soil",
+      "x": 27,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n28_25",
+      "kind": "soil",
+      "x": 28,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n29_25",
+      "kind": "soil",
+      "x": 29,
+      "z": 25,
+      "amount": 1
+    },
+    {
+      "id": "n10_26",
+      "kind": "soil",
+      "x": 10,
+      "z": 26,
+      "amount": 2
+    },
+    {
+      "id": "n11_26",
+      "kind": "soil",
+      "x": 11,
+      "z": 26,
+      "amount": 2
+    },
+    {
+      "id": "n12_26",
+      "kind": "soil",
+      "x": 12,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n13_26",
+      "kind": "soil",
+      "x": 13,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n14_26",
+      "kind": "soil",
+      "x": 14,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n19_26",
+      "kind": "stone",
+      "x": 19,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n20_26",
+      "kind": "stone",
+      "x": 20,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n21_26",
+      "kind": "soil",
+      "x": 21,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n22_26",
+      "kind": "soil",
+      "x": 22,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n23_26",
+      "kind": "soil",
+      "x": 23,
+      "z": 26,
+      "amount": 2
+    },
+    {
+      "id": "n24_26",
+      "kind": "soil",
+      "x": 24,
+      "z": 26,
+      "amount": 2
+    },
+    {
+      "id": "n25_26",
+      "kind": "soil",
+      "x": 25,
+      "z": 26,
+      "amount": 2
+    },
+    {
+      "id": "n26_26",
+      "kind": "soil",
+      "x": 26,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n27_26",
+      "kind": "soil",
+      "x": 27,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n28_26",
+      "kind": "soil",
+      "x": 28,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n29_26",
+      "kind": "soil",
+      "x": 29,
+      "z": 26,
+      "amount": 1
+    },
+    {
+      "id": "n10_27",
+      "kind": "soil",
+      "x": 10,
+      "z": 27,
+      "amount": 2
+    },
+    {
+      "id": "n11_27",
+      "kind": "soil",
+      "x": 11,
+      "z": 27,
+      "amount": 2
+    },
+    {
+      "id": "n22_27",
+      "kind": "soil",
+      "x": 22,
+      "z": 27,
+      "amount": 1
+    },
+    {
+      "id": "n23_27",
+      "kind": "soil",
+      "x": 23,
+      "z": 27,
+      "amount": 2
+    },
+    {
+      "id": "n24_27",
+      "kind": "soil",
+      "x": 24,
+      "z": 27,
+      "amount": 2
+    },
+    {
+      "id": "n25_27",
+      "kind": "soil",
+      "x": 25,
+      "z": 27,
+      "amount": 1
+    },
+    {
+      "id": "n26_27",
+      "kind": "soil",
+      "x": 26,
+      "z": 27,
+      "amount": 1
+    },
+    {
+      "id": "n11_28",
+      "kind": "soil",
+      "x": 11,
+      "z": 28,
+      "amount": 2
+    },
+    {
+      "id": "n12_28",
+      "kind": "soil",
+      "x": 12,
+      "z": 28,
+      "amount": 1
+    },
+    {
+      "id": "n20_28",
+      "kind": "soil",
+      "x": 20,
+      "z": 28,
+      "amount": 1
+    },
+    {
+      "id": "n21_28",
+      "kind": "soil",
+      "x": 21,
+      "z": 28,
+      "amount": 2
+    },
+    {
+      "id": "n22_28",
+      "kind": "soil",
+      "x": 22,
+      "z": 28,
+      "amount": 2
+    },
+    {
+      "id": "n23_28",
+      "kind": "soil",
+      "x": 23,
+      "z": 28,
+      "amount": 2
+    },
+    {
+      "id": "n24_28",
+      "kind": "soil",
+      "x": 24,
+      "z": 28,
+      "amount": 2
+    },
+    {
+      "id": "n25_28",
+      "kind": "soil",
+      "x": 25,
+      "z": 28,
+      "amount": 2
+    },
+    {
+      "id": "n26_28",
+      "kind": "soil",
+      "x": 26,
+      "z": 28,
+      "amount": 1
+    },
+    {
+      "id": "n12_29",
+      "kind": "soil",
+      "x": 12,
+      "z": 29,
+      "amount": 1
+    },
+    {
+      "id": "n21_29",
+      "kind": "soil",
+      "x": 21,
+      "z": 29,
+      "amount": 1
+    },
+    {
+      "id": "n22_29",
+      "kind": "soil",
+      "x": 22,
+      "z": 29,
+      "amount": 2
+    },
+    {
+      "id": "n23_29",
+      "kind": "soil",
+      "x": 23,
+      "z": 29,
+      "amount": 2
+    },
+    {
+      "id": "n24_29",
+      "kind": "soil",
+      "x": 24,
+      "z": 29,
+      "amount": 2
+    },
+    {
+      "id": "n25_29",
+      "kind": "soil",
+      "x": 25,
+      "z": 29,
+      "amount": 2
+    },
+    {
+      "id": "n26_29",
+      "kind": "soil",
+      "x": 26,
+      "z": 29,
+      "amount": 1
+    },
+    {
+      "id": "n22_30",
+      "kind": "soil",
+      "x": 22,
+      "z": 30,
+      "amount": 1
+    },
+    {
+      "id": "n23_30",
+      "kind": "soil",
+      "x": 23,
+      "z": 30,
+      "amount": 2
+    },
+    {
+      "id": "n24_30",
+      "kind": "soil",
+      "x": 24,
+      "z": 30,
+      "amount": 2
+    },
+    {
+      "id": "n25_30",
+      "kind": "soil",
+      "x": 25,
+      "z": 30,
+      "amount": 2
+    },
+    {
+      "id": "n26_30",
+      "kind": "soil",
+      "x": 26,
+      "z": 30,
+      "amount": 1
+    },
+    {
+      "id": "n23_31",
+      "kind": "soil",
+      "x": 23,
+      "z": 31,
+      "amount": 1
+    },
+    {
+      "id": "n24_31",
+      "kind": "soil",
+      "x": 24,
+      "z": 31,
+      "amount": 1
+    },
+    {
+      "id": "n25_31",
+      "kind": "soil",
+      "x": 25,
+      "z": 31,
+      "amount": 1
+    }
+  ],
+  "nextTreeId": 65,
+  "groundStacks": [],
+  "cropRecoveryAvailable": true,
+  "commerce": {
+    "offerId": 1,
+    "shipmentId": 1,
+    "shopStock": {},
+    "dockCargo": {},
+    "shipments": {}
+  },
+  "coins": 120,
+  "inventory": {
+    "vegetable": 1,
+    "wheat": 0,
+    "lettuce": 0,
+    "wood": 0,
+    "stone": 0,
+    "soil": 0,
+    "mud": 0,
+    "treeSeed": 0,
+    "chilledVegetable": 0
+  },
+  "nextId": 3,
+  "lastSeenAt": 0,
+  "completedOrders": 0,
+  "buildings": [
+    {
+      "id": "b1",
+      "kind": "warehouse",
+      "x": 3,
+      "z": 3,
+      "rotation": 0
+    },
+    {
+      "id": "b2",
+      "kind": "farm",
+      "x": 6,
+      "z": 3,
+      "rotation": 0,
+      "cropJobs": [null, null, null, null, null, null, null, null, null]
+    }
+  ]
+}

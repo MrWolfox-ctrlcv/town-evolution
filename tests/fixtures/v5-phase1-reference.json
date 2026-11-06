@@ -1,0 +1,42 @@
+{
+  "revision": "v5-mouth-resource-coast-fade-starter-1",
+  "source": "Phase 1 frozen production reference before natural coast feature",
+  "seeds": [
+    {
+      "seed": 1,
+      "sha256": "5ee279232896db102017408e87f001bc690fe4538c2d868505d9f9659874343c",
+      "resourceCount": 8860,
+      "treeCandidateCount": 2076
+    },
+    {
+      "seed": 17,
+      "sha256": "cc1c0d8622c5924880356bbd340fa080de1cbec225590c51ad88b64b1749d453",
+      "resourceCount": 8584,
+      "treeCandidateCount": 1854
+    },
+    {
+      "seed": 1937,
+      "sha256": "6467a5804750f7dcebaabc136f29502bff6fd78edd0734bd5205b1e5dcb81372",
+      "resourceCount": 8867,
+      "treeCandidateCount": 1856
+    },
+    {
+      "seed": 42173,
+      "sha256": "c4c04358a976ced7b2445230fd7c210357868fb57f680c42c3eff37f2e85022e",
+      "resourceCount": 8563,
+      "treeCandidateCount": 1875
+    },
+    {
+      "seed": 999999937,
+      "sha256": "3eb437a7ce6a9be1ba76eae40c6475f13f3805a0771989ff488e91b475b7ca0e",
+      "resourceCount": 8718,
+      "treeCandidateCount": 1830
+    },
+    {
+      "seed": 1000000000,
+      "sha256": "50b365e20c038214f67e3772f9c80fe9fe24a11b92f45d821da9fac8cc5723bb",
+      "resourceCount": 8647,
+      "treeCandidateCount": 1865
+    }
+  ]
+}

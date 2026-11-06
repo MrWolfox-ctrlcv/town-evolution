@@ -1,0 +1,396 @@
+{
+  "description": "Captured before terrain v5 integration using an isolated compiled v1-v4 domain copy; exact old land, terrain, tree/resource order and save hashes.",
+  "capturedAt": "2026-11-06T03:25:37.317Z",
+  "versions": [1, 2, 3, 4],
+  "seeds": [1, 7, 42, 42173, 1000000000],
+  "records": [
+    {
+      "version": 1,
+      "seed": 1,
+      "now": 123000,
+      "size": 40,
+      "landCount": 292,
+      "landHash": "7c033efa513f7e18dd0d59e3349ed42032660857fe1c81e0c8d4165de2287621",
+      "terrainHash": "aa2f78d2641556ee13ef10b90eaeeb2d26c563ac93450b983ab328a468cf4f35",
+      "treeCount": 24,
+      "treesHash": "775fcd91eda833ed52042f79181fd566a5bfb70fde8ad52a4ac99d5e6f245898",
+      "resourceCount": 0,
+      "resourcesHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "saveHash": "7fbc9eb40b25740242e2177a00192802dd864c72c6a715948ceda163fc493153",
+      "depletedSaveHash": "44ebf9d8e904d893b9d5bc2e848d8f65281f4258bde04af1f289b18fbb009836",
+      "removed": {
+        "trees": ["t1"],
+        "resources": []
+      }
+    },
+    {
+      "version": 1,
+      "seed": 7,
+      "now": 123000,
+      "size": 40,
+      "landCount": 292,
+      "landHash": "7c033efa513f7e18dd0d59e3349ed42032660857fe1c81e0c8d4165de2287621",
+      "terrainHash": "aa2f78d2641556ee13ef10b90eaeeb2d26c563ac93450b983ab328a468cf4f35",
+      "treeCount": 24,
+      "treesHash": "e5a96807a2d12a3cb63aa77a2afda11c02d61613be356e57d276fa281e335d08",
+      "resourceCount": 0,
+      "resourcesHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "saveHash": "090d4e4f0855292e8f7e288aec36cc386651a7540077f3329d3d70151d6c324a",
+      "depletedSaveHash": "235395ed22dd5025c54ea4690910dce2d1a55bdfb8749a1e6e82643411798c80",
+      "removed": {
+        "trees": ["t1"],
+        "resources": []
+      }
+    },
+    {
+      "version": 1,
+      "seed": 42,
+      "now": 123000,
+      "size": 40,
+      "landCount": 292,
+      "landHash": "7c033efa513f7e18dd0d59e3349ed42032660857fe1c81e0c8d4165de2287621",
+      "terrainHash": "aa2f78d2641556ee13ef10b90eaeeb2d26c563ac93450b983ab328a468cf4f35",
+      "treeCount": 24,
+      "treesHash": "f96dca94f39b0eae317c1c9c1af2c0975d93a90e8efd9860c57fc5ed7860a843",
+      "resourceCount": 0,
+      "resourcesHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "saveHash": "6a8aff8a6f300857443d0382f4f49561804690559982c29bcbf6fe09d24edc99",
+      "depletedSaveHash": "7c18c28bf77e0f68ccfd3f302aaddc54c1aa01d9c28409a6d2260869bb52a95b",
+      "removed": {
+        "trees": ["t1"],
+        "resources": []
+      }
+    },
+    {
+      "version": 1,
+      "seed": 42173,
+      "now": 123000,
+      "size": 40,
+      "landCount": 284,
+      "landHash": "b70c05730057f31ecbf7c3100dc82b5e1d35f491dab8e721c37e7cea58abb3d5",
+      "terrainHash": "45fc6ecdadbd54fe02561c5ccca9bdf87f9224062c3d5609272fafed18d5e4d4",
+      "treeCount": 24,
+      "treesHash": "0b465830f6f0f7173d4d1e727448f881d0bbb539c3f7da474dd4e4bb7b854f30",
+      "resourceCount": 0,
+      "resourcesHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "saveHash": "a6331425488d7293c17fc887edd8dad46bac59c937ee7d849ff774fde84dfcec",
+      "depletedSaveHash": "d6b0d12bd847881a63687813af54e68b140b11465017d58b6c562d082c149719",
+      "removed": {
+        "trees": ["t1"],
+        "resources": []
+      }
+    },
+    {
+      "version": 1,
+      "seed": 1000000000,
+      "now": 123000,
+      "size": 40,
+      "landCount": 279,
+      "landHash": "d8b53d1e3d125489d420c17bb4d55beaf964885c84b97d05ee08dd44308afd7e",
+      "terrainHash": "21350b8c88f853a5b9ba70c3748968920e55fa7e075f989a5f80b8105b6ef21c",
+      "treeCount": 24,
+      "treesHash": "c45045cf9cb0f2c6ec1489f4c96c1370ee97598945d2e9f50f96490e10d67f85",
+      "resourceCount": 0,
+      "resourcesHash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "saveHash": "7071fd1f0b71e88179b8d180dec83a94d169e221531b85029a7a949db3987113",
+      "depletedSaveHash": "7920642ec5e2f60aa35829ab034e27cf788b456991728d5bc456532774f00fb3",
+      "removed": {
+        "trees": ["t1"],
+        "resources": []
+      }
+    },
+    {
+      "version": 2,
+      "seed": 1,
+      "now": 123000,
+      "size": 40,
+      "landCount": 934,
+      "landHash": "a7a9632309b67409b3cf433d73b991bbc85ace6c07d0df12dc9e822c33b4f63e",
+      "terrainHash": "93bfa271d54a8c49723f04791c7b4d5924a79b9e448f203513bfae991e89c3f4",
+      "treeCount": 64,
+      "treesHash": "7fc776b5c49bbbe1d0319fda3cb2befe83fa371b8bf609adaa551238cab44ae6",
+      "resourceCount": 400,
+      "resourcesHash": "8cb2bf394fdb84ffac2ed3085294a747dddddbad1b596c3e3ed5883674b6a33c",
+      "saveHash": "1975ed99696b48a72b5c87f6428721ceeb0ab892bf9be2e12f015fd3c3b9a2a5",
+      "depletedSaveHash": "91208bd835e5c0c5824e57dcabf3e0a22e9fd40dd060b1cb6a65f30fd4512f50",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n21_4", "n17_12"]
+      }
+    },
+    {
+      "version": 2,
+      "seed": 7,
+      "now": 123000,
+      "size": 40,
+      "landCount": 903,
+      "landHash": "89841a1bd8ca5a0685c7776c98aa94cb9ac71750aed4f359ab8314519bb958ec",
+      "terrainHash": "22b28e783fc219c612237a7a737fae89c235703c2a73e702e6b770c635f220de",
+      "treeCount": 64,
+      "treesHash": "fac8cf7656fef7734582de522784dac480734e5afbbaf0fffd8de8067d2b2ddc",
+      "resourceCount": 379,
+      "resourcesHash": "23d0de9e6800d90704ef0f2d4590e3154f2e3bbda7e3e19c37e5f7ad4db81611",
+      "saveHash": "ad081560fe464accd93202e30f8c65b122fc38d1e6df4d0dd384aff188a8e2b3",
+      "depletedSaveHash": "2377e0df4854859aeb0ad3cea1850a666b74680aa9b206371a11aaa9274c89f1",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n21_4", "n19_11"]
+      }
+    },
+    {
+      "version": 2,
+      "seed": 42,
+      "now": 123000,
+      "size": 40,
+      "landCount": 894,
+      "landHash": "2ffae3ba6fe4dd84adc39ceefb8e3c801b5172c6ab87bd45d59c803d79a62a85",
+      "terrainHash": "1d7a5480fe5b273bf504519c6003a44bb8dd5cff84b56ee6b39baa777ad12309",
+      "treeCount": 64,
+      "treesHash": "b73e44b6bfa9afc921cd3eaaea72b2a23be79e5f6a8caeae608f7cba180539ff",
+      "resourceCount": 246,
+      "resourcesHash": "3381af03e48c71942f4b0eb9ea03a3b8c7aa7faa48325d2546b81a52bce7f771",
+      "saveHash": "ddd8b9b098aab0605febb18c90f37fa7d7f8d6963910b4ec176b67efc8a3a2f4",
+      "depletedSaveHash": "2b82a76dde42ad3d954c6d7756f2aa1f3918610adf1a92b169edf59935620e18",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n19_5", "n17_13"]
+      }
+    },
+    {
+      "version": 2,
+      "seed": 42173,
+      "now": 123000,
+      "size": 40,
+      "landCount": 899,
+      "landHash": "a88c89e56436756bbf7b31adf96bd4c98fbc36ffdfdc7ae92c24b3fa240cc0a8",
+      "terrainHash": "e2c621a80e93c52479510f25246c39c3e98a02f7c5e6a1a97c16426f1d331455",
+      "treeCount": 64,
+      "treesHash": "8e980e777ad5b7f9ed5a30d592e20626d6daef9ae3da75961a133fa41ea9e100",
+      "resourceCount": 340,
+      "resourcesHash": "0baeea3d44b9d6b0812df79afffe68b751c62f3c1c98ca5469038e65f682c862",
+      "saveHash": "c67fa9fd5e921d5eaf11d7c4b43038a5649810c472109c44f523135b77880354",
+      "depletedSaveHash": "b793aa33b77c1cd72d6a8536a2721cc8b14507adfa3a99115c3b5515f9994f2b",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n14_5", "n17_14"]
+      }
+    },
+    {
+      "version": 2,
+      "seed": 1000000000,
+      "now": 123000,
+      "size": 40,
+      "landCount": 918,
+      "landHash": "cc0a7a4d0a5246ad0d68a17156d28758815ff513726d79c9a5b8825488c1e854",
+      "terrainHash": "2499f8b527034ae91a9ecc0273f519abcd81b84d619f06d76711295a11993d05",
+      "treeCount": 64,
+      "treesHash": "7744fadf3e22f6b92de32b3375dd01224863dc01acc37fcefb4bc75548de057d",
+      "resourceCount": 283,
+      "resourcesHash": "5ca2757f94ab81a8f5a3e7acfa536fb1d13cfc3f0ffac24987d4054d9cb78d7c",
+      "saveHash": "40253276a466f1a73653019819287487934bd54643fc5d502a190f2f40ef477b",
+      "depletedSaveHash": "6942c4b29fad37fdc0f4854dce88f9d826a8f8941f890c0c05f949fb953fab8a",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n14_5", "n19_13"]
+      }
+    },
+    {
+      "version": 3,
+      "seed": 1,
+      "now": 123000,
+      "size": 40,
+      "landCount": 934,
+      "landHash": "a7a9632309b67409b3cf433d73b991bbc85ace6c07d0df12dc9e822c33b4f63e",
+      "terrainHash": "c6ecc0be2ff36c4c7674c24afe0d84da7e4877cfb1bfb636da11a7b5a45cd02f",
+      "treeCount": 64,
+      "treesHash": "75ff59fe7f693391266fbc276f3a4d5d75253def7137ab9f610b15559e383686",
+      "resourceCount": 202,
+      "resourcesHash": "a091e27016a97f17fd52d199df6036f7711c767ca17d7f91d9f3504d73e70ef1",
+      "saveHash": "5e4153bbb2e78141706e4aeaf9629713283ba4f37765de6996712692177e4eac",
+      "depletedSaveHash": "05b5cfb3a3e74e1ffbe4396eead5d41e0f2ed594a7b481dce77dc268e8b99db9",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n17_8", "n20_12"]
+      }
+    },
+    {
+      "version": 3,
+      "seed": 7,
+      "now": 123000,
+      "size": 40,
+      "landCount": 903,
+      "landHash": "89841a1bd8ca5a0685c7776c98aa94cb9ac71750aed4f359ab8314519bb958ec",
+      "terrainHash": "fad82b2802bf681cb0839371a90bde1fea90cbe79907d4c79feb743cfc89e8a7",
+      "treeCount": 64,
+      "treesHash": "814041f7361e3fd63227da2ba0005ebeeb44a739312e10bad7b54e3987c32d88",
+      "resourceCount": 179,
+      "resourcesHash": "3a81bbf4885218f28c393865f97ef379030de05df70edfe4811f30820a4608f0",
+      "saveHash": "252ca3bb694b96800181df439e4efc70b35420efc0702c5e30468413f26926e9",
+      "depletedSaveHash": "ab3e5ef9590ab9509fbbf7103f3092501b9d68d5a760232056925fdc46a5d0b8",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n14_5", "n22_14"]
+      }
+    },
+    {
+      "version": 3,
+      "seed": 42,
+      "now": 123000,
+      "size": 40,
+      "landCount": 894,
+      "landHash": "2ffae3ba6fe4dd84adc39ceefb8e3c801b5172c6ab87bd45d59c803d79a62a85",
+      "terrainHash": "38141a292e441b2fe2a03b2102d4114f14669fbf1db906fc924777ceaf5ab3d0",
+      "treeCount": 64,
+      "treesHash": "a5012a7ae15b0ea4dd2b8502a103066071d43fe081bab8fb1b3f8fba694788bd",
+      "resourceCount": 205,
+      "resourcesHash": "18afb0a2a24958d792be7c603390a12a54f45230dd91286c6d94149fbdd27229",
+      "saveHash": "8d7b92578378111dcd449f92ba3ddeb378cb3a0c77767214b9e0b60589179171",
+      "depletedSaveHash": "4d793c9cb568b75e2b29c4723500c63a5dbe988ab6b2c1440534db81349182b4",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n12_8", "n17_12"]
+      }
+    },
+    {
+      "version": 3,
+      "seed": 42173,
+      "now": 123000,
+      "size": 40,
+      "landCount": 899,
+      "landHash": "a88c89e56436756bbf7b31adf96bd4c98fbc36ffdfdc7ae92c24b3fa240cc0a8",
+      "terrainHash": "e284abdd0e77bb0f2ea88769604b5479fe5732b96791ea1a7691226cd2d0d18a",
+      "treeCount": 64,
+      "treesHash": "f8e7c4b2b1769920efe8db583541387e995c8b5ba8c02434b186183b2500acd6",
+      "resourceCount": 192,
+      "resourcesHash": "4531461b6a5e71f6f18e5a7d8563a333ad0221426e035a8bd258fdb6b1c3d77a",
+      "saveHash": "556e97520dc14aa3acf53a45d54ca961e7c7cae718d4bebae79215610915111b",
+      "depletedSaveHash": "d2b9422697772b589f473eb0d3b5c5713de0c7d3b5024268199ddb46eedbe8b0",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n24_8", "n24_14"]
+      }
+    },
+    {
+      "version": 3,
+      "seed": 1000000000,
+      "now": 123000,
+      "size": 40,
+      "landCount": 918,
+      "landHash": "cc0a7a4d0a5246ad0d68a17156d28758815ff513726d79c9a5b8825488c1e854",
+      "terrainHash": "a15e6db6b65a8383b968e39e390de894e27dc6ac991cbf5cbf942bb5778e1297",
+      "treeCount": 64,
+      "treesHash": "28083fb82f5a6268f7d68e65fc9ed225ece0cd4a4e74cb18eb756fc62a303ff7",
+      "resourceCount": 186,
+      "resourcesHash": "2338fb3a67e8225505a3a9255be34bcec4498986366fa90e6dab3558bc5a5529",
+      "saveHash": "ef381c091373a775d274401724bfc527be8d44d406ca7d7e138c14e37f213f8f",
+      "depletedSaveHash": "247153ec142b26b43aa9a90201743ffffce98d48d78cadca81cbbd76a082ac98",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n21_8", "n19_12"]
+      }
+    },
+    {
+      "version": 4,
+      "seed": 1,
+      "now": 123000,
+      "size": 192,
+      "landCount": 27590,
+      "landHash": "3dc43affb459ee9d0ed687126e8f3a34409dab773c205dbc689ac7c80fe94052",
+      "terrainHash": "679112a28e0cec76f4af66f0e459859b4221539cffc8af5d3fc05555915df7c4",
+      "treeCount": 192,
+      "treesHash": "5d7619588b57c67441fa2e666796d9f2c9eaf7c19c0e63d51d4e159df7612b97",
+      "resourceCount": 1329,
+      "resourcesHash": "45aaa82f186e9f91ba73d8ee9578b7883b9988eee144181df8e6efe2700f3e77",
+      "saveHash": "a7b9cee80fa6bd2b92b06256b81361f2fd96f3d793cae83286cf8a3c6be0d1cd",
+      "depletedSaveHash": "d11b84199f0d83e92ed1957dd04246898634cb0d1a279b219b4e2969c8c84ef7",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n17_8", "n20_12"]
+      }
+    },
+    {
+      "version": 4,
+      "seed": 7,
+      "now": 123000,
+      "size": 192,
+      "landCount": 27591,
+      "landHash": "c5054ae50d24b78c287ce842a602e225719eaf85ea01a0130dc5076913b6c762",
+      "terrainHash": "cb2ae5ca511e072456f94c4c1f02db17afda0f9a316d9d51f2ad21196275e3ca",
+      "treeCount": 192,
+      "treesHash": "6ffa75150eaa67f2f4b479fd7f26c404293721e2b1dade231a578a8a55a5e73f",
+      "resourceCount": 1325,
+      "resourcesHash": "234977f3c3906ceec19b97ca9c2b8d1d9d6f9532e615198603c70303e4afbfec",
+      "saveHash": "aa0c4fced8ff14d7c6893c7b4ac62f68903f784546c7b4123e9d52f6b1180482",
+      "depletedSaveHash": "893f2ec889095a8a670a58f1890471fd46f93c9eb65cdecbfafe8144bdd7c5be",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n14_5", "n22_14"]
+      }
+    },
+    {
+      "version": 4,
+      "seed": 42,
+      "now": 123000,
+      "size": 192,
+      "landCount": 27900,
+      "landHash": "c21d8391d8a71f9d0ca4186be8b647bc8019e24e0936d13bf2486a720c993970",
+      "terrainHash": "7e510db8d9d9e865b2ad9154e19e9dbff463b9b3834642afa0d06f72c365e3be",
+      "treeCount": 192,
+      "treesHash": "24900b8fadfe0f2d1042dd68a6ee1fc4bfe997ce7308901a752b7de514711142",
+      "resourceCount": 1363,
+      "resourcesHash": "ab7507154836e4a2907722e03ddff79b0513828ca402832220e4c1480588e9c6",
+      "saveHash": "789ad53ebf9961f124aa497b640fc0f386b854f362dcbf327f8d7c22745ed133",
+      "depletedSaveHash": "46b318676f90dfa005a8e66ae3a27fd6fc720ef84a3cf49982f8bda3dd4ae81f",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n12_8", "n17_12"]
+      }
+    },
+    {
+      "version": 4,
+      "seed": 42173,
+      "now": 123000,
+      "size": 192,
+      "landCount": 27587,
+      "landHash": "21a17094837e8a558ce1174fc37a1cfc7cefaa24004b85fdffe9b4c3c2e7b416",
+      "terrainHash": "8d57b86286ff7037546527710fc1af09ae4c817a8d1c198285f8ebdf04368203",
+      "treeCount": 192,
+      "treesHash": "99b44df93ae77a38d17a237f5baf07557c4aac150f472eaabd66cd6d7d475614",
+      "resourceCount": 1372,
+      "resourcesHash": "5531d9bb3f91bf92e8c684a3d4311ce9b35bc1142e81554dd70d763d2f908c53",
+      "saveHash": "44083037b162583d87d652173e65213dbba70dc76d48424b0159b85bdc448df6",
+      "depletedSaveHash": "5c7d433df1c63ed91b7d631ec2bdf0c7b5f50217de338d4be32ffb59f9f7460c",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n24_8", "n24_14"]
+      }
+    },
+    {
+      "version": 4,
+      "seed": 1000000000,
+      "now": 123000,
+      "size": 192,
+      "landCount": 27653,
+      "landHash": "4d7c3d3e98e6cfc253629e61332ca4430a71123e6b3731e1c0eca89466378b8b",
+      "terrainHash": "55aa29ec060b83bcae85935172a3affa743842afc3bf40a94ba9a6fb410acf1f",
+      "treeCount": 192,
+      "treesHash": "342b3e50fb2c38a357935a57c8c5388b675ffeabee9fa33d6bd6b9fb20d7f928",
+      "resourceCount": 1329,
+      "resourcesHash": "e1274ec9aafe63216505d036e932bfe18a1416898c95ec739f985663cae9154a",
+      "saveHash": "9bb49c0afc009d3a3727cc386d0115448e53a8125c54101e71533aa77c527cf4",
+      "depletedSaveHash": "05ee789e2c0bb14a15150abff2855bc305d6bb4f5924b15ebe360195220665db",
+      "removed": {
+        "trees": ["t1"],
+        "resources": ["n21_8", "n19_12"]
+      }
+    }
+  ],
+  "fixtureSha256": "3603eb884ee2ea6bacfc96b4249db7a4e755978fcfc4d3819529f4c4791600f8",
+  "fixtureBytes": 123713,
+  "captureSource": {
+    "world": "0b61215ed2371551b1648cb3d164689ab97d456b59db23bf4a15156649c02ad1",
+    "state": "32f64c7ff71aca682a17bdcc94e20b4a1bb6e139a8ec90e24d0c7968d754317d",
+    "island": "ad6dcfabca9beb83d498c21425fd085965a0d04ec02d976ce2e4b4ba2705e202",
+    "terrain": "2e2f18fa5c99baebd66338842feb22b7902c3cecd7f26b5cfbd5244d77e4e127"
+  }
+}
