@@ -2,18 +2,18 @@
 
 以 **Cocos Creator 3.8.8 + TypeScript** 开发的本地单机经营原型。玩家在岛上种植、采集、加工、交易，通过明确的材料配方搭建与组合建筑。业务规则、存档、程序化模型和 Cocos 表现分层实现，目标是让网页与 Android 共用同一套玩法规则。
 
-[中文操作说明](README.zh-CN.md) · [代码树与阅读路线](docs/code-tree.md) · [生产与存档规则](docs/new-production-routes.md) · [预览构建说明](scripts/preview/README.md)
+[中文操作说明](README.zh-CN.md) · [代码树与阅读路线](docs/code-tree.md) · [生产与存档规则](docs/new-production-routes.md) · [预览构建说明](scripts/preview/README.md) · [terrain6 接入状态](docs/terrain6-integration.md)
 
 ## 当前是什么版本
 
-本说明按 **2026-11-06 本地源码**整理。工作区包含尚未提交的开发改动；仓库 HEAD、已打包的预览和当前工作区不是同一份验收对象。
+本说明按 **2026-11-06 本地源码**整理。本次源码包含 terrain6 集成候选；现有在线 v31 仍为此前的 v5 / 木桥 / 堆肥与烤制包，未升级为 terrain6。仓库源码与在线预览须分别验收。
 
 | 范围                  | 当前状态                                                                                                         |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | 主游戏源码            | 已实现逐格种田、材料合成、地面掉落、交易、加工、独立存档和配方图鉴；当前写入 schema 10，兼容导入 schema 8/9。    |
 | 普通小镇与演示岛      | 新建时仍用 terrain v4；演示模板、正常进度分别保存，模板更新不自动重置已有存档。                                  |
 | v5 新岛预览与木桥演示 | 已有独立入口，使用 terrain v5 和带生成器 revision 的独立存储空间；不是默认小镇，也不迁移旧岛。                   |
-| terrain6              | **独立研究原型，尚未接入本仓库主游戏**。基础地形、分步构造、填海和规则挖填分开验证，不可把离线图当成可玩版本。   |
+| terrain6 自然挖填实验 | 已进入主游戏源码，独立 `v6-preview` / revision / 存档；仍是未部署的集成候选，木桥关闭，GPU / 手机未验。          |
 | 完整验收              | 源码检查、独立引擎构建、真实浏览器交互、Creator 导出、GPU/真机性能是不同环节；旧检查点的通过结果不覆盖当前改动。 |
 
 这里的「已实现」指可在源码中找到对应逻辑，不代表本轮已完成全部运行时或设备验收。具体边界见下文。[早期架构文档](docs/architecture.md)保留了最初 MVP 的背景，其 schema1、冷藏生产和金币建造参数不是当前玩法规范。
@@ -97,19 +97,19 @@ npm run preview:serve
 
 [Creator 安装](https://docs.cocos.com/creator/3.8/manual/en/getting-started/install/) · [Android 构建](https://docs.cocos.com/creator/3.8/manual/en/editor/publish/android/index.html) · [原生工具链](https://docs.cocos.com/creator/3.8/manual/en/editor/publish/setup-native-development.html)
 
-## 地形版本与 terrain6 研究边界
+## 地形版本与 terrain6 接入边界
 
-**主游戏目前只接受 terrainVersion 1–5。** v5 将种子地形、真实资源剩余量、海岸 / 湖河与合法填海统一校验；资源、树和海岸分块发布，渲染、命中和支撑使用对应几何。分帧 CPU / 上传任务不代表已经实现 Worker，也不代表 GPU 或手机性能通过。[v5 接入边界](docs/v5-integration.md) · [树木流式加载](docs/v5-tree-streaming.md)
+**当前源码接受 terrainVersion 1–6，默认普通小镇 / 演示岛仍为4。** 旧 v1–v5 规则、ID、资源和存档不因新实验改写，v5 两个入口保持独立。[v5 接入边界](docs/v5-integration.md) · [树木流式加载](docs/v5-tree-streaming.md)
 
-terrain6 文件位于开发工作区中本仓库旁的 `terrain-v5-lab/grass-relief/`，**不在本仓库内，不随单独 clone 获取**：
+terrain6 已从研究进入 `assets/scripts/`，入口名为 **自然挖填实验**，profile 为 `v6-preview`，独立 revision 是 `v6-natural-grass-edits-1`。自然山坡保留柔和形态，玩家挖填生成共同层面和规则竖直边界。
 
-- `world6/`：完整岛的自然地貌、普通高地、真实资源柱、Float32 表面、基础网格和 CPU 查询基线。
-- `world6-staged/`：对冻结基线的分步构造与取消 / 重启实验；可调度不等于消除了总计算量和内存峰值。
-- `world6-reclaimed/`：保留原海域验证规则的填海状态、基础面、侧墙、支撑 / 拾取一致性实验。
-- `world6-edits/`：自然地貌保留柔和形态，玩家编辑使用共同层面和规则竖直边界；陆地挖填、材料层账本与严格重放正在独立核验。它不接旧库存、不决定新整地价格，也不支持直接在未经整平的天然斜面补土。
-- `world6-rocks-*`：岩山造型对照，尚未选为正式地貌；不能把天然山整体规则阶梯化当作既定方向。
+- **真实材料**：现有土 / 石按实际几何体积的 1/4096 份额结算，挖掘产生掉落，明确拾取入仓；填筑消耗选中的库存或地堆。混合层共享体积预算，不使用研究 token，也不沿用旧采土整格9份来给新体积定价。这仍是实验平衡。
+- **天然坡可直接改造**：挖面低于全格，填面盖过全格，按实际缺口消耗材料，不暗中免费削高或垫低。编辑保护水岸、自然港、建筑、树和现有物品占用。
+- **保存与旧档**：正式 v6 使用每格状态检查点，不是逐操作 journal；载入不重复发放材料。现有4百万JSON字符上限在 v6 命令提交前预检，超限保持原状态，但浏览器存储配额故障仍须单独处理。
+- **画面与操作接入**：高地建筑 / 农田 / 树 / 掉落的实际高程、分块表面、拾取支撑、挖填触控路由及回家 / 缩放导航已有源码实现；远景不等于精细交互已就绪。
+- **明确未完成**：v6 木桥仍有安全 gate，继续在原 v5 木桥演示使用旧桥；全链路加载、同步步骤、极端档案内存和真机帧时仍未达到已验收状态。没有真实 Cocos / WebGL、GPU 或手机通过声明，也没有部署本次 terrain6。
 
-这些实验还没有 terrain6 正式 profile / 存档入口、完整建筑占用及多高程交互接入，也未完成真实 Cocos / GPU / 手机验收。离线 Blender 图只证明对应 CPU 网格的形状。已有 v1–v5 存档、生成器 revision、资源 ID 与原有采土 / 采石 / 填海配方不因此改变。独立目录与后续接入门槛见[代码树](docs/code-tree.md)。
+当前功能、保存约束、性能与桥的限制见 [terrain6 接入状态](docs/terrain6-integration.md)。工作区旁的 `terrain-v5-lab/grass-relief/world6*` 仍保留独立历史实验，不随本仓库 clone 获取；它们的接口、离线图和旧测试结果不能替代当前集成源码验收。
 
 ## 架构与存档原则
 
@@ -127,7 +127,7 @@ terrain6 文件位于开发工作区中本仓库旁的 `terrain-v5-lab/grass-rel
 
 - [早期 CI 记录](docs/verification.md)只对应 `ec7ed6f5`：55 项测试、18 个模型，以及桌面 / 手机视口各 21 项真实 Cocos UI 检查。这些数字不是当前代码规模或新功能验收结果。
 - [2026-11-03 融合与图鉴检查点](docs/checkpoint-fusion-2026-11-03.md)记录了当时本地 Windows 的真实 Cocos 鼠标与模拟触屏测试，仅覆盖该检查点。
-- [当前预览说明](scripts/preview/README.md)列出后续准备好的 schema10、生产路线和木桥交互场景，以及执行环境受限时未完成的环节。准备了脚本、构建成功、HTTP 字节一致和 CPU 渲染都不等于浏览器交互通过。
+- [terrain6 接入状态](docs/terrain6-integration.md)区分本次源码检查、尚未部署的实验和桥 / 性能限制；[当前预览说明](scripts/preview/README.md)保留 schema10、生产路线和木桥交互场景及环境限制。准备了脚本、构建成功、HTTP 字节一致和 CPU 渲染都不等于浏览器交互通过。
 - 对当前源码的结论须关联同一份最终源码与本轮日志。未运行、阻塞、失败和通过应分别记录，不把旧报告中的通过结果沿用到新地形或新生产路线。
 
 ## 文档与资产入口
