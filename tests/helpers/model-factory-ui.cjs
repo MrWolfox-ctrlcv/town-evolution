@@ -25,7 +25,8 @@ class Node extends ResourceNode {
   addComponent(Type) {
     const c = new Type();
     c.node = this;
-    this.renderers.push(c);
+    if (c instanceof Renderer) this.renderers.push(c);
+    else (this.components ??= []).push(c);
     return c;
   }
 }
@@ -50,7 +51,7 @@ class Assets {
     for (const m of this.meshes.values()) m.destroy();
   }
 }
-function factory() {
+function factory(overrides = {}) {
   const m = { exports: {} },
     code = ts.transpileModule(
       fs.readFileSync('assets/scripts/presentation/ModelFactory.ts', 'utf8'),
@@ -73,6 +74,7 @@ function factory() {
     },
     './Palette': { color: (v) => v },
     './CropMotion': {},
+    ...overrides,
   };
   new Function('require', 'module', 'exports', code)(
     (id) => deps[id] ?? require('../../.domain-build/' + id.slice(3)),
