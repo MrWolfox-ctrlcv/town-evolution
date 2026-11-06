@@ -23,18 +23,25 @@ export interface Part {
   size: V3;
   color: string;
   rotation?: V3;
+  texture?: 'warm-wood';
 }
+export type AssetCategory = 'natural-plants' | 'natural-inorganic' | 'buildings' | 'crops';
 export interface AssetRecipe {
   id: string;
   footprint: readonly [number, number];
   parts: Part[];
   sockets?: Record<string, V3>;
+  category?: AssetCategory;
+  /** Precompiled procedural geometry shares the canonical export/render pipeline. */
+  mesh?: MeshData;
 }
 export interface MeshData {
   positions: number[];
   normals: number[];
   colors: number[];
   indices: number[];
+  uvs?: number[];
+  texturedIndices?: number[];
   min: number[];
   max: number[];
 }

@@ -6,16 +6,22 @@ export interface CropPose {
   height: number;
 }
 /** Pure, frame-rate independent pose. Soil anchors and simulation state never move. */
-export function cropPose(job: Job, now: number, phase: number, ready: boolean): CropPose {
+export function cropPose(
+  job: Job,
+  now: number,
+  phase: number,
+  ready: boolean,
+  growthNow = now,
+): CropPose {
   const crop: Crop = job.crop ?? 'vegetable';
   const progress = Math.max(
     0,
-    Math.min(1, (now - job.startedAt) / Math.max(1, job.readyAt - job.startedAt)),
+    Math.min(1, (growthNow - job.startedAt) / Math.max(1, job.readyAt - job.startedAt)),
   );
   const time = now / 1000;
   const strength = crop === 'wheat' ? 2.1 : crop === 'lettuce' ? 0.55 : 1.2;
   const wind = Math.sin(time * 1.7 + phase) * 0.7 + Math.sin(time * 0.73 + phase * 0.4) * 0.3;
-  const age = (now - job.readyAt) / 1000;
+  const age = (growthNow - job.readyAt) / 1000;
   // One restrained ripening stretch, never a repeating bounce or delayed replay on reload.
   const ripe = ready && age >= 0 && age < 0.8 ? Math.sin((age / 0.8) * Math.PI) * 0.065 : 0;
   const growth = ready ? 1 : 0.78 + 0.22 * progress;

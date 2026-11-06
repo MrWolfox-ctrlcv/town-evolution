@@ -1,16 +1,7 @@
+import { BUILDING_ASSETS } from './BuildingAssets';
 import type { BuildingKind } from '../domain/types';
 import { ASSETS } from './AssetCatalog';
 import { compileAsset } from './MeshCompiler';
-const BUILDING_ASSETS: Record<BuildingKind, string> = {
-  farm: 'farm-cell-bed',
-  warehouse: 'warehouse-base',
-  expandedWarehouse: 'warehouse-expanded',
-  coldWarehouse: 'warehouse-cold',
-  cooler: 'cooler',
-  shop: 'shop',
-  orderBoard: 'order-board',
-  dock: 'dock',
-};
 const heights = new Map<BuildingKind, number>();
 /** The tray clears actual mesh vertices, rather than guessing from logical collision height. */
 export function attachmentHeight(kind: BuildingKind): number {
@@ -18,7 +9,7 @@ export function attachmentHeight(kind: BuildingKind): number {
   if (height !== undefined) return height;
   height = compileAsset(ASSETS[BUILDING_ASSETS[kind]]!).max[1]!;
   if (kind === 'farm') {
-    for (const crop of ['vegetable', 'wheat', 'lettuce'])
+    for (const crop of ['vegetable', 'wheat', 'lettuce', 'rice'])
       height = Math.max(height, compileAsset(ASSETS[`crop-cell-${crop}-ready`]!).max[1]! * 1.2);
   }
   height += 0.08;

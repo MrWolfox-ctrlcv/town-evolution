@@ -1,3 +1,4 @@
+import { woodenCrate } from './BuildingAccessories';
 import { treeParts } from './TreeKit';
 import { ART as C, part } from './AssetTypes';
 import type { AssetRecipe, Part } from './AssetTypes';
@@ -30,14 +31,7 @@ export function farm(stage: 'empty' | 'seedling' | 'ready'): AssetRecipe {
       }
   return { id: `farm-${stage}`, footprint: [2, 2], parts };
 }
-export const crate = (): Part[] => [
-  part('crate-body', 'box', [0, 0.22, 0], [0.42, 0.44, 0.42], C.wood),
-  ...[-1, 1].flatMap((s) => [
-    part('crate-rim', 'box', [0, 0.22 + s * 0.18, 0.22], [0.44, 0.055, 0.04], C.woodLight),
-    part('crate-post', 'box', [s * 0.18, 0.22, 0.22], [0.05, 0.4, 0.04], C.woodLight),
-  ]),
-  part('crate-brace', 'box', [0, 0.22, 0.25], [0.055, 0.5, 0.035], C.woodLight, [0, 0, 40]),
-];
+export const crate = woodenCrate;
 export function environment(id: 'crate' | 'fence' | 'tree' | 'rock' | 'path'): AssetRecipe {
   let parts: Part[];
   if (id === 'crate') parts = crate();

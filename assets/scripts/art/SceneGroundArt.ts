@@ -1,4 +1,5 @@
 import type { MeshData, V3 } from './AssetTypes';
+import type { IslandSurface } from './IslandTerrain';
 export interface GroundActor {
   x: number;
   z: number;
@@ -6,6 +7,7 @@ export interface GroundActor {
   depth: number;
   tree: boolean;
   prop?: boolean;
+  resource?: boolean;
   rotation: number;
 }
 export function sceneGroundArt(
@@ -13,6 +15,7 @@ export function sceneGroundArt(
   seed: number,
   actors: GroundActor[],
   land: (x: number, z: number) => boolean,
+  surface?: (x: number, z: number) => IslandSurface | null,
 ): MeshData {
   const m: MeshData = {
     positions: [],
@@ -30,7 +33,7 @@ export function sceneGroundArt(
   const roads = new Set<string>();
   const walk = (x: number, z: number) =>
     x >= 0 && z >= 0 && x < size && z < size && land(x, z) && !occupied.has(key(x, z));
-  const buildings = actors.filter((a) => !a.tree && !a.prop);
+  const buildings = actors.filter((a) => !a.tree && !a.prop && !a.resource);
   function entrance(a: GroundActor): [number, number] | null {
     const ends: [[number, number], [number, number], [number, number], [number, number]] = [
       [Math.floor(a.x + a.width / 2), a.z + a.depth],
@@ -82,12 +85,6 @@ export function sceneGroundArt(
         current = previous.get(current) ?? null;
       }
   }
-  const meadow = (x: number, z: number) => {
-    const tone = 0.94 + 0.055 * Math.sin(x * 0.47 + seed) + 0.035 * Math.cos(z * 0.38 + seed * 0.1);
-    return [147, 173, 102].map((c) => (c / 255) * tone);
-  };
-  const base = (x: number, z: number) =>
-    roads.has(key(Math.floor(x), Math.floor(z))) ? [0.8, 0.69, 0.46] : meadow(x, z);
   function triangle(a: V3, b: V3, c: V3, colors: number[][]) {
     const start = m.positions.length / 3;
     for (const [i, p] of [a, b, c].entries()) {
@@ -116,32 +113,12 @@ export function sceneGroundArt(
       for (let col = 0; col < 2; col++)
         paving(x + col * 0.5 + 0.012, z + row * 0.5 + 0.012, 0.476, 0.022, [0.8, 0.69, 0.46]);
   }
-  for (const actor of actors) {
-    const cx = actor.x + actor.width / 2 + 0.035,
-      cz = actor.z + actor.depth / 2 + 0.035;
-    const rx = actor.tree ? 0.28 : actor.prop ? 0.43 : actor.width * 0.53,
-      rz = actor.tree ? 0.24 : actor.prop ? 0.4 : actor.depth * 0.52;
-    const segments = 16;
-    for (let i = 0; i < segments; i++) {
-      const a = (i * Math.PI * 2) / segments,
-        b = ((i + 1) * Math.PI * 2) / segments;
-      const points: V3[] = [
-        [cx, 0.028, cz],
-        [cx + Math.cos(b) * rx, 0.028, cz + Math.sin(b) * rz],
-        [cx + Math.cos(a) * rx, 0.028, cz + Math.sin(a) * rz],
-      ];
-      if (points.some((p) => !land(Math.floor(p[0]), Math.floor(p[2])))) continue;
-      const cols = points.map((p, j) =>
-        base(p[0], p[2]).map(
-          (v, k) => v * (j === 0 ? 0.57 : 1) + (j === 0 ? [0.025, 0.035, 0.012][k]! : 0),
-        ),
-      );
-      triangle(points[0]!, points[1]!, points[2]!, cols);
-    }
-  }
+  // Object shadows are rendered from their actual meshes by the scene sun.
   // Short meadow tufts are scenery, never tree-shaped resources or collision nodes.
   for (let x = 1; x < size - 1; x++)
     for (let z = 1; z < size - 1; z++) {
+      const biome = surface?.(x, z)?.biome;
+      if (biome === 'mountain' || biome === 'hill') continue;
       if (!walk(x, z) || roads.has(key(x, z)) || (x * 71 + z * 37 + seed) % 19 !== 0) continue;
       const cx = x + 0.44,
         cz = z + 0.5;

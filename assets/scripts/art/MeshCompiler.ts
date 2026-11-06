@@ -45,11 +45,23 @@ function transform(v: V3, p: Part): number[] {
   return [x + p.position[0], y + p.position[1], z + p.position[2]];
 }
 export function compileAsset(recipe: AssetRecipe): MeshData {
+  if (recipe.mesh)
+    return {
+      ...recipe.mesh,
+      positions: [...recipe.mesh.positions],
+      normals: [...recipe.mesh.normals],
+      colors: [...recipe.mesh.colors],
+      indices: [...recipe.mesh.indices],
+      min: [...recipe.mesh.min],
+      max: [...recipe.mesh.max],
+    };
   const mesh: MeshData = {
     positions: [],
     normals: [],
     colors: [],
     indices: [],
+    uvs: [],
+    texturedIndices: [],
     min: [Infinity, Infinity, Infinity],
     max: [-Infinity, -Infinity, -Infinity],
   };
@@ -109,10 +121,10 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
       const base = mesh.positions.length / 3;
       points.forEach((pos, index) => {
         const n = normals[index]!.map((v) => v / Math.hypot(...normals[index]!));
-        const shade = 0.77 + 0.23 * Math.max(0, n[0]! * -0.45 + n[1]! * 0.82 + n[2]! * 0.36);
         mesh.positions.push(...pos);
         mesh.normals.push(...n);
-        mesh.colors.push(...rgb.map((v) => v * shade), 1);
+        mesh.uvs!.push(0, 0);
+        mesh.colors.push(...rgb, 1);
         pos.forEach((v, i) => {
           mesh.min[i] = Math.min(mesh.min[i]!, v);
           mesh.max[i] = Math.max(mesh.max[i]!, v);
@@ -137,32 +149,41 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
       const length = Math.hypot(...n);
       if (length < 1e-10) throw new Error(`Degenerate ${recipe.id}/${p.name}`);
       const normal = n.map((k) => k / length);
-      // Baked directional value keeps faceted shapes readable with the shared unlit material.
-      const shade =
-        0.6 + 0.4 * Math.max(0, normal[0]! * -0.45 + normal[1]! * 0.82 + normal[2]! * 0.36);
+      // Pure albedo lets geometry rotate under the actual world-space sun.
       const base = mesh.positions.length / 3;
       for (const index of face) {
         const pos = points[index]!;
         const vertexNormal = smooth
           ? normals[index]!.map((v) => v / Math.hypot(...normals[index]!))
           : normal;
-        const light = smooth
-          ? 0.77 +
-            0.23 *
-              Math.max(
-                0,
-                vertexNormal[0]! * -0.45 + vertexNormal[1]! * 0.82 + vertexNormal[2]! * 0.36,
-              )
-          : shade;
         mesh.positions.push(...pos);
         mesh.normals.push(...vertexNormal);
-        mesh.colors.push(...rgb.map((k) => k * light), 1);
+        // Project local face coordinates; the longest face axis follows the wood grain.
+        const local = vertices[index]!;
+        const faceLocal = face.map((i) => vertices[i]!);
+        const span = [0, 1, 2].map(
+          (a) =>
+            Math.max(...faceLocal.map((v) => v[a]!)) - Math.min(...faceLocal.map((v) => v[a]!)),
+        );
+        const axes = [0, 1, 2]
+          .filter((a) => span[a]! > 0.001)
+          .sort((a, b) => p.size[b]! - p.size[a]!);
+        const u = axes[0] ?? 0,
+          v = axes[1] ?? 1;
+        const grainWidth = Math.min(0.8, p.size[v]! / p.size[u]!);
+        const patch =
+          Math.abs(p.position[0] * 0.37 + p.position[1] * 0.29 + p.position[2] * 0.43) % 0.19;
+        mesh.uvs!.push((local[u]! + 0.5) * 0.8 + patch, (local[v]! + 0.5) * grainWidth + patch);
+        mesh.colors.push(...rgb, 1);
         pos.forEach((value, i) => {
           mesh.min[i] = Math.min(mesh.min[i]!, value);
           mesh.max[i] = Math.max(mesh.max[i]!, value);
         });
       }
-      for (let j = 1; j < face.length - 1; j++) mesh.indices.push(base, base + j, base + j + 1);
+      for (let j = 1; j < face.length - 1; j++) {
+        mesh.indices.push(base, base + j, base + j + 1);
+        if (p.texture) mesh.texturedIndices!.push(base, base + j, base + j + 1);
+      }
     }
   }
   return mesh;
