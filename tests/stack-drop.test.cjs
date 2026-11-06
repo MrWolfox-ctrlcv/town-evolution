@@ -15,7 +15,7 @@ test('right products recover whole pile while blocked overlays never create a co
   });
   assert.equal(stackDropCommand(source, { kind: 'blocked' }), null);
 });
-test('only storage building targets route recovery and marker uses real rotated footprint', () => {
+test('without a known crop pile only storage targets route recovery, using the rotated footprint', () => {
   const state = createDemoGame(60000);
   for (const kind of ['warehouse', 'expandedWarehouse', 'coldWarehouse', 'shop', 'farm', 'dock']) {
     const building = { ...state.buildings[0], kind, rotation: 1 };
@@ -35,7 +35,7 @@ test('merge preview describes overflow left at source, not a failed or destructi
   ];
   const command = stackDropCommand(source, { kind: 'ground', x: 8, z: 7 });
   assert.deepEqual(command, { type: 'moveStack', fromX: 6, fromZ: 7, x: 8, z: 7 });
-  assert.equal(stackDropHint(state, command), '合并2份 · 余下留原地');
+  assert.equal(stackDropHint(state, command), '合并3份 · 余下留原地');
   state.groundStacks[0].amount = 1;
   assert.equal(stackDropHint(state, command), '松手合并1份');
 });

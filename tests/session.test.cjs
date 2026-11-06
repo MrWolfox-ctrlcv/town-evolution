@@ -20,14 +20,30 @@ test('session persists successful commands and recovers after restart', () => {
   fixture.setTime(15000);
   const restored = fixture.session();
   assert.equal(restored.run({ type: 'collect', buildingId: 'b2' }), true);
-  assert.equal(restored.state.inventory.vegetable, 2);
+  assert.equal(restored.state.inventory.vegetable, 0);
+  const drop = restored.state.looseDrops[0];
+  assert.equal(drop.item, 'vegetable');
+  assert.equal(drop.amount, 2);
+  const awaitingPickup = fixture.session();
+  assert.equal(awaitingPickup.state.inventory.vegetable, 0);
+  assert.deepEqual(awaitingPickup.state.looseDrops, restored.state.looseDrops);
+  assert.equal(awaitingPickup.run({ type: 'pickupDrop', dropId: drop.id }), true);
+  assert.equal(awaitingPickup.state.inventory.vegetable, 2);
+  const pickedUp = fixture.session();
+  assert.equal(pickedUp.state.inventory.vegetable, 2);
+  assert.equal(pickedUp.state.looseDrops.length, 0);
+  assert.equal(pickedUp.run({ type: 'pickupDrop', dropId: drop.id }), false);
   assert.equal(fixture.session().state.inventory.vegetable, 2);
 });
 test('preview reason never spends money or allocates identifiers', () => {
   const f = setup(),
     s = f.session();
   const before = exportSave(s.state);
-  assert.equal(s.reason({ type: 'place', kind: 'cooler', x: 5, z: 3 }), null);
+  assert.match(s.reason({ type: 'place', kind: 'cooler', x: 5, z: 3 }), /暂停|合成/);
+  assert.match(
+    s.reason({ type: 'upgrade', buildingId: 'b1', target: 'expandedWarehouse' }),
+    /暂停|合成/,
+  );
   assert.equal(exportSave(s.state), before);
   assert.equal(f.storage.getItem(SAVE_KEY), null);
 });

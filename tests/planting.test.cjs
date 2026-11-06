@@ -1,30 +1,10 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { looseAmount, pickupDrops } = require('./helpers/loose-output.cjs');
+const { emptyStock } = require('../.domain-build/domain/commerce.js');
+const { withLegacyBuildingAtFreeCell } = require('./helpers/legacy-town.cjs');
 const { createGame, dispatch, importSave, exportSave } = require('../.domain-build/domain/game.js');
 const { SAVE_KEY, BACKUP_KEY, loadGame, saveGame } = require('../.domain-build/domain/storage.js');
-
-const { validatePlacement } = require('../.domain-build/domain/geometry.js');
-const {
-  CONFIG,
-  isDockShore,
-  isLandCell,
-  landCellCount,
-} = require('../.domain-build/domain/game.js');
-function place(s, kind) {
-  for (let z = 0; z < CONFIG.gridSize; z++) {
-    for (let x = 0; x < CONFIG.gridSize; x++) {
-      const b = { id: `b${s.nextId}`, kind, x, z, rotation: 0 };
-      try {
-        validatePlacement(s, b);
-      } catch {
-        continue;
-      }
-      if (kind === 'dock' && !isDockShore(b, s.mapSeed)) continue;
-      return run(s, { type: 'place', kind, x, z });
-    }
-  }
-  assert.fail(`No legal placement for ${kind}`);
-}
 
 function run(s, c, t = s.lastSeenAt) {
   const before = JSON.stringify(s),
@@ -45,7 +25,18 @@ const harvest = (cell) => ({ type: 'harvestCell', buildingId: 'b2', cell });
 test('nine cells plant independently, consuming one each and yielding two only per touched cell', () => {
   let s = {
     ...createGame(0),
-    inventory: { vegetable: 9, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 9,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   for (let cell = 0; cell < 9; cell++) s = run(s, plant(cell), cell * 1000);
   assert.equal(s.inventory.vegetable, 0);
@@ -53,17 +44,24 @@ test('nine cells plant independently, consuming one each and yielding two only p
   fail(s, plant(0), 9000);
   fail(s, harvest(8), 15000);
   s = run(s, harvest(0), 15000);
+  assert.equal(s.inventory.vegetable, 0);
+  assert.equal(looseAmount(s, 'vegetable'), 2);
+  s = pickupDrops(s);
   assert.equal(s.inventory.vegetable, 2);
   assert.equal(s.buildings[1].cropJobs[0], null);
   assert.equal(s.buildings[1].cropJobs.filter(Boolean).length, 8);
   fail(s, harvest(0));
   for (let cell = 1; cell < 8; cell++) s = run(s, harvest(cell), 23000);
+  assert.equal(looseAmount(s, 'vegetable'), 14);
+  s = pickupDrops(s);
   assert.equal(s.inventory.vegetable, 16);
-  fail(s, harvest(8));
-  assert.ok(s.buildings[1].cropJobs[8]);
+  s = run(s, harvest(8));
+  assert.equal(s.buildings[1].cropJobs[8], null);
+  assert.equal(looseAmount(s, 'vegetable'), 2);
+  fail(s, { type: 'pickupDrop', dropId: s.looseDrops[0].id });
   s = run(s, plant(0));
   s = run(s, plant(1));
-  s = run(s, harvest(8));
+  s = pickupDrops(s);
   assert.equal(s.inventory.vegetable, 16);
 });
 test('bad cell indices, empty inventory and failed clocks preserve all crops and ids', () => {
@@ -75,7 +73,18 @@ test('bad cell indices, empty inventory and failed clocks preserve all crops and
   fail(
     {
       ...s,
-      inventory: { vegetable: 0, chilledVegetable: 3, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+      inventory: {
+        ...emptyStock(),
+        vegetable: 0,
+        chilledVegetable: 3,
+        wheat: 0,
+        lettuce: 0,
+        wood: 0,
+        stone: 0,
+        soil: 0,
+        mud: 0,
+        treeSeed: 0,
+      },
     },
     plant(0),
   );
@@ -86,7 +95,18 @@ test('bad cell indices, empty inventory and failed clocks preserve all crops and
 test('direct purchase works without shop, charges exact price and rejects invalid or full purchases', () => {
   let s = {
     ...createGame(0),
-    inventory: { vegetable: 0, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 0,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   s = run(s, { type: 'buyCrop', item: 'vegetable', quantity: 9 });
   assert.equal(s.coins, 48);
@@ -98,7 +118,7 @@ test('direct purchase works without shop, charges exact price and rejects invali
   fail({ ...s, coins: 0 }, { type: 'buyCrop', item: 'vegetable', quantity: 1 });
 });
 test('last crop sale is allowed and there is no automatic seed grant', () => {
-  let s = place(createGame(0), 'shop');
+  let s = withLegacyBuildingAtFreeCell(createGame(0), 'shop');
   s = run(s, { type: 'shopTrade', buildingId: 'b3', item: 'vegetable', quantity: 1, side: 'sell' });
   assert.equal(s.inventory.vegetable, 0);
   s = importSave(exportSave(s), 0);
@@ -110,7 +130,18 @@ test('explicit emergency seed is one-time, zero-money only, persisted and blocke
   let s = {
     ...createGame(0),
     coins: 0,
-    inventory: { vegetable: 0, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+    inventory: {
+      ...emptyStock(),
+      vegetable: 0,
+      chilledVegetable: 0,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+    },
   };
   s = run(s, { type: 'recoverCrop' });
   assert.equal(s.inventory.vegetable, 1);
@@ -122,13 +153,24 @@ test('explicit emergency seed is one-time, zero-money only, persisted and blocke
   fail(
     {
       ...createGame(0),
-      inventory: { vegetable: 0, chilledVegetable: 0, wheat: 0, lettuce: 0, wood: 0, stone: 0 },
+      inventory: {
+        ...emptyStock(),
+        vegetable: 0,
+        chilledVegetable: 0,
+        wheat: 0,
+        lettuce: 0,
+        wood: 0,
+        stone: 0,
+        soil: 0,
+        mud: 0,
+        treeSeed: 0,
+      },
     },
     { type: 'recoverCrop' },
   );
   const growing = run({ ...createGame(0), coins: 0 }, plant(8));
   fail(growing, { type: 'recoverCrop' });
-  let dock = place(createGame(0), 'dock');
+  let dock = withLegacyBuildingAtFreeCell(createGame(0), 'dock');
   dock = run(dock, {
     type: 'dockTransfer',
     buildingId: 'b3',
@@ -189,11 +231,11 @@ test('current crop save preserves exact raw backup and pending jobs', () => {
   assert.deepEqual(result.state, current);
   saveGame(storage, result.state);
   assert.equal(data.get(BACKUP_KEY), text);
-  assert.equal(JSON.parse(data.get(SAVE_KEY)).schemaVersion, 8);
+  assert.equal(JSON.parse(data.get(SAVE_KEY)).schemaVersion, 10);
 });
 test('selling final seed for five coins permits once-only emergency recovery below purchase price', () => {
   let s = createGame(0);
-  for (const kind of ['shop', 'cooler', 'warehouse']) s = place(s, kind);
+  for (const kind of ['shop', 'cooler', 'warehouse']) s = withLegacyBuildingAtFreeCell(s, kind);
   assert.equal(s.coins, 0);
   s = run(s, { type: 'shopTrade', buildingId: 'b3', item: 'vegetable', quantity: 1, side: 'sell' });
   assert.equal(s.coins, 5);

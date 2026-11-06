@@ -1,10 +1,11 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { PRODUCTS, productPile } = require('../.domain-build/art/ProductPileKit.js');
+const { stackLimitFor } = require('../.domain-build/domain/foundation.js');
 const { compileAsset } = require('../.domain-build/art/MeshCompiler.js');
 for (const item of PRODUCTS)
   test(`${item} quantities have supported, distinct harvested models`, () => {
-    for (let amount = 1; amount <= 5; amount++) {
+    for (let amount = 1; amount <= stackLimitFor(item); amount++) {
       const recipe = productPile(item, amount),
         mesh = compileAsset(recipe);
       assert.ok(Math.abs(mesh.min[1]) < 1e-8, 'pile must touch ground');
@@ -18,8 +19,23 @@ for (const item of PRODUCTS)
         const parts = recipe.parts.filter((p) => p.name.startsWith(`unit-${i}-`));
         const unit = compileAsset({ ...recipe, parts });
         assert.ok(unit.min[1] >= -1e-8);
-        if (!['wood', 'stone', 'lettuce'].includes(item) || i <= 3)
-          assert.ok(Math.abs(unit.min[1]) < 1e-8, 'loose produce must touch ground');
+        const baseCount = ['wheat', 'vegetable', 'rice'].includes(item) ? 4 : 3;
+        if (
+          !['wood', 'stone', 'soil', 'wheat', 'vegetable', 'rice'].includes(item) ||
+          i <= baseCount
+        )
+          assert.ok(Math.abs(unit.min[1]) < 1e-8, 'base units must touch ground');
       }
     }
   });
+
+test('model quantities cover exactly the business stack limits and reject invalid counts', () => {
+  const { ASSETS } = require('../.domain-build/art/AssetCatalog.js');
+  for (const item of PRODUCTS) {
+    for (let amount = 1; amount <= stackLimitFor(item); amount++)
+      assert.ok(ASSETS[`pile-${item}-${amount}`]);
+    assert.equal(ASSETS[`pile-${item}-${stackLimitFor(item) + 1}`], undefined);
+    for (const amount of [0, -1, 1.5, stackLimitFor(item) + 1])
+      assert.throws(() => productPile(item, amount), RangeError);
+  }
+});

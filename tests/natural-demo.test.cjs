@@ -1,5 +1,7 @@
+const { hammerAssemblyCommand } = require('./helpers/hammer-assembly.cjs');
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
+const { looseAmount, pickupDrops } = require('./helpers/loose-output.cjs');
 const {
   createDemoGame,
   DEMO_SEED,
@@ -20,7 +22,17 @@ test('demo is one deterministic actual game fixture with all currently supported
   assert.equal(s.mapSeed, DEMO_SEED);
   assert.deepEqual(createDemoGame(NOW), s);
   assert.deepEqual(importSave(exportSave(s), NOW), s);
-  for (const kind of ['farm', 'expandedWarehouse', 'warehouse', 'shop', 'orderBoard', 'dock'])
+  for (const kind of [
+    'farm',
+    'expandedWarehouse',
+    'warehouse',
+    'shop',
+    'orderBoard',
+    'dock',
+    'crate',
+    'house',
+    'residence',
+  ])
     assert.ok(
       s.buildings.some((b) => b.kind === kind),
       kind,
@@ -33,33 +45,64 @@ test('demo is one deterministic actual game fixture with all currently supported
     farm.cropJobs.slice(0, 3).map((j) => j.crop),
     ['vegetable', 'wheat', 'lettuce'],
   );
-  assert.equal(s.trees.length, 18);
-  assert.ok(s.groundStacks.some((p) => p.item === 'wood' && p.amount === 3));
-  assert.ok(s.groundStacks.some((p) => p.item === 'wood' && p.amount === 5));
+  assert.equal(s.trees.length, 192);
+  assert.ok(s.groundStacks.some((p) => p.item === 'wood' && p.amount === 4));
+  assert.ok(s.groundStacks.some((p) => p.item === 'wood' && p.amount === 2));
   const dock = s.buildings.find((b) => b.kind === 'dock');
   assert.ok(isDockShore(dock, s.mapSeed));
   assert.ok(s.commerce.shipments[dock.id]);
   assert.equal(s.coins, 1000);
 });
-test('demo saw recipes really build warehouses and surplus returns without hidden setup mutations', () => {
+test('demo hammer recipes build real board, crate and house and merge into a warehouse', () => {
   let s = createDemoGame(NOW);
   const capacity = getCapacity(s),
     coins = s.coins,
     wood = s.inventory.wood;
-  for (const pile of [...s.groundStacks])
-    s = run(s, { type: 'useTool', tool: 'saw', x: pile.x, z: pile.z });
-  assert.equal(getCapacity(s), capacity + 32);
-  assert.equal(s.inventory.wood, wood + 2);
+  const woodPiles = s.groundStacks.filter((p) => p.item === 'wood');
+  const otherPiles = s.groundStacks.filter((p) => p.item !== 'wood');
+  for (const pile of woodPiles)
+    s = run(s, {
+      type: 'useTool',
+      tool: 'hammer',
+      x: pile.x,
+      z: pile.z,
+    });
+  assert.equal(getCapacity(s), capacity);
+  assert.equal(s.inventory.wood, wood);
+  const product = (amount) => {
+    const p = woodPiles.find((p) => p.amount === amount);
+    return s.buildings.find((b) => b.x === p.x && b.z === p.z);
+  };
+  const house = product(4);
+  const crate = product(2);
+  assert.equal(product(1).kind, 'orderBoard');
+  assert.equal(house.kind, 'house');
+  assert.equal(crate.kind, 'crate');
+  assert.ok(house && crate);
+  s = run(s, hammerAssemblyCommand(s, [crate.id, house.id]));
+  assert.equal(getCapacity(s), capacity + 16);
   assert.equal(s.coins, coins);
-  assert.equal(s.tools.saw, 48);
-  assert.equal(s.groundStacks.length, 0);
+  assert.equal(s.tools.saw, 50);
+  assert.equal(s.tools.hammer, 10);
+  assert.deepEqual(s.groundStacks, otherPiles);
 });
 test('demo supports real crop harvest/plant, axe, sale, purchase, ready settlement and next shipment', () => {
   let s = createDemoGame(NOW);
   const shop = s.buildings.find((b) => b.kind === 'shop').id,
     dock = s.buildings.find((b) => b.kind === 'dock').id;
+  const inventoryBeforeHarvest = { ...s.inventory };
+  const preexistingDrops = structuredClone(s.looseDrops);
   for (let cell = 0; cell < 3; cell++) s = run(s, { type: 'harvestCell', buildingId: 'b2', cell });
-  assert.equal(s.tools.sickle, 87);
+  assert.deepEqual(s.inventory, inventoryBeforeHarvest);
+  for (const crop of ['vegetable', 'wheat', 'lettuce']) {
+    const existing = preexistingDrops
+      .filter((drop) => drop.item === crop)
+      .reduce((total, drop) => total + drop.amount, 0);
+    assert.equal(looseAmount(s, crop), existing + 2);
+  }
+  s = pickupDrops(s, (drop) => drop.source.type === 'crop' && drop.source.buildingId === 'b2');
+  assert.deepEqual(s.looseDrops, preexistingDrops);
+  assert.equal(s.tools.sickle, 90);
   s = run(s, { type: 'plantCell', buildingId: 'b2', cell: 6, crop: 'lettuce' });
   s = run(s, { type: 'useTool', tool: 'axe', treeId: s.trees[0].id });
   s = run(s, { type: 'shopTrade', buildingId: shop, item: 'wood', quantity: 1, side: 'sell' });
@@ -77,11 +120,11 @@ test('demo supports real crop harvest/plant, axe, sale, purchase, ready settleme
 test('saved demo progress is preserved, while explicit fixture reset is repeatable and independent', () => {
   const fresh = createDemoGame(NOW);
   let changed = run(fresh, { type: 'useTool', tool: 'axe', treeId: fresh.trees[0].id });
-  assert.equal(changed.trees.length, 17);
+  assert.equal(changed.trees.length, 191);
   changed = importSave(exportSave(changed), NOW + 999);
-  assert.equal(changed.trees.length, 17);
+  assert.equal(changed.trees.length, 191);
   const reset = createDemoGame(NOW);
-  assert.equal(reset.trees.length, 18);
+  assert.equal(reset.trees.length, 192);
   assert.deepEqual(reset, fresh);
   assert.notDeepEqual(changed, reset);
 });

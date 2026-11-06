@@ -22,21 +22,22 @@ function memory() {
     removeItem: (key) => data.delete(key),
   };
 }
-test('authorized old test reset removes only known game saves and does not repeat', () => {
+test('opening an unsupported old save preserves every game key and unrelated preference', () => {
   const store = memory();
   for (const key of GAME_SAVE_KEYS) store.setItem(key, JSON.stringify({ schemaVersion: 7 }));
   store.setItem('other-app.notes', 'keep');
   store.setItem('town-evolution.unrelated-preference', 'keep');
   const result = loadGame(store, 60000);
-  assert.equal(result.status, 'empty');
-  assert.match(result.warning, /清除/);
-  for (const key of GAME_SAVE_KEYS) assert.equal(store.getItem(key), null);
+  assert.equal(result.status, 'corrupt');
+  assert.match(result.warning, /不兼容/);
+  for (const key of GAME_SAVE_KEYS)
+    assert.equal(store.getItem(key), JSON.stringify({ schemaVersion: 7 }));
   assert.equal(store.getItem('other-app.notes'), 'keep');
   assert.equal(store.getItem('town-evolution.unrelated-preference'), 'keep');
   store.setItem(SAVE_KEY, exportSave(createGame(60000)));
   assert.equal(loadGame(store, 60001).status, 'loaded');
 });
-test('future save is never removed by old-test cleanup', () => {
+test('future save and old backup remain untouched on load', () => {
   const store = memory(),
     raw = JSON.stringify({ schemaVersion: 999 });
   store.setItem(SAVE_KEY, raw);
@@ -83,7 +84,7 @@ test('profile storage preparation failure is explicit, not silently treated as h
   assert.match(demo.message, /无法初始化/);
 });
 
-test('future backup blocks legacy cleanup before any game-owned key is removed', () => {
+test('unsupported primary and future backup are both preserved', () => {
   const store = memory();
   store.setItem(SAVE_KEY, JSON.stringify({ schemaVersion: 7 }));
   store.setItem(BACKUP_KEY, JSON.stringify({ schemaVersion: 999 }));
@@ -92,7 +93,7 @@ test('future backup blocks legacy cleanup before any game-owned key is removed',
   assert.deepEqual([...store.data.entries()], before);
 });
 
-test('authorized old-primary reset preserves and offers recovery of a current-version backup', () => {
+test('unsupported primary does not silently switch to a current-version backup', () => {
   const store = memory(),
     current = createGame(60000);
   current.coins = 77;
@@ -100,8 +101,21 @@ test('authorized old-primary reset preserves and offers recovery of a current-ve
   store.setItem(SAVE_KEY, JSON.stringify({ schemaVersion: 7 }));
   store.setItem(BACKUP_KEY, backup);
   const result = loadGame(store, 60000);
-  assert.equal(result.status, 'recovered');
-  assert.equal(result.state.coins, 77);
-  assert.equal(store.getItem(SAVE_KEY), null);
+  assert.equal(result.status, 'corrupt');
+  assert.equal(result.state, null);
+  assert.equal(store.getItem(SAVE_KEY), JSON.stringify({ schemaVersion: 7 }));
   assert.equal(store.getItem(BACKUP_KEY), backup);
+});
+
+test('opening the separate demo never clears unsupported normal-town saves', () => {
+  const store = memory();
+  for (const key of GAME_SAVE_KEYS)
+    store.setItem(key, JSON.stringify({ schemaVersion: 7, marker: key }));
+  const before = new Map(store.data);
+  const demo = townSession(store, 'demo', () => 60000);
+  assert.equal(demo.mode, 'normal');
+  for (const [key, value] of before) assert.equal(store.getItem(key), value);
+  const normal = townSession(store, 'normal', () => 60000);
+  assert.equal(normal.mode, 'corrupt');
+  for (const [key, value] of before) assert.equal(store.getItem(key), value);
 });
