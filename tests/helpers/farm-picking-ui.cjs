@@ -135,6 +135,7 @@ function load(name, dependencies = {}) {
           : [
                 './TownObjectPicking',
                 './TownFarmPicking',
+                './V6TreeView',
                 './TerrainInteraction',
                 './DiggingToolCommand',
                 './ToolOutline',
