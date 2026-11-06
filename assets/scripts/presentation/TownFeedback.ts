@@ -1,3 +1,5 @@
+import { v5TreeVisual } from '../art/V5TreeGeometry';
+import { resourceTreeVisual } from '../art/TreeKit';
 import { woodChipPose } from '../art/FeedbackMath';
 import { _decorator, Component, Node, isValid } from 'cc';
 import type { Building } from '../domain/game';
@@ -23,11 +25,17 @@ export class TownFeedback extends Component {
     this.effects.push(effect);
     effect.pose(0);
   }
-  chop(x: number, z: number): void {
+  chop(x: number, z: number, seed = 1, v5 = false): void {
     const root = new Node('CommittedTreeChop');
-    root.setPosition(x + 0.5, 0, z + 0.5);
-    const tree = this.factory.asset('tree', 'FallingTree');
-    tree.setScale(0.65, 0.8, 0.65);
+    const wide = v5 ? v5TreeVisual(seed, x, z) : null;
+    root.setPosition(
+      x + 0.5 + (wide?.offset[0] ?? 0),
+      v5 ? 0.015 : 0,
+      z + 0.5 + (wide?.offset[2] ?? 0),
+    );
+    const visual = wide ?? resourceTreeVisual(seed, x, z);
+    const tree = this.factory.asset(visual.asset, 'FallingTree');
+    tree.setScale(...visual.scale);
     root.addChild(tree);
     const axe = new Node('AxeSwing');
     root.addChild(axe);
@@ -56,9 +64,13 @@ export class TownFeedback extends Component {
         axe.setPosition(-0.55 + hit * 0.6, 0.75, 0.05);
         axe.setRotationFromEuler(0, 0, 65 - hit * 135);
         const fall = Math.max(0, (t - 0.2) / 0.8);
-        tree.setRotationFromEuler(0, 0, t < 0.2 ? Math.sin(t * 110) * 5 : -fall * fall * 88);
+        tree.setRotationFromEuler(
+          0,
+          visual.yaw,
+          t < 0.2 ? Math.sin(t * 110) * 5 : -fall * fall * 88,
+        );
         const shrink = 1 - Math.max(0, (t - 0.72) / 0.28);
-        tree.setScale(0.65 * shrink, 0.8 * shrink, 0.65 * shrink);
+        tree.setScale(visual.scale[0] * shrink, visual.scale[1] * shrink, visual.scale[2] * shrink);
         chips.forEach((chip, i) => {
           const p = Math.max(0, (t - 0.23) / 0.77);
           const pose = woodChipPose(i, t);
@@ -132,6 +144,24 @@ export class TownFeedback extends Component {
         bars.forEach((bar, i) => {
           bar.setPosition((i ? 1 : -1) * (0.48 + t * 0.2), Math.sin(t * Math.PI) * 0.25, 0);
           bar.setScale(0.08 * (1 - t), 0.08, 0.65);
+        });
+      },
+    });
+  }
+  drop(point: { x: number; y: number; z: number }): void {
+    const root = new Node('CommittedDropPulse');
+    root.setPosition(point.x, point.y + 0.02, point.z);
+    const bars = [-1, 1].map((side) =>
+      this.factory.shape(root, 'DropSpark', side * 0.18, 0, 0, 0.035, 0.035, 0.24, '#F3D37C'),
+    );
+    this.add({
+      root,
+      age: 0,
+      duration: 0.35,
+      pose: (t) => {
+        bars.forEach((bar, i) => {
+          bar.setPosition((i ? 1 : -1) * (0.18 + t * 0.08), Math.sin(t * Math.PI) * 0.06, 0);
+          bar.setScale(0.035 * (1 - t), 0.035, 0.24);
         });
       },
     });

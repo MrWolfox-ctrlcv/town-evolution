@@ -1,7 +1,7 @@
 import { Node, Label, UITransform, EventTouch, LabelOutline } from 'cc';
 import { uiNode, label } from './Widgets';
 import { color } from './Palette';
-import { TapGesture } from '../application/TapGesture';
+import { InputTapGesture } from './InputTapGesture';
 import type { TrayKind } from './TrayIcons';
 export interface TrayEntry {
   kind: TrayKind;
@@ -15,7 +15,7 @@ export class TrayColumn {
   private readonly pager: Node;
   private readonly pageText: Label;
   private page = 0;
-  private readonly gesture = new TapGesture();
+  private readonly gesture = new InputTapGesture();
   private slots = 6;
   private compact = false;
   private inward = 1;
@@ -32,25 +32,21 @@ export class TrayColumn {
     this.pager.on(Node.EventType.TOUCH_START, (e: EventTouch) => {
       e.propagationStopped = true;
       this.cancel();
-      if (e.getAllTouches().length > 1) {
-        this.gesture.cancel();
-        return;
-      }
-      this.gesture.begin(e.getID() ?? 0, e.getUILocation());
+      this.gesture.begin(e);
     });
     this.pager.on(Node.EventType.TOUCH_MOVE, (e: EventTouch) => {
       e.propagationStopped = true;
-      this.gesture.move(e.getID() ?? 0, e.getUILocation());
+      this.gesture.move(e);
     });
     this.pager.on(Node.EventType.TOUCH_END, (e: EventTouch) => {
       e.propagationStopped = true;
-      if (!this.gesture.end(e.getID() ?? 0)) return;
+      if (!this.gesture.end(e)) return;
       this.page = (this.page + 1) % Math.max(1, Math.ceil(this.visible.length / this.slots));
       this.render();
     });
     this.pager.on(Node.EventType.TOUCH_CANCEL, (e: EventTouch) => {
       e.propagationStopped = true;
-      this.gesture.cancel(e.getID() ?? undefined);
+      this.gesture.cancel(e);
     });
   }
   cancelGesture(): void {
@@ -76,6 +72,10 @@ export class TrayColumn {
     this.visible = this.entries.filter(predicate);
     this.render();
   }
+  /** Includes temporarily hidden pages/roots, but not items removed by the quantity filter. */
+  canShow(kind: TrayKind): boolean {
+    return this.visible.some((entry) => entry.kind === kind);
+  }
   destination(kind: TrayKind): Node | null {
     const entry = this.entries.find((candidate) => candidate.kind === kind);
     if (!entry || !this.visible.includes(entry)) return null;
@@ -99,6 +99,7 @@ export class TrayColumn {
       e.node.setPosition(0, -i * 60);
     });
     this.pager.active = pages > 1;
+    if (!this.pager.active) this.gesture.cancel();
     this.pager.setPosition(
       this.compact ? this.inward * 58 : 0,
       this.compact ? 0 : -this.slots * 60,

@@ -1,39 +1,67 @@
+import type { WorldViewBounds } from '../application/TreeStreaming';
+import { buildingOutline } from './BuildingOutline';
+import { townChanges } from './TownChanges';
+import { TownObjectPicking } from './TownObjectPicking';
+import { modelBounds } from './ObjectBounds';
+import type { ObjectTarget } from '../application/ObjectSelection';
 import { attachmentModel } from './PileModel';
 import { TownFeedback } from './TownFeedback';
 import { IslandView } from './IslandView';
 import { Node, geometry } from 'cc';
-import { CONFIG, footprint } from '../domain/game';
+import { nurseryStage, processingStage, compostStage } from '../domain/game';
 import type { Building, GameState } from '../domain/game';
 import { GroundObjects } from './GroundObjects';
 import { ModelFactory } from './ModelFactory';
+import { ModelPicking } from './ModelPicking';
+import { RenderedCropPicking } from './RenderedCropPicking';
 import { farmVisuals } from '../art/FarmCellKit';
-import { pickFarmCrop } from '../application/FarmPicking';
+import { resolveHarvestHit } from '../application/FarmPicking';
+import type { FarmToolSurface } from '../application/FarmPicking';
 export interface PlacementPreview {
   kind: 'farm' | 'warehouse' | 'cooler' | 'shop' | 'orderBoard' | 'dock';
   x: number;
   z: number;
   valid: boolean;
 }
-/** Incremental renderer: static terrain stays alive and only changed buildings are rebuilt. */
 export class TownView {
   private readonly factory = new ModelFactory();
   private island!: IslandView;
   private readonly root: Node;
   private readonly resources: GroundObjects;
-  private readonly buildings = new Map<string, { signature: string; node: Node }>();
+  private readonly buildings = new Map<
+    string,
+    {
+      signature: string;
+      node: Node;
+      kind: Building['kind'];
+      surface: ModelPicking;
+      crops: RenderedCropPicking;
+    }
+  >();
   private readonly feedback: TownFeedback;
   private previous: GameState | null = null;
   private marker: Node | null = null;
   private markerKey = '';
   private lifted: string | null = null;
-  private pickBoxes: Array<{ id: string; bounds: geometry.AABB }> = [];
+  private picking: TownObjectPicking | null = null;
+  private visibleHit(ray: geometry.Ray, exclude?: string) {
+    this.picking ??= new TownObjectPicking(
+      () => this.resources,
+      (sample, excluded) => this.buildingHit(sample, excluded),
+      () =>
+        [...this.buildings]
+          .filter(([id]) => id !== this.lifted)
+          .map(([id, entry]) => ({ id, surface: entry.surface })),
+    );
+    return this.picking.hit(ray, exclude);
+  }
   constructor(parent: Node) {
     this.root = new Node('TownWorld');
     parent.addChild(this.root);
     this.feedback = this.root.addComponent(TownFeedback);
     this.feedback.configure(this.factory);
-    this.terrain();
-    this.resources = new GroundObjects(this.root);
+    this.island = new IslandView(this.root, 40);
+    this.resources = new GroundObjects(this.root, (x, z) => this.island.isGroundReady(x, z));
   }
   sync(
     state: GameState,
@@ -41,48 +69,13 @@ export class TownView {
     preview: PlacementPreview | null,
     now = Date.now(),
   ): void {
+    this.picking?.clear();
     const previous = this.previous;
-    if (previous && previous.mapSeed === state.mapSeed) {
-      const trees = new Set(state.trees.map((tree) => tree.id));
-      for (const tree of previous.trees)
-        if (!trees.has(tree.id)) this.feedback.chop(tree.x, tree.z);
-      for (const pile of state.groundStacks) {
-        const old = previous.groundStacks.find(
-          (p) => p.x === pile.x && p.z === pile.z && p.item === pile.item,
-        );
-        if (!old || old.amount !== pile.amount) this.feedback.stack(pile.x, pile.z);
-      }
-    } else if (previous) this.feedback.clear();
     this.previous = state;
     this.island.sync(state);
-    this.resources.sync(state);
     const effectiveNow = Math.max(now, state.lastSeenAt);
-    this.pickBoxes = state.buildings.map((b) => {
-      const f = footprint(b);
-      const h =
-        b.kind === 'farm'
-          ? 0.6
-          : b.kind === 'orderBoard'
-            ? 1.4
-            : b.kind === 'dock'
-              ? 1.3
-              : b.kind === 'cooler'
-                ? 1
-                : b.kind === 'expandedWarehouse'
-                  ? 2.3
-                  : 2;
-      return {
-        id: b.id,
-        bounds: new geometry.AABB(
-          b.x + f.width / 2,
-          h / 2,
-          b.z + f.depth / 2,
-          f.width / 2,
-          h / 2,
-          f.depth / 2,
-        ),
-      };
-    });
+    this.resources.sync(state, this.island.naturalSurface, effectiveNow, this.island.dropSupport);
+    townChanges(previous, state, this.feedback, (id) => this.resources.dropOrigin(id));
     const live = new Set(state.buildings.map((b) => b.id));
     for (const [id, entry] of this.buildings)
       if (!live.has(id)) {
@@ -92,21 +85,37 @@ export class TownView {
     for (const b of state.buildings) {
       const signature = [
         state.mapSeed,
+        state.terrainVersion,
+        JSON.stringify(state.landExtensions),
         b.kind,
         b.x,
         b.z,
         b.rotation,
+        b.farmSize,
+        b.irrigated,
+        b.dockStyle,
+        b.boatAttached,
+        b.bridge?.length,
+        JSON.stringify(b.collectionBox),
+        b.compost ? compostStage(b.compost, effectiveNow) : '',
+        b.kind === 'nursery' ? nurseryStage(b, effectiveNow) : processingStage(b, effectiveNow),
         JSON.stringify(state.fusion.attachments[b.id] ?? {}),
         b.kind === 'farm' ? farmVisuals(b.cropJobs, effectiveNow).join(',') : Boolean(b.job),
       ].join(':');
       const old = this.buildings.get(b.id);
       if (old?.signature === signature) continue;
       old?.node.destroy();
-      const node = this.factory.building(b, effectiveNow, state.mapSeed);
+      const node = this.factory.building(
+        b,
+        effectiveNow,
+        state.mapSeed,
+        state.terrainVersion,
+        state.landExtensions,
+      );
       this.root.addChild(node);
       const stock = state.fusion.attachments[b.id];
       if (stock) {
-        const materials = attachmentModel(this.factory, stock, b.kind);
+        const materials = attachmentModel(this.factory, stock, b.kind, b.farmSize);
         materials.setRotationFromEuler(0, b.rotation * 90, 0);
         node.addChild(materials);
       }
@@ -116,18 +125,26 @@ export class TownView {
         previous.mapSeed === state.mapSeed &&
         (!before ||
           before.kind !== b.kind ||
+          before.farmSize !== b.farmSize ||
+          before.irrigated !== b.irrigated ||
           JSON.stringify(previous.fusion.attachments[b.id]) !==
             JSON.stringify(state.fusion.attachments[b.id]))
       )
         this.feedback.construct(node, b);
       node.active = b.id !== this.lifted;
-      this.buildings.set(b.id, { signature, node });
+      this.buildings.set(b.id, {
+        signature,
+        node,
+        kind: b.kind,
+        surface: new ModelPicking(node),
+        crops: new RenderedCropPicking(node),
+      });
     }
     const selected = state.buildings.find((b) => b.id === selection);
     const key = preview
       ? JSON.stringify(preview)
       : selected
-        ? `${selected.id}:${selected.kind}:${selected.x}:${selected.z}:${selected.rotation}`
+        ? `${selected.id}:${selected.kind}:${selected.x}:${selected.z}:${selected.rotation}:${selected.farmSize}:${Boolean(selected.collectionBox)}`
         : '';
     if (key === this.markerKey) return;
     this.markerKey = key;
@@ -136,84 +153,139 @@ export class TownView {
     if (preview) this.outline(preview, preview.valid ? '#EFD377' : '#D87163');
     else if (selected) this.outline(selected, '#F3D37C');
   }
+  get loading(): boolean {
+    return this.island.isLoading() || this.resources.loading;
+  }
+  frame(bounds: WorldViewBounds, treeBounds = bounds): void {
+    if (this.previous?.terrainVersion !== 5) return;
+    const changed = this.island.frame(bounds);
+    if (changed)
+      this.resources.sync(
+        this.previous,
+        this.island.naturalSurface,
+        Math.max(Date.now(), this.previous.lastSeenAt),
+        this.island.dropSupport,
+      );
+    if (this.resources.frame(treeBounds) || changed) this.picking?.clear();
+  }
+  objectBounds(target: ObjectTarget) {
+    if (target.kind !== 'building') return this.resources.objectBounds(target);
+    const node = this.buildings.get(target.id)?.node;
+    return node ? modelBounds(node) : null;
+  }
   setLifted(id: string | null): void {
+    this.picking?.clear();
     this.lifted = id;
     for (const [key, entry] of this.buildings) entry.node.active = key !== id;
   }
   pickBuilding(ray: geometry.Ray, excludeId?: string): string | null {
-    let distance = Infinity;
-    let id: string | null = null;
-    for (const entry of this.pickBoxes) {
-      if (entry.id === excludeId || entry.id === this.lifted) continue;
-      const hit = geometry.intersect.rayAABB(ray, entry.bounds);
-      if (hit > 0 && hit < distance) {
-        distance = hit;
-        id = entry.id;
-      }
-    }
-    const tree = this.resources.pickTree(ray);
-    const pile = this.resources.pickStack(ray);
-    return (tree && tree.distance < distance) || (pile && pile.distance < distance) ? null : id;
+    const hit = this.visibleHit(ray, excludeId);
+    return hit?.kind === 'building' ? hit.id : null;
   }
-  pickCrop(ray: geometry.Ray, state = this.previous) {
-    if (!state) return null;
-    const hit = pickFarmCrop(state.buildings, ray, Math.max(Date.now(), state.lastSeenAt));
-    if (!hit || hit.buildingId === this.lifted) return null;
-    for (const entry of this.pickBoxes) {
-      if (state.buildings.find((b) => b.id === entry.id)?.kind === 'farm') continue;
-      const distance = geometry.intersect.rayAABB(ray, entry.bounds);
-      if (distance > 0 && distance < hit.distance) return null;
+  private buildingHit(ray: geometry.Ray, excludeId?: string, farms = true) {
+    let nearest: { id: string; distance: number } | null = null;
+    for (const [id, entry] of this.buildings) {
+      if (id === excludeId || id === this.lifted || (!farms && entry.kind === 'farm')) continue;
+      const distance = entry.surface.distance(ray, nearest?.distance);
+      if (
+        distance !== null &&
+        (!nearest ||
+          distance < nearest.distance ||
+          (distance === nearest.distance && id < nearest.id))
+      )
+        nearest = { id, distance };
+    }
+    return nearest;
+  }
+  private farmToolSurface(ray: geometry.Ray) {
+    let nearest: FarmToolSurface | null = null;
+    for (const [id, entry] of this.buildings) {
+      if (id === this.lifted) continue;
+      const crop = entry.kind === 'farm' ? entry.crops : null;
+      const hit = entry.surface.hit(ray, nearest?.distance, (node) => crop?.cellAt(node) != null);
+      if (!hit) continue;
+      const cell = crop?.cellAt(hit.node) ?? null;
+      if (
+        !nearest ||
+        hit.distance < nearest.distance ||
+        (hit.distance === nearest.distance && cell !== null && nearest.cell === null)
+      )
+        nearest = {
+          buildingId: id,
+          cell,
+          soil: crop?.isSoil(hit.node) ?? false,
+          distance: hit.distance,
+        };
     }
     const tree = this.resources.pickTree(ray),
       pile = this.resources.pickStack(ray);
-    if ((tree && tree.distance < hit.distance) || (pile && pile.distance < hit.distance))
-      return null;
-    return hit;
+    const natural = this.resources.pickNatural(ray);
+    for (const blocker of [tree, pile, natural, this.resources.pickDrop?.(ray)])
+      if (blocker && blocker.distance < (nearest?.distance ?? Infinity))
+        nearest = { buildingId: null, cell: null, soil: false, distance: blocker.distance };
+    return nearest;
+  }
+  pickPlant(ray: geometry.Ray) {
+    const hit = this.farmToolSurface(ray);
+    return hit?.buildingId
+      ? { buildingId: hit.buildingId, cell: hit.cell, distance: hit.distance }
+      : null;
+  }
+  pickCrop(ray: geometry.Ray, state = this.previous, purpose: 'plant' | 'harvest' = 'harvest') {
+    if (!state) return null;
+    if (purpose === 'plant') {
+      const hit = this.pickPlant(ray);
+      return hit && hit.cell !== null ? { ...hit, cell: hit.cell } : null;
+    }
+    return resolveHarvestHit(
+      state.buildings,
+      ray,
+      this.farmToolSurface(ray),
+      Math.max(Date.now(), state.lastSeenAt),
+    );
   }
   private outline(
-    b: Pick<Building, 'kind' | 'x' | 'z'> & { rotation?: Building['rotation'] },
+    b: Pick<Building, 'kind' | 'x' | 'z' | 'farmSize' | 'collectionBox'> & {
+      rotation?: Building['rotation'];
+    },
     shade: string,
   ): void {
-    const dimensions = footprint({ kind: b.kind, rotation: b.rotation ?? 0 });
-    const w = dimensions.width,
-      d = dimensions.depth;
-    this.marker = new Node('PlacementOutline');
-    this.root.addChild(this.marker);
-    this.marker.setPosition(b.x + w / 2, 0, b.z + d / 2);
-    this.factory.shape(this.marker, 'North', 0, 0.09, -d / 2, w + 0.1, 0.09, 0.1, shade);
-    this.factory.shape(this.marker, 'South', 0, 0.09, d / 2, w + 0.1, 0.09, 0.1, shade);
-    this.factory.shape(this.marker, 'West', -w / 2, 0.09, 0, 0.1, 0.09, d, shade);
-    this.factory.shape(this.marker, 'East', w / 2, 0.09, 0, 0.1, 0.09, d, shade);
-  }
-  private terrain(): void {
-    this.island = new IslandView(this.root, CONFIG.gridSize);
+    this.marker = buildingOutline(this.root, this.factory, b, shade, 'PlacementOutline');
   }
   setLiftedStack(id: string | null): void {
+    this.picking?.clear();
     this.resources.setLifted(id);
   }
   pickStack(ray: geometry.Ray, exclude?: string) {
-    const pile = this.resources.pickStack(ray, exclude);
-    if (!pile) return null;
-    const tree = this.resources.pickTree(ray);
-    if (tree && tree.distance < pile.distance) return null;
-    for (const building of this.pickBoxes) {
-      if (building.id === this.lifted) continue;
-      const hit = geometry.intersect.rayAABB(ray, building.bounds);
-      if (hit > 0 && hit < pile.distance) return null;
-    }
-    return pile;
+    const hit = this.visibleHit(ray, exclude);
+    return hit?.kind === 'pile' ? { id: hit.id, x: hit.x, z: hit.z, distance: hit.distance } : null;
   }
   pickTree(ray: geometry.Ray): string | null {
-    const tree = this.resources.pickTree(ray);
-    if (!tree) return null;
-    const pile = this.resources.pickStack(ray);
-    if (pile && pile.distance < tree.distance) return null;
-    for (const building of this.pickBoxes) {
-      if (building.id === this.lifted) continue;
-      const hit = geometry.intersect.rayAABB(ray, building.bounds);
-      if (hit > 0 && hit < tree.distance) return null;
-    }
-    return tree.id;
+    const hit = this.visibleHit(ray);
+    return hit?.kind === 'tree' ? hit.id : null;
+  }
+  setLiftedDrop(id: string | null): void {
+    this.picking?.clear();
+    this.resources.setLiftedDrop(id);
+  }
+  pickDrop(ray: geometry.Ray): string | null {
+    const hit = this.visibleHit(ray);
+    return hit?.kind === 'drop' ? hit.id : null;
+  }
+  dropOrigin(id: string) {
+    return this.resources.dropOrigin(id);
+  }
+  naturalOrigin(id: string) {
+    return this.resources.naturalOrigin(id);
+  }
+  pickNatural(ray: geometry.Ray): string | null {
+    return this.pickNaturalHit(ray)?.id ?? null;
+  }
+  pickNaturalHit(ray: geometry.Ray) {
+    const hit = this.visibleHit(ray);
+    return hit?.kind === 'natural'
+      ? { id: hit.id, distance: hit.distance, point: hit.point }
+      : null;
   }
   dispose(): void {
     this.feedback.clear();

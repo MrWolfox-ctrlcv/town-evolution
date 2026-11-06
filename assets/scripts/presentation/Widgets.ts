@@ -1,7 +1,7 @@
 import { ActionArtwork, actionIcon } from './ActionArtwork';
 import { Node, UITransform, Label, Graphics, Layers, EventTouch, LabelOutline } from 'cc';
 import { PALETTE, color } from './Palette';
-import { TapGesture } from '../application/TapGesture';
+import { InputTapGesture } from './InputTapGesture';
 export function uiNode(name: string, parent: Node): Node {
   const node = new Node(name);
   node.layer = Layers.Enum.UI_2D;
@@ -39,8 +39,12 @@ export function consumeTouches(node: Node): void {
   node.on(Node.EventType.TOUCH_MOVE, stop);
   node.on(Node.EventType.TOUCH_END, stop);
 }
+export interface ButtonSurface {
+  bindButton(node: Node, width: number, height: number, action: Action): void;
+}
 export interface Action {
   text: string;
+  icon?: string;
   run: () => void;
   enabled?: boolean;
   reason?: string;
@@ -56,13 +60,15 @@ export class ActionButton {
   private height = 48;
   private theme: 'default' | 'tab' | 'quiet' = 'default';
   private selected = false;
+  private iconOnly = false;
   private visualKey = '';
-  private readonly gesture = new TapGesture();
+  private readonly gesture = new InputTapGesture();
   private pressed: Action | null = null;
   constructor(
     parent: Node,
     private readonly explain: (text: string) => void,
     private readonly artwork?: ActionArtwork,
+    private readonly surface?: ButtonSurface,
   ) {
     this.node = uiNode('Action', parent);
     this.title = label(this.node, '', 17);
@@ -76,23 +82,22 @@ export class ActionButton {
     }
     consumeTouches(this.node);
     this.node.on(Node.EventType.TOUCH_START, (event: EventTouch) => {
-      if (event.getAllTouches().length > 1) {
+      if (this.gesture.begin(event)) this.pressed = this.action;
+    });
+    this.node.on(Node.EventType.TOUCH_MOVE, (event: EventTouch) => {
+      this.gesture.move(event);
+    });
+    this.node.on(Node.EventType.TOUCH_CANCEL, (event: EventTouch) => {
+      this.gesture.cancel(event);
+    });
+    this.node.on(Node.EventType.TOUCH_END, (event: EventTouch) => {
+      if (!this.gesture.end(event)) return;
+      const action = this.pressed;
+      this.pressed = null;
+      if (!action) {
         this.cancelGesture();
         return;
       }
-      if (this.gesture.begin(event.getID() ?? 0, event.getUILocation())) this.pressed = this.action;
-    });
-    this.node.on(Node.EventType.TOUCH_MOVE, (event: EventTouch) => {
-      this.gesture.move(event.getID() ?? 0, event.getUILocation());
-    });
-    this.node.on(Node.EventType.TOUCH_CANCEL, (event: EventTouch) => {
-      this.gesture.cancel(event.getID() ?? 0);
-    });
-    this.node.on(Node.EventType.TOUCH_END, (event: EventTouch) => {
-      if (!this.gesture.end(event.getID() ?? 0)) return;
-      const action = this.pressed;
-      this.pressed = null;
-      if (!action) return;
       if (action.enabled === false) {
         this.explain(action.reason ?? '条件尚未满足');
         return;
@@ -113,19 +118,28 @@ export class ActionButton {
   set(action: Action | null): void {
     this.action = action;
     this.node.active = action !== null;
-    if (!action) return;
+    if (!action) {
+      this.cancelGesture();
+      return;
+    }
     this.title.string = action.text;
+    this.title.node.active = !this.iconOnly;
+    if (this.surface) {
+      this.title.color = color(action.enabled === false ? '#736D5C' : '#3C4A28');
+      this.surface.bindButton(this.node, this.width, this.height, action);
+      return;
+    }
     if (this.icon && this.artwork) {
       this.title.color = color(
         action.enabled === false ? '#DADAC8' : action.caution ? '#FFD0A8' : '#FFF9E6',
       );
       this.title.node.setPosition(0, -this.height / 2 + 15);
       this.title.node.getComponent(UITransform)!.setContentSize(this.width, 28);
-      this.icon.setPosition(0, 10);
+      this.icon.setPosition(0, this.iconOnly ? 0 : 10);
       this.artwork.bind(
         this.icon,
-        actionIcon(action.text),
-        Math.min(60, this.width - 6, this.height - 22),
+        action.icon ?? action.icon ?? actionIcon(action.text),
+        Math.min(60, this.width - 6, this.height - (this.iconOnly ? 2 : 22)),
         action.enabled !== false,
       );
       const g = this.node.getComponent(Graphics) ?? this.node.addComponent(Graphics);
@@ -176,9 +190,15 @@ export class ActionButton {
     x: number,
     y: number,
     width: number,
-    options: { height?: number; fontSize?: number; theme?: 'default' | 'tab' | 'quiet' } = {},
+    options: {
+      height?: number;
+      fontSize?: number;
+      theme?: 'default' | 'tab' | 'quiet';
+      iconOnly?: boolean;
+    } = {},
   ): void {
     this.width = width;
+    this.iconOnly = options.iconOnly ?? false;
     this.height = options.height ?? 48;
     this.theme = options.theme ?? 'default';
     this.title.fontSize = options.fontSize ?? 17;
