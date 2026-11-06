@@ -1,4 +1,11 @@
+import { cloneCompostState } from './compost';
+import { cloneLooseDrop } from './loose-drops';
+import type { TerrainVersion } from './world';
 import { mapSeedFromTime, populateIslandTrees } from './island';
+import { populateNaturalResources } from './terrain';
+import { createV5Foundation } from './v5-foundation';
+import { V5_GENERATOR_REVISION } from './v5-world';
+import { buildingOccupiedCells } from './building-cells';
 import { emptyFusion, cloneFusion } from './fusion-state';
 import { initialTools, initialToolRecovery } from './foundation';
 import type { GameState, Building } from './types';
@@ -12,32 +19,92 @@ export function clone(state: GameState): GameState {
     tools: { ...state.tools },
     toolRecoveryAvailable: { ...state.toolRecoveryAvailable },
     trees: state.trees.map((t) => ({ ...t })),
+    naturalResources: state.naturalResources.map((p) => ({ ...p })),
     groundStacks: state.groundStacks.map((p) => ({ ...p })),
+    looseDrops: state.looseDrops.map(cloneLooseDrop),
+    landExtensions: state.landExtensions.map((p) => ({ ...p })),
     commerce: cloneCommerce(state.commerce),
     inventory: { ...state.inventory },
     buildings: state.buildings.map((b) => ({
       ...b,
+      ...(b.bridge
+        ? {
+            bridge: {
+              length: b.bridge.length,
+              piers: b.bridge.piers.map((p) => ({ ...p })) as [
+                (typeof b.bridge.piers)[0],
+                (typeof b.bridge.piers)[1],
+              ],
+            },
+          }
+        : {}),
+      ...(b.compost ? { compost: cloneCompostState(b.compost) } : {}),
+      ...(b.collectionBox
+        ? { collectionBox: { ...b.collectionBox, stock: { ...b.collectionBox.stock } } }
+        : {}),
+      ...(b.processingJob
+        ? {
+            processingJob: {
+              ...b.processingJob,
+              inputs: b.processingJob.inputs.map((v) => ({ ...v })),
+              outputs: b.processingJob.outputs.map((v) => ({ ...v })),
+            },
+          }
+        : {}),
       ...(b.job ? { job: { ...b.job } } : {}),
       ...(b.cropJobs ? { cropJobs: b.cropJobs.map((j) => (j ? { ...j } : null)) } : {}),
     })),
   };
 }
-export function createGame(now: number, seed = mapSeedFromTime(now)): GameState {
+export function createGame(
+  now: number,
+  seed = mapSeedFromTime(now),
+  terrainVersion: TerrainVersion = 4,
+): GameState {
   time(now);
   requireRule(integer(seed) && seed > 0, '地图种子无效');
+  requireRule(
+    terrainVersion === 1 ||
+      terrainVersion === 2 ||
+      terrainVersion === 3 ||
+      terrainVersion === 4 ||
+      terrainVersion === 5,
+    '地图版本无效',
+  );
   const state: GameState = {
-    schemaVersion: 8,
+    schemaVersion: 10,
     fusion: emptyFusion(),
     mapSeed: seed,
+    terrainVersion,
+    ...(terrainVersion === 5 ? { terrainRevision: V5_GENERATOR_REVISION } : {}),
+    landExtensions: [],
     tools: initialTools(),
     toolRecoveryAvailable: initialToolRecovery(),
     trees: [],
+    naturalResources: [],
     nextTreeId: 1,
     groundStacks: [],
+    looseDrops: [],
     cropRecoveryAvailable: true,
     commerce: emptyCommerce(),
     coins: 120,
-    inventory: { vegetable: 1, wheat: 0, lettuce: 0, wood: 0, stone: 0, chilledVegetable: 0 },
+    inventory: {
+      rice: 0,
+      sapling: 0,
+      milledRice: 0,
+      flour: 0,
+      bread: 0,
+      roastedCarrot: 0,
+      vegetable: 1,
+      wheat: 0,
+      lettuce: 0,
+      wood: 0,
+      stone: 0,
+      soil: 0,
+      mud: 0,
+      treeSeed: 0,
+      chilledVegetable: 0,
+    },
     nextId: 3,
     lastSeenAt: now,
     completedOrders: 0,
@@ -46,7 +113,17 @@ export function createGame(now: number, seed = mapSeedFromTime(now)): GameState 
       { id: 'b2', kind: 'farm', x: 6, z: 3, rotation: 0, cropJobs: Array(9).fill(null) },
     ],
   };
-  populateIslandTrees(state);
+  if (terrainVersion === 5) {
+    const blocked: { x: number; z: number }[] = [];
+    for (const b of state.buildings)
+      for (const p of buildingOccupiedCells(b))
+        for (let dz = -1; dz <= 1; dz++)
+          for (let dx = -1; dx <= 1; dx++) blocked.push({ x: p.x + dx, z: p.z + dz });
+    Object.assign(state, createV5Foundation(seed, blocked));
+  } else {
+    populateNaturalResources(state);
+    populateIslandTrees(state);
+  }
   return state;
 }
 export function getCapacity(state: GameState): number {

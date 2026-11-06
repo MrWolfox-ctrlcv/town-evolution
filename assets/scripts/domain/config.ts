@@ -16,8 +16,22 @@ export const CONFIG: {
   expansionCost: number;
   combineCost: number;
 } = {
-  gridSize: 24,
+  gridSize: 192,
   buildings: {
+    woodenBridge: { label: '木桥', width: 2, depth: 8, cost: 0, capacity: 0 },
+    compostBarrel: { label: '堆肥木桶', width: 1, depth: 1, cost: 0, capacity: 0 },
+    nursery: { label: '育苗箱', width: 1, depth: 1, cost: 0, capacity: 0 },
+    stoneMill: { label: '石磨', width: 1, depth: 1, cost: 0, capacity: 0 },
+    mill: { label: '磨坊', width: 2, depth: 2, cost: 0, capacity: 0 },
+    stoneOven: { label: '石窑', width: 1, depth: 1, cost: 0, capacity: 0 },
+    bakery: { label: '烘焙坊', width: 2, depth: 2, cost: 0, capacity: 0 },
+    handcart: { label: '手推车', width: 1, depth: 1, cost: 0, capacity: 0 },
+    transportWarehouse: { label: '运输仓', width: 2, depth: 2, cost: 0, capacity: 16 },
+    woodenPier: { label: '木栈桥', width: 2, depth: 2, cost: 0, capacity: 0 },
+    boat: { label: '木船', width: 1, depth: 2, cost: 0, capacity: 0 },
+    crate: { label: '箱子', width: 1, depth: 1, cost: 0, capacity: 0 },
+    house: { label: '基础房屋', width: 2, depth: 2, cost: 0, capacity: 0 },
+    residence: { label: '住宅', width: 2, depth: 2, cost: 0, capacity: 0 },
     farm: { label: '菜地', width: 2, depth: 2, cost: 20, capacity: 0 },
     warehouse: { label: '基础仓房', width: 2, depth: 2, cost: 50, capacity: 16 },
     expandedWarehouse: { label: '扩容仓库', width: 2, depth: 2, cost: 0, capacity: 32 },

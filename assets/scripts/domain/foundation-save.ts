@@ -1,8 +1,12 @@
-import type { GameState, Tree, GroundStack } from './types';
+import type { TerrainVersion } from './world';
+import type { GameState, Tree, GroundStack, NaturalResource, LandCell } from './types';
 import { isLandCell } from './island';
+import { terrainAt } from './terrain';
+import { MAX_TERRAIN_HEIGHT } from './world';
 import { CONFIG } from './config';
 import { ITEM_KEYS } from './crops';
-import { TOOL_IDS, initialTools, initialToolRecovery, FOUNDATION } from './foundation';
+import { TOOL_IDS, initialTools, initialToolRecovery, stackLimitFor } from './foundation';
+import { parseTreeGrowth } from './nursery-save';
 import { requireRule, integer } from './guards';
 function record(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -12,17 +16,32 @@ export function importFoundation(
   legacy: boolean,
   gridLimit = CONFIG.gridSize,
   seed = 1,
-): Pick<GameState, 'tools' | 'toolRecoveryAvailable' | 'trees' | 'nextTreeId' | 'groundStacks'> {
+  terrainVersion: TerrainVersion = 3,
+  landExtensions: readonly LandCell[] = [],
+): Pick<
+  GameState,
+  'tools' | 'toolRecoveryAvailable' | 'trees' | 'nextTreeId' | 'groundStacks' | 'naturalResources'
+> {
+  const current = raw.schemaVersion === 9 || raw.schemaVersion === 10;
+  if (current) requireRule(raw.naturalResources !== undefined, '天然资源列表缺失');
   const result = {
     tools: initialTools(),
     toolRecoveryAvailable: initialToolRecovery(),
     trees: [] as Tree[],
+    naturalResources: [] as NaturalResource[],
     nextTreeId: 1,
     groundStacks: [] as GroundStack[],
   };
   if (legacy) return result;
   requireRule(record(raw.tools) && record(raw.toolRecoveryAvailable), '工具记录无效');
   for (const tool of TOOL_IDS) {
+    if (
+      !current &&
+      tool === 'diggingTool' &&
+      raw.tools[tool] === undefined &&
+      raw.toolRecoveryAvailable[tool] === undefined
+    )
+      continue;
     requireRule(
       integer(raw.tools[tool]) && typeof raw.toolRecoveryAvailable[tool] === 'boolean',
       '工具耐久或应急状态无效',
@@ -34,16 +53,19 @@ export function importFoundation(
   result.nextTreeId = raw.nextTreeId;
   requireRule(
     Array.isArray(raw.trees) &&
-      raw.trees.length <= CONFIG.gridSize ** 2 &&
+      raw.trees.length <= gridLimit ** 2 &&
       Array.isArray(raw.groundStacks) &&
-      raw.groundStacks.length <= CONFIG.gridSize ** 2,
+      raw.groundStacks.length <= gridLimit ** 2,
     '地面记录无效',
   );
   const cells = new Set<string>(),
     ids = new Set<string>();
   function acceptCell(value: Record<string, unknown>): { x: number; z: number } {
     requireRule(integer(value.x, gridLimit - 1) && integer(value.z, gridLimit - 1), '地块位置无效');
-    requireRule(isLandCell(value.x, value.z, seed), '地面物品不能位于水域');
+    requireRule(
+      isLandCell(value.x, value.z, seed, terrainVersion, landExtensions),
+      '地面物品不能位于水域',
+    );
     const key = `${value.x},${value.z}`;
     requireRule(!cells.has(key), '树木或地堆重叠');
     cells.add(key);
@@ -59,13 +81,17 @@ export function importFoundation(
       '树木记录无效',
     );
     ids.add(value.id);
-    result.trees.push({ id: value.id, ...acceptCell(value) });
+    result.trees.push({
+      id: value.id,
+      ...acceptCell(value),
+      ...parseTreeGrowth(value, raw.lastSeenAt as number),
+    });
   }
   for (const value of raw.groundStacks) {
     requireRule(
       record(value) &&
         ITEM_KEYS.includes(value.item as never) &&
-        integer(value.amount, FOUNDATION.stackLimit) &&
+        integer(value.amount, stackLimitFor(value.item as GroundStack['item'])) &&
         value.amount >= 1,
       '地堆产品或数量无效',
     );
@@ -74,6 +100,42 @@ export function importFoundation(
       item: value.item as GroundStack['item'],
       amount: value.amount,
     });
+  }
+  // Absence is the additive v8 migration. Never regenerate resource blocks on import.
+  if (raw.naturalResources !== undefined) {
+    requireRule(
+      Array.isArray(raw.naturalResources) && raw.naturalResources.length <= gridLimit ** 2,
+      '天然资源列表无效',
+    );
+    for (const value of raw.naturalResources) {
+      requireRule(
+        record(value) &&
+          typeof value.id === 'string' &&
+          (value.kind === 'stone' || value.kind === 'soil') &&
+          integer(
+            value.amount,
+            terrainVersion === 5 ? 64 : terrainVersion === 4 ? MAX_TERRAIN_HEIGHT : 4,
+          ) &&
+          value.amount > 0,
+        '天然资源记录无效',
+      );
+      const point = acceptCell(value);
+      const terrain = terrainAt(point.x, point.z, seed, terrainVersion);
+      requireRule(
+        value.id === `n${point.x}_${point.z}` &&
+          terrain &&
+          value.amount <= terrain.elevation &&
+          ((value.kind === 'stone' && terrain.biome === 'mountain') ||
+            (value.kind === 'soil' && terrain.biome === 'hill')),
+        '天然资源与地图不一致',
+      );
+      result.naturalResources.push({
+        id: value.id,
+        kind: value.kind,
+        amount: value.amount,
+        ...point,
+      });
+    }
   }
   return result;
 }
