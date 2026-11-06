@@ -58,6 +58,8 @@ const uuids = new Set();
 function walk(dir) {
   for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
     const rel = path.join(dir, entry.name);
+    if (!entry.name.endsWith('.meta'))
+      assert.ok(fs.existsSync(path.join(root, `${rel}.meta`)), `Missing asset meta ${rel}`);
     if (entry.isDirectory()) {
       walk(rel);
       continue;
