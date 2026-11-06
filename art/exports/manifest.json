@@ -1,9 +1,682 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "units": "1 unit = 1 game grid cell; Y up; front +Z",
+  "categories": [
+    {
+      "id": "natural-plants",
+      "label": "自然植物",
+      "description": "树木与自然植被；采集由存档中的树木实体决定。"
+    },
+    {
+      "id": "natural-inorganic",
+      "label": "自然无机物",
+      "description": "草皮土块、石块、土丘、沙岸；资源量以自然资源实体为准。"
+    },
+    {
+      "id": "buildings",
+      "label": "建筑",
+      "description": "建筑、结构模块、围栏与人工铺装。"
+    },
+    {
+      "id": "crops",
+      "label": "作物",
+      "description": "种植中的作物、收获物与加工农产品。"
+    }
+  ],
   "assets": [
     {
+      "id": "compost-barrel",
+      "category": "buildings",
+      "file": "compost-barrel.gltf",
+      "parts": 39,
+      "triangles": 460,
+      "vertices": 972,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.35250000000000004,
+          0,
+          -0.4152
+        ],
+        "max": [
+          0.35250000000000004,
+          1.442292834583117,
+          0.4152
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 79048
+    },
+    {
+      "id": "compost-barrel-working",
+      "category": "buildings",
+      "file": "compost-barrel-working.gltf",
+      "parts": 39,
+      "triangles": 460,
+      "vertices": 972,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.35250000000000004,
+          0,
+          -0.4152
+        ],
+        "max": [
+          0.35250000000000004,
+          1.0125,
+          0.4152
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 79053
+    },
+    {
+      "id": "compost-barrel-ready",
+      "category": "buildings",
+      "file": "compost-barrel-ready.gltf",
+      "parts": 47,
+      "triangles": 1056,
+      "vertices": 2712,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.35250000000000004,
+          0,
+          -0.4152
+        ],
+        "max": [
+          0.35250000000000004,
+          1.442292834583117,
+          0.4152
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 209504
+    },
+    {
+      "id": "roasted-carrot",
+      "category": "crops",
+      "file": "roasted-carrot.gltf",
+      "parts": 25,
+      "triangles": 1108,
+      "vertices": 1068,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.29250000000000004,
+          0,
+          -0.35050000000000003
+        ],
+        "max": [
+          0.29250000000000004,
+          0.19923564029934832,
+          0.35050000000000003
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 105910
+    },
+    {
+      "id": "farm-collection-box-0",
+      "category": "buildings",
+      "file": "farm-collection-box-0.gltf",
+      "parts": 25,
+      "triangles": 268,
+      "vertices": 600,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.759,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 49065
+    },
+    {
+      "id": "farm-collection-box-1",
+      "category": "buildings",
+      "file": "farm-collection-box-1.gltf",
+      "parts": 29,
+      "triangles": 720,
+      "vertices": 930,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8040733960404916,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 84669
+    },
+    {
+      "id": "farm-collection-box-2",
+      "category": "buildings",
+      "file": "farm-collection-box-2.gltf",
+      "parts": 61,
+      "triangles": 644,
+      "vertices": 858,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.7796420006313269,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 77629
+    },
+    {
+      "id": "farm-collection-box-3",
+      "category": "buildings",
+      "file": "farm-collection-box-3.gltf",
+      "parts": 65,
+      "triangles": 1096,
+      "vertices": 1188,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8040733960404916,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 113219
+    },
+    {
+      "id": "farm-collection-box-4",
+      "category": "buildings",
+      "file": "farm-collection-box-4.gltf",
+      "parts": 30,
+      "triangles": 548,
+      "vertices": 1188,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 95681
+    },
+    {
+      "id": "farm-collection-box-5",
+      "category": "buildings",
+      "file": "farm-collection-box-5.gltf",
+      "parts": 34,
+      "triangles": 1000,
+      "vertices": 1518,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 131267
+    },
+    {
+      "id": "farm-collection-box-6",
+      "category": "buildings",
+      "file": "farm-collection-box-6.gltf",
+      "parts": 66,
+      "triangles": 924,
+      "vertices": 1446,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 124227
+    },
+    {
+      "id": "farm-collection-box-7",
+      "category": "buildings",
+      "file": "farm-collection-box-7.gltf",
+      "parts": 70,
+      "triangles": 1376,
+      "vertices": 1776,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 159815
+    },
+    {
+      "id": "farm-collection-box-8",
+      "category": "buildings",
+      "file": "farm-collection-box-8.gltf",
+      "parts": 61,
+      "triangles": 644,
+      "vertices": 858,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.759,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 77616
+    },
+    {
+      "id": "farm-collection-box-9",
+      "category": "buildings",
+      "file": "farm-collection-box-9.gltf",
+      "parts": 65,
+      "triangles": 1096,
+      "vertices": 1188,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8040733960404916,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 113219
+    },
+    {
+      "id": "farm-collection-box-10",
+      "category": "buildings",
+      "file": "farm-collection-box-10.gltf",
+      "parts": 97,
+      "triangles": 1020,
+      "vertices": 1116,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.7796420006313269,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 106180
+    },
+    {
+      "id": "farm-collection-box-11",
+      "category": "buildings",
+      "file": "farm-collection-box-11.gltf",
+      "parts": 101,
+      "triangles": 1472,
+      "vertices": 1446,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8040733960404916,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 141768
+    },
+    {
+      "id": "farm-collection-box-12",
+      "category": "buildings",
+      "file": "farm-collection-box-12.gltf",
+      "parts": 66,
+      "triangles": 924,
+      "vertices": 1446,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 124229
+    },
+    {
+      "id": "farm-collection-box-13",
+      "category": "buildings",
+      "file": "farm-collection-box-13.gltf",
+      "parts": 70,
+      "triangles": 1376,
+      "vertices": 1776,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 159817
+    },
+    {
+      "id": "farm-collection-box-14",
+      "category": "buildings",
+      "file": "farm-collection-box-14.gltf",
+      "parts": 102,
+      "triangles": 1300,
+      "vertices": 1704,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 152776
+    },
+    {
+      "id": "farm-collection-box-15",
+      "category": "buildings",
+      "file": "farm-collection-box-15.gltf",
+      "parts": 106,
+      "triangles": 1752,
+      "vertices": 2034,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.40012499999999995,
+          0,
+          -0.4191
+        ],
+        "max": [
+          0.40012499999999995,
+          0.8447999999999999,
+          0.4191
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 188362
+    },
+    {
+      "id": "farm-with-box",
+      "category": "buildings",
+      "file": "farm-with-box.gltf",
+      "parts": 96,
+      "triangles": 1044,
+      "vertices": 2190,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -1.505,
+          0,
+          -1
+        ],
+        "max": [
+          1.400125,
+          0.759,
+          1
+        ]
+      },
+      "footprint": [
+        3,
+        2
+      ],
+      "bytes": 175649
+    },
+    {
+      "id": "farm-large-with-box",
+      "category": "buildings",
+      "file": "farm-large-with-box.gltf",
+      "parts": 105,
+      "triangles": 1188,
+      "vertices": 2460,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -2.505,
+          0,
+          -2
+        ],
+        "max": [
+          2.4001249999999996,
+          0.759,
+          1.9999999999999998
+        ]
+      },
+      "footprint": [
+        5,
+        4
+      ],
+      "bytes": 197576
+    },
+    {
+      "id": "farm-with-box-water",
+      "category": "buildings",
+      "file": "farm-with-box-water.gltf",
+      "parts": 60,
+      "triangles": 720,
+      "vertices": 1488,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -1.505,
+          0,
+          -1
+        ],
+        "max": [
+          1.400125,
+          0.759,
+          1
+        ]
+      },
+      "footprint": [
+        3,
+        2
+      ],
+      "bytes": 120359
+    },
+    {
+      "id": "farm-large-with-box-water",
+      "category": "buildings",
+      "file": "farm-large-with-box-water.gltf",
+      "parts": 141,
+      "triangles": 1692,
+      "vertices": 3432,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -2.505,
+          0,
+          -2
+        ],
+        "max": [
+          2.4001249999999996,
+          0.759,
+          1.9999999999999998
+        ]
+      },
+      "footprint": [
+        5,
+        4
+      ],
+      "bytes": 275925
+    },
+    {
+      "id": "dock-simple-three",
+      "category": "buildings",
+      "file": "dock-simple-three.gltf",
+      "parts": 94,
+      "triangles": 2664,
+      "vertices": 3816,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -0.9
+        ],
+        "max": [
+          0.9,
+          1.2248,
+          0.9
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 331614
+    },
+    {
       "id": "farm-cell-bed",
+      "category": "buildings",
       "file": "farm-cell-bed.gltf",
       "parts": 71,
       "triangles": 776,
@@ -25,10 +698,869 @@
         2,
         2
       ],
-      "bytes": 98451
+      "bytes": 98399
+    },
+    {
+      "id": "farm-large-bed",
+      "category": "buildings",
+      "file": "farm-large-bed.gltf",
+      "parts": 80,
+      "triangles": 920,
+      "vertices": 1860,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -2.005,
+          0.009999999999999995,
+          -2
+        ],
+        "max": [
+          2.005,
+          0.245,
+          1.9999999999999998
+        ]
+      },
+      "footprint": [
+        4,
+        4
+      ],
+      "bytes": 115123
+    },
+    {
+      "id": "farm-cell-bed-water",
+      "category": "buildings",
+      "file": "farm-cell-bed-water.gltf",
+      "parts": 35,
+      "triangles": 452,
+      "vertices": 888,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -1.005,
+          0.009999999999999995,
+          -1
+        ],
+        "max": [
+          1.005,
+          0.245,
+          1
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 55784
+    },
+    {
+      "id": "farm-large-bed-water",
+      "category": "buildings",
+      "file": "farm-large-bed-water.gltf",
+      "parts": 116,
+      "triangles": 1424,
+      "vertices": 2832,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -2.005,
+          0.009999999999999995,
+          -2
+        ],
+        "max": [
+          2.005,
+          0.245,
+          1.9999999999999998
+        ]
+      },
+      "footprint": [
+        4,
+        4
+      ],
+      "bytes": 175041
+    },
+    {
+      "id": "natural-block-grass",
+      "category": "natural-inorganic",
+      "file": "natural-block-grass.gltf",
+      "parts": 0,
+      "triangles": 162,
+      "vertices": 129,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5016463370122599,
+          0,
+          -0.5036561765639896
+        ],
+        "max": [
+          0.5008320348831979,
+          1.0040920383852958,
+          0.5
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 10703
+    },
+    {
+      "id": "natural-block-forest",
+      "category": "natural-inorganic",
+      "file": "natural-block-forest.gltf",
+      "parts": 0,
+      "triangles": 162,
+      "vertices": 129,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5016463370122599,
+          0,
+          -0.5036561765639896
+        ],
+        "max": [
+          0.5008320348831979,
+          1.0040920383852958,
+          0.5
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 10705
+    },
+    {
+      "id": "natural-block-stone",
+      "category": "natural-inorganic",
+      "file": "natural-block-stone.gltf",
+      "parts": 0,
+      "triangles": 48,
+      "vertices": 96,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5,
+          0,
+          -0.5
+        ],
+        "max": [
+          0.5,
+          1,
+          0.5
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 7053
+    },
+    {
+      "id": "natural-block-soil",
+      "category": "natural-inorganic",
+      "file": "natural-block-soil.gltf",
+      "parts": 0,
+      "triangles": 162,
+      "vertices": 129,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5016463370122599,
+          0,
+          -0.5036561765639896
+        ],
+        "max": [
+          0.5008320348831979,
+          1.0040920383852958,
+          0.5
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 10701
+    },
+    {
+      "id": "natural-block-sand",
+      "category": "natural-inorganic",
+      "file": "natural-block-sand.gltf",
+      "parts": 0,
+      "triangles": 162,
+      "vertices": 129,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5016463370122599,
+          0,
+          -0.5036561765639896
+        ],
+        "max": [
+          0.5008320348831979,
+          1.0040920383852958,
+          0.5
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 10701
+    },
+    {
+      "id": "tree-pine",
+      "category": "natural-plants",
+      "file": "tree-pine.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39597979746446665,
+          0,
+          -0.39597979746446665
+        ],
+        "max": [
+          0.39597979746446665,
+          1.9,
+          0.39597979746446665
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9087
+    },
+    {
+      "id": "tree-canopy-0",
+      "category": "natural-plants",
+      "file": "tree-canopy-0.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5697444732308851,
+          0,
+          -0.4406689938771079
+        ],
+        "max": [
+          0.530847564871097,
+          1.635528493014951,
+          0.372896644069595
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66523
+    },
+    {
+      "id": "tree-canopy-1",
+      "category": "natural-plants",
+      "file": "tree-canopy-1.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5925123829888084,
+          0,
+          -0.5115396948973574
+        ],
+        "max": [
+          0.5779341044493704,
+          1.6864737103197949,
+          0.3534297184722755
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66526
+    },
+    {
+      "id": "tree-canopy-2",
+      "category": "natural-plants",
+      "file": "tree-canopy-2.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.48173863834652314,
+          0,
+          -0.4483872590867792
+        ],
+        "max": [
+          0.5948170920157386,
+          1.7035730625431225,
+          0.3115742000161333
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66527
+    },
+    {
+      "id": "tree-canopy-3",
+      "category": "natural-plants",
+      "file": "tree-canopy-3.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5284328467810315,
+          0,
+          -0.5667769964306691
+        ],
+        "max": [
+          0.486107537228902,
+          1.8591077045412865,
+          0.48965796364790626
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66526
+    },
+    {
+      "id": "tree-canopy-4",
+      "category": "natural-plants",
+      "file": "tree-canopy-4.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.512732270749329,
+          0,
+          -0.36902513521217095
+        ],
+        "max": [
+          0.5696392365547074,
+          1.5677084602299334,
+          0.37799617098175264
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66527
+    },
+    {
+      "id": "tree-canopy-5",
+      "category": "natural-plants",
+      "file": "tree-canopy-5.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5048492407829481,
+          0,
+          -0.5150040662573813
+        ],
+        "max": [
+          0.5189521531693608,
+          1.7766727529059625,
+          0.436233950159701
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66525
+    },
+    {
+      "id": "tree-canopy-6",
+      "category": "natural-plants",
+      "file": "tree-canopy-6.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5876531766069939,
+          0,
+          -0.39146408411588196
+        ],
+        "max": [
+          0.5194520653533212,
+          1.7344860773449504,
+          0.3755585359559491
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66527
+    },
+    {
+      "id": "tree-canopy-7",
+      "category": "natural-plants",
+      "file": "tree-canopy-7.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5258995165863052,
+          0,
+          -0.4141491263170306
+        ],
+        "max": [
+          0.5949728018525733,
+          1.6868568102727157,
+          0.3472747068278944
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66526
+    },
+    {
+      "id": "tree-canopy-8",
+      "category": "natural-plants",
+      "file": "tree-canopy-8.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5247054789720739,
+          0,
+          -0.4374099642632987
+        ],
+        "max": [
+          0.4260060457395928,
+          1.8964965047469653,
+          0.399322452213118
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66525
+    },
+    {
+      "id": "tree-canopy-9",
+      "category": "natural-plants",
+      "file": "tree-canopy-9.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5309302054503027,
+          0,
+          -0.4695309856281598
+        ],
+        "max": [
+          0.5756039068454412,
+          1.8964965047469655,
+          0.40736936351910474
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66527
+    },
+    {
+      "id": "tree-canopy-10",
+      "category": "natural-plants",
+      "file": "tree-canopy-10.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5939420331562419,
+          0,
+          -0.4578393028294842
+        ],
+        "max": [
+          0.5440059966291064,
+          1.795040422217341,
+          0.41452925594052914
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66528
+    },
+    {
+      "id": "tree-canopy-11",
+      "category": "natural-plants",
+      "file": "tree-canopy-11.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5321478643594876,
+          0,
+          -0.4002255827487283
+        ],
+        "max": [
+          0.5410249253688184,
+          1.6461653808091128,
+          0.46505193418500373
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66529
+    },
+    {
+      "id": "tree-canopy-12",
+      "category": "natural-plants",
+      "file": "tree-canopy-12.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5571798849689625,
+          0,
+          -0.41878445325784763
+        ],
+        "max": [
+          0.5859654885857721,
+          1.7833699604371713,
+          0.3439351243602282
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66529
+    },
+    {
+      "id": "tree-canopy-13",
+      "category": "natural-plants",
+      "file": "tree-canopy-13.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4495714630253729,
+          0,
+          -0.5914913718013658
+        ],
+        "max": [
+          0.5594997435514517,
+          1.7136610958773335,
+          0.3316501199496663
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66528
+    },
+    {
+      "id": "tree-canopy-14",
+      "category": "natural-plants",
+      "file": "tree-canopy-14.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.48326273706365586,
+          0,
+          -0.3365463039498932
+        ],
+        "max": [
+          0.593014984870119,
+          1.582820427668533,
+          0.3440859464387936
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66527
+    },
+    {
+      "id": "tree-canopy-15",
+      "category": "natural-plants",
+      "file": "tree-canopy-15.gltf",
+      "parts": 8,
+      "triangles": 400,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5636998364257453,
+          0,
+          -0.48972257028747423
+        ],
+        "max": [
+          0.571678157180264,
+          1.6754851901048202,
+          0.352007009065322
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 66527
+    },
+    {
+      "id": "tree-pine-canopy-0",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-0.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5316375263439296,
+          0,
+          -0.5425471452416032
+        ],
+        "max": [
+          0.5275669048145281,
+          1.8826621505264738,
+          0.45453917361121354
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9117
+    },
+    {
+      "id": "tree-pine-canopy-1",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-1.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39733130687226614,
+          0,
+          -0.3872382642997255
+        ],
+        "max": [
+          0.45174276603188224,
+          1.6893837597551853,
+          0.35463691963320165
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9119
+    },
+    {
+      "id": "tree-pine-canopy-2",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-2.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.576002162746745,
+          0,
+          -0.47339864773444507
+        ],
+        "max": [
+          0.504211906358604,
+          1.8393644658499777,
+          0.5084931549113322
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9115
+    },
+    {
+      "id": "tree-pine-canopy-3",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-3.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.5493966143727789,
+          0,
+          -0.4397694584141728
+        ],
+        "max": [
+          0.5864889262539754,
+          1.8743504874107222,
+          0.4487541607987381
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9116
+    },
+    {
+      "id": "tree-pine-canopy-4",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-4.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.48032548796064,
+          0,
+          -0.4528029590859008
+        ],
+        "max": [
+          0.4658514418866888,
+          1.714135880800961,
+          0.5070450393409301
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9113
+    },
+    {
+      "id": "tree-pine-canopy-5",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-5.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4501092128862876,
+          0,
+          -0.46820337236356474
+        ],
+        "max": [
+          0.37807924404003457,
+          1.8987663798828747,
+          0.5082614768106589
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9118
+    },
+    {
+      "id": "tree-pine-canopy-6",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-6.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.48047772128804467,
+          0,
+          -0.35939200282618017
+        ],
+        "max": [
+          0.49805736968583975,
+          1.7211787896745283,
+          0.41364834495705877
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9120
+    },
+    {
+      "id": "tree-pine-canopy-7",
+      "category": "natural-plants",
+      "file": "tree-pine-canopy-7.gltf",
+      "parts": 5,
+      "triangles": 52,
+      "vertices": 132,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4695993394247625,
+          0,
+          -0.4369881379558478
+        ],
+        "max": [
+          0.4255259285559051,
+          1.6504494903003808,
+          0.4911719687211349
+        ]
+      },
+      "footprint": [
+        1.2,
+        1.2
+      ],
+      "bytes": 9116
     },
     {
       "id": "pile-wood-1",
+      "category": "natural-plants",
       "file": "pile-wood-1.gltf",
       "parts": 5,
       "triangles": 148,
@@ -50,23 +1582,24 @@
         1,
         1
       ],
-      "bytes": 17033
+      "bytes": 16986
     },
     {
       "id": "pile-wood-2",
+      "category": "natural-plants",
       "file": "pile-wood-2.gltf",
-      "parts": 10,
-      "triangles": 296,
-      "vertices": 504,
+      "parts": 11,
+      "triangles": 392,
+      "vertices": 552,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.23,
+          -0.23690000000000003,
           0,
           -0.377
         ],
         "max": [
-          0.23,
+          0.23690000000000003,
           0.23776412907378847,
           0.402
         ]
@@ -75,23 +1608,24 @@
         1,
         1
       ],
-      "bytes": 32840
+      "bytes": 36920
     },
     {
       "id": "pile-wood-3",
+      "category": "natural-plants",
       "file": "pile-wood-3.gltf",
-      "parts": 15,
-      "triangles": 444,
-      "vertices": 756,
+      "parts": 16,
+      "triangles": 540,
+      "vertices": 804,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.34500000000000003,
+          -0.35535000000000005,
           0,
           -0.377
         ],
         "max": [
-          0.34500000000000003,
+          0.35535000000000005,
           0.23776412907378847,
           0.402
         ]
@@ -100,23 +1634,24 @@
         1,
         1
       ],
-      "bytes": 48680
+      "bytes": 52729
     },
     {
       "id": "pile-wood-4",
+      "category": "natural-plants",
       "file": "pile-wood-4.gltf",
-      "parts": 20,
-      "triangles": 592,
-      "vertices": 1008,
+      "parts": 21,
+      "triangles": 688,
+      "vertices": 1056,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.34500000000000003,
+          -0.35535000000000005,
           0,
           -0.377
         ],
         "max": [
-          0.34500000000000003,
+          0.35535000000000005,
           0.4367641290737885,
           0.402
         ]
@@ -125,23 +1660,24 @@
         1,
         1
       ],
-      "bytes": 64493
+      "bytes": 68542
     },
     {
       "id": "pile-wood-5",
+      "category": "natural-plants",
       "file": "pile-wood-5.gltf",
-      "parts": 25,
-      "triangles": 740,
-      "vertices": 1260,
+      "parts": 26,
+      "triangles": 836,
+      "vertices": 1308,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.34500000000000003,
+          -0.35535000000000005,
           0,
           -0.377
         ],
         "max": [
-          0.34500000000000003,
+          0.35535000000000005,
           0.4367641290737885,
           0.402
         ]
@@ -150,10 +1686,37 @@
         1,
         1
       ],
-      "bytes": 80301
+      "bytes": 84351
+    },
+    {
+      "id": "pile-wood-6",
+      "category": "natural-plants",
+      "file": "pile-wood-6.gltf",
+      "parts": 31,
+      "triangles": 984,
+      "vertices": 1560,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.35535000000000005,
+          0,
+          -0.377
+        ],
+        "max": [
+          0.35535000000000005,
+          0.6357641290737884,
+          0.402
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 100159
     },
     {
       "id": "pile-stone-1",
+      "category": "natural-inorganic",
       "file": "pile-stone-1.gltf",
       "parts": 2,
       "triangles": 88,
@@ -175,10 +1738,11 @@
         1,
         1
       ],
-      "bytes": 16768
+      "bytes": 16724
     },
     {
       "id": "pile-stone-2",
+      "category": "natural-inorganic",
       "file": "pile-stone-2.gltf",
       "parts": 4,
       "triangles": 176,
@@ -186,24 +1750,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.3016095895409979,
+          -0.2890901262510819,
           0,
           -0.18225235468052967
         ],
         "max": [
-          0.2940901262510819,
+          0.2966095895409979,
           0.2638724951607582,
-          0.18225235468052967
+          0.2173768914155066
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 32257
+      "bytes": 32212
     },
     {
       "id": "pile-stone-3",
+      "category": "natural-inorganic",
       "file": "pile-stone-3.gltf",
       "parts": 6,
       "triangles": 264,
@@ -211,24 +1776,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.25398699906555033,
+          -0.4240901262510819,
           0,
-          -0.32389397654183166
+          -0.18225235468052967
         ],
         "max": [
-          0.3340901262510819,
+          0.43398699906555027,
           0.2638724951607582,
-          0.32826146409670554
+          0.2173768914155066
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 47747
+      "bytes": 47702
     },
     {
       "id": "pile-stone-4",
+      "category": "natural-inorganic",
       "file": "pile-stone-4.gltf",
       "parts": 8,
       "triangles": 352,
@@ -236,24 +1802,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.25398699906555033,
+          -0.4240901262510819,
           0,
-          -0.32389397654183166
+          -0.18225235468052967
         ],
         "max": [
-          0.3340901262510819,
-          0.41387249516075825,
-          0.32826146409670554
+          0.43398699906555027,
+          0.4438724951607582,
+          0.22725235468052968
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 63243
+      "bytes": 63198
     },
     {
       "id": "pile-stone-5",
+      "category": "natural-inorganic",
       "file": "pile-stone-5.gltf",
       "parts": 10,
       "triangles": 440,
@@ -261,149 +1828,805 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.25398699906555033,
+          -0.4240901262510819,
           0,
-          -0.32389397654183166
+          -0.18225235468052967
         ],
         "max": [
-          0.3340901262510819,
-          0.41387249516075825,
-          0.32826146409670565
+          0.43398699906555027,
+          0.4438724951607582,
+          0.22725235468052968
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 78731
+      "bytes": 78686
+    },
+    {
+      "id": "pile-stone-6",
+      "category": "natural-inorganic",
+      "file": "pile-stone-6.gltf",
+      "parts": 12,
+      "triangles": 528,
+      "vertices": 1584,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4240901262510819,
+          0,
+          -0.18225235468052967
+        ],
+        "max": [
+          0.43398699906555027,
+          0.6228886944712178,
+          0.22725235468052968
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 94174
+    },
+    {
+      "id": "pile-soil-1",
+      "category": "natural-inorganic",
+      "file": "pile-soil-1.gltf",
+      "parts": 2,
+      "triangles": 20,
+      "vertices": 48,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.14609868216250305,
+          0,
+          -0.1573078196508274
+        ],
+        "max": [
+          0.1721660826966756,
+          0.2873578266860687,
+          0.1573078196508274
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 4102
+    },
+    {
+      "id": "pile-soil-2",
+      "category": "natural-inorganic",
+      "file": "pile-soil-2.gltf",
+      "parts": 4,
+      "triangles": 40,
+      "vertices": 96,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.3214383449383952,
+          0,
+          -0.19136625474344485
+        ],
+        "max": [
+          0.3121660826966756,
+          0.2873578266860687,
+          0.1913662547434449
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 6987
+    },
+    {
+      "id": "pile-soil-3",
+      "category": "natural-inorganic",
+      "file": "pile-soil-3.gltf",
+      "parts": 6,
+      "triangles": 60,
+      "vertices": 144,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2914717561933201,
+          0,
+          -0.3645856721143517
+        ],
+        "max": [
+          0.3521660826966756,
+          0.2873578266860687,
+          0.34725082742464386
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 9870
+    },
+    {
+      "id": "pile-soil-4",
+      "category": "natural-inorganic",
+      "file": "pile-soil-4.gltf",
+      "parts": 8,
+      "triangles": 80,
+      "vertices": 192,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2914717561933201,
+          0,
+          -0.3645856721143517
+        ],
+        "max": [
+          0.3521660826966756,
+          0.43735782668606865,
+          0.34725082742464386
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 12751
+    },
+    {
+      "id": "pile-soil-5",
+      "category": "natural-inorganic",
+      "file": "pile-soil-5.gltf",
+      "parts": 10,
+      "triangles": 100,
+      "vertices": 240,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2914717561933201,
+          0,
+          -0.3645856721143517
+        ],
+        "max": [
+          0.3521660826966756,
+          0.43735782668606865,
+          0.3472508274246439
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 15632
+    },
+    {
+      "id": "pile-mud-1",
+      "category": "natural-inorganic",
+      "file": "pile-mud-1.gltf",
+      "parts": 4,
+      "triangles": 44,
+      "vertices": 96,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.141,
+          0,
+          -0.141
+        ],
+        "max": [
+          0.144,
+          0.167,
+          0.141
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 6983
+    },
+    {
+      "id": "pile-mud-2",
+      "category": "natural-inorganic",
+      "file": "pile-mud-2.gltf",
+      "parts": 8,
+      "triangles": 88,
+      "vertices": 192,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.287,
+          0,
+          -0.141
+        ],
+        "max": [
+          0.29,
+          0.167,
+          0.141
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 12810
+    },
+    {
+      "id": "pile-mud-3",
+      "category": "natural-inorganic",
+      "file": "pile-mud-3.gltf",
+      "parts": 12,
+      "triangles": 132,
+      "vertices": 288,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.141
+        ],
+        "max": [
+          0.43599999999999994,
+          0.167,
+          0.141
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 18665
+    },
+    {
+      "id": "pile-mud-4",
+      "category": "natural-inorganic",
+      "file": "pile-mud-4.gltf",
+      "parts": 16,
+      "triangles": 176,
+      "vertices": 384,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.287
+        ],
+        "max": [
+          0.43599999999999994,
+          0.167,
+          0.287
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 24489
+    },
+    {
+      "id": "pile-mud-5",
+      "category": "natural-inorganic",
+      "file": "pile-mud-5.gltf",
+      "parts": 20,
+      "triangles": 220,
+      "vertices": 480,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.287
+        ],
+        "max": [
+          0.43599999999999994,
+          0.167,
+          0.287
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 30314
+    },
+    {
+      "id": "pile-mud-6",
+      "category": "natural-inorganic",
+      "file": "pile-mud-6.gltf",
+      "parts": 24,
+      "triangles": 264,
+      "vertices": 576,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.287
+        ],
+        "max": [
+          0.43599999999999994,
+          0.167,
+          0.287
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 36138
+    },
+    {
+      "id": "pile-mud-7",
+      "category": "natural-inorganic",
+      "file": "pile-mud-7.gltf",
+      "parts": 28,
+      "triangles": 308,
+      "vertices": 672,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.43299999999999994
+        ],
+        "max": [
+          0.43599999999999994,
+          0.167,
+          0.43299999999999994
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 41991
+    },
+    {
+      "id": "pile-mud-8",
+      "category": "natural-inorganic",
+      "file": "pile-mud-8.gltf",
+      "parts": 32,
+      "triangles": 352,
+      "vertices": 768,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.43299999999999994
+        ],
+        "max": [
+          0.43599999999999994,
+          0.167,
+          0.43299999999999994
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 47816
+    },
+    {
+      "id": "pile-mud-9",
+      "category": "natural-inorganic",
+      "file": "pile-mud-9.gltf",
+      "parts": 44,
+      "triangles": 492,
+      "vertices": 1056,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.43299999999999994,
+          0,
+          -0.43299999999999994
+        ],
+        "max": [
+          0.43599999999999994,
+          0.182,
+          0.43299999999999994
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 65422
+    },
+    {
+      "id": "pile-treeSeed-1",
+      "category": "natural-plants",
+      "file": "pile-treeSeed-1.gltf",
+      "parts": 3,
+      "triangles": 180,
+      "vertices": 516,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.13305051962524417,
+          0,
+          -0.11850319667026277
+        ],
+        "max": [
+          0.09811831484343361,
+          0.33002722661333905,
+          0.10096089438689856
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 31643
+    },
+    {
+      "id": "pile-treeSeed-2",
+      "category": "natural-plants",
+      "file": "pile-treeSeed-2.gltf",
+      "parts": 6,
+      "triangles": 360,
+      "vertices": 1032,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2680505196252442,
+          0,
+          -0.11850319667026277
+        ],
+        "max": [
+          0.23589477544763016,
+          0.3301690036296373,
+          0.10718070712637588
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 62049
+    },
+    {
+      "id": "pile-treeSeed-3",
+      "category": "natural-plants",
+      "file": "pile-treeSeed-3.gltf",
+      "parts": 9,
+      "triangles": 540,
+      "vertices": 1548,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4030505196252442,
+          0,
+          -0.11850319667026277
+        ],
+        "max": [
+          0.37064199665581904,
+          0.3301690036296373,
+          0.11334037075610613
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 92449
+    },
+    {
+      "id": "pile-treeSeed-4",
+      "category": "natural-plants",
+      "file": "pile-treeSeed-4.gltf",
+      "parts": 12,
+      "triangles": 720,
+      "vertices": 2064,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4030505196252442,
+          0,
+          -0.2585031966702628
+        ],
+        "max": [
+          0.37064199665581904,
+          0.3301690036296373,
+          0.26096089438689857
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 122848
+    },
+    {
+      "id": "pile-treeSeed-5",
+      "category": "natural-plants",
+      "file": "pile-treeSeed-5.gltf",
+      "parts": 15,
+      "triangles": 900,
+      "vertices": 2580,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4030505196252442,
+          0,
+          -0.2585031966702628
+        ],
+        "max": [
+          0.37064199665581904,
+          0.3301690036296373,
+          0.26718070712637587
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 153251
     },
     {
       "id": "pile-wheat-1",
+      "category": "crops",
       "file": "pile-wheat-1.gltf",
       "parts": 36,
-      "triangles": 908,
-      "vertices": 692,
+      "triangles": 376,
+      "vertices": 258,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.15194299231900527,
+          -0.07251101951822031,
           0,
-          -0.307607208476115
+          -0.2791177478864735
         ],
         "max": [
-          0.14129197914042013,
-          0.11549560455685409,
-          0.2548358769501767
+          0.0993215144598508,
+          0.10781438575662952,
+          0.2431177478864735
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 52720
+      "bytes": 21001
     },
     {
       "id": "pile-wheat-2",
+      "category": "crops",
       "file": "pile-wheat-2.gltf",
       "parts": 72,
-      "triangles": 1816,
-      "vertices": 1384,
+      "triangles": 752,
+      "vertices": 516,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.2869429923190053,
+          -0.16499390528707675,
           0,
-          -0.307607208476115
+          -0.27545261493975154
         ],
         "max": [
-          0.23002903657893434,
-          0.11549560455685409,
-          0.2548358769501767
+          0.2015886558022356,
+          0.10781438575662952,
+          0.28218020582756975
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 104161
+      "bytes": 40780
     },
     {
       "id": "pile-wheat-3",
+      "category": "crops",
       "file": "pile-wheat-3.gltf",
       "parts": 108,
-      "triangles": 2724,
-      "vertices": 2076,
+      "triangles": 1128,
+      "vertices": 774,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.4219429923190053,
+          -0.2668771237865705,
           0,
-          -0.307607208476115
+          -0.2823482501503571
         ],
         "max": [
-          0.4219429923190053,
-          0.11549560455685409,
-          0.2548358769501767
+          0.30252364638758905,
+          0.10781438575662952,
+          0.2791177478864735
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 155593
+      "bytes": 60556
     },
     {
       "id": "pile-wheat-4",
+      "category": "crops",
       "file": "pile-wheat-4.gltf",
       "parts": 144,
-      "triangles": 3632,
-      "vertices": 2768,
+      "triangles": 1504,
+      "vertices": 1032,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.4219429923190053,
+          -0.36872665475555755,
           0,
-          -0.447607208476115
+          -0.2821802058275698
         ],
         "max": [
-          0.4219429923190053,
-          0.11549560455685409,
-          0.4148358769501767
+          0.4018971180781297,
+          0.10781438575662952,
+          0.2796200397260693
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 207031
+      "bytes": 80338
     },
     {
       "id": "pile-wheat-5",
+      "category": "crops",
       "file": "pile-wheat-5.gltf",
       "parts": 180,
-      "triangles": 4540,
-      "vertices": 3460,
+      "triangles": 1880,
+      "vertices": 1290,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.4219429923190053,
+          -0.36872665475555755,
           0,
-          -0.447607208476115
+          -0.3162042658019777
         ],
         "max": [
-          0.4219429923190053,
-          0.11549560455685409,
-          0.4148358769501767
+          0.4018971180781297,
+          0.1898143857566295,
+          0.2796200397260693
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 258467
+      "bytes": 100113
+    },
+    {
+      "id": "pile-wheat-6",
+      "category": "crops",
+      "file": "pile-wheat-6.gltf",
+      "parts": 216,
+      "triangles": 2256,
+      "vertices": 1548,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.36872665475555755,
+          0,
+          -0.3171584361865382
+        ],
+        "max": [
+          0.4018971180781297,
+          0.1898143857566295,
+          0.2796200397260693
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 119889
+    },
+    {
+      "id": "pile-wheat-7",
+      "category": "crops",
+      "file": "pile-wheat-7.gltf",
+      "parts": 252,
+      "triangles": 2632,
+      "vertices": 1806,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.36872665475555755,
+          0,
+          -0.3152184314655324
+        ],
+        "max": [
+          0.4018971180781297,
+          0.1898143857566295,
+          0.2796200397260693
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 139666
+    },
+    {
+      "id": "pile-wheat-8",
+      "category": "crops",
+      "file": "pile-wheat-8.gltf",
+      "parts": 288,
+      "triangles": 3008,
+      "vertices": 2064,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.36872665475555755,
+          0,
+          -0.34911774788647354
+        ],
+        "max": [
+          0.4018971180781297,
+          0.27181438575662953,
+          0.2796200397260693
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 159444
+    },
+    {
+      "id": "pile-wheat-9",
+      "category": "crops",
+      "file": "pile-wheat-9.gltf",
+      "parts": 324,
+      "triangles": 3384,
+      "vertices": 2322,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.36872665475555755,
+          0,
+          -0.34545261493975155
+        ],
+        "max": [
+          0.4018971180781297,
+          0.27181438575662953,
+          0.2796200397260693
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 179221
+    },
+    {
+      "id": "pile-wheat-10",
+      "category": "crops",
+      "file": "pile-wheat-10.gltf",
+      "parts": 360,
+      "triangles": 3760,
+      "vertices": 2580,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.36872665475555755,
+          0,
+          -0.3862042658019777
+        ],
+        "max": [
+          0.4018971180781297,
+          0.3538143857566295,
+          0.2796200397260693
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 198998
     },
     {
       "id": "pile-vegetable-1",
+      "category": "crops",
       "file": "pile-vegetable-1.gltf",
       "parts": 4,
       "triangles": 452,
@@ -411,24 +2634,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.16748728261301254,
+          -0.06855227790248922,
           0,
-          -0.25894783195706256
+          -0.30337627881112195
         ],
         "max": [
-          0.08137893740284467,
-          0.16167960777017612,
-          0.3369211610808189
+          0.10052742215475119,
+          0.15197883130396556,
+          0.26737627881112197
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 26123
+      "bytes": 26068
     },
     {
       "id": "pile-vegetable-2",
+      "category": "crops",
       "file": "pile-vegetable-2.gltf",
       "parts": 8,
       "triangles": 904,
@@ -436,24 +2660,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.30248728261301255,
+          -0.14091556612157152,
           0,
-          -0.27
+          -0.30162715765737086
         ],
         "max": [
-          0.22000000000000003,
-          0.16167960777017612,
-          0.33918008137394107
+          0.1576764015185146,
+          0.15197883130396556,
+          0.3043012988480356
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 50944
+      "bytes": 50901
     },
     {
       "id": "pile-vegetable-3",
+      "category": "crops",
       "file": "pile-vegetable-3.gltf",
       "parts": 12,
       "triangles": 1356,
@@ -461,24 +2686,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.43748728261301256,
+          -0.236496201158674,
           0,
-          -0.27
+          -0.30239185035166644
         ],
         "max": [
-          0.43748728261301256,
-          0.16167960777017612,
-          0.33918008137394107
+          0.2238621292745886,
+          0.15197883130396556,
+          0.30337627881112195
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 75779
+      "bytes": 75735
     },
     {
       "id": "pile-vegetable-4",
+      "category": "crops",
       "file": "pile-vegetable-4.gltf",
       "parts": 16,
       "triangles": 1808,
@@ -486,24 +2712,25 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.43748728261301256,
+          -0.34137401054430316,
           0,
-          -0.41000000000000003
+          -0.3043012988480356
         ],
         "max": [
-          0.43748728261301256,
-          0.16167960777017612,
-          0.49692116108081885
+          0.3033393007754354,
+          0.15197883130396556,
+          0.30162715765737086
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 100629
+      "bytes": 100571
     },
     {
       "id": "pile-vegetable-5",
+      "category": "crops",
       "file": "pile-vegetable-5.gltf",
       "parts": 20,
       "triangles": 2260,
@@ -511,149 +2738,415 @@
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.43748728261301256,
+          -0.34137401054430316,
           0,
-          -0.41000000000000003
+          -0.3371271360846801
         ],
         "max": [
-          0.43748728261301256,
-          0.16167960777017612,
-          0.4991800813739411
+          0.3033393007754354,
+          0.27197883130396555,
+          0.30162715765737086
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 125460
+      "bytes": 125403
+    },
+    {
+      "id": "pile-vegetable-6",
+      "category": "crops",
+      "file": "pile-vegetable-6.gltf",
+      "parts": 24,
+      "triangles": 2712,
+      "vertices": 1980,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.34137401054430316,
+          0,
+          -0.33901302023369195
+        ],
+        "max": [
+          0.3033393007754354,
+          0.27197883130396555,
+          0.30162715765737086
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 150237
+    },
+    {
+      "id": "pile-vegetable-7",
+      "category": "crops",
+      "file": "pile-vegetable-7.gltf",
+      "parts": 28,
+      "triangles": 3164,
+      "vertices": 2310,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.34137401054430316,
+          0,
+          -0.33901302023369195
+        ],
+        "max": [
+          0.3033393007754354,
+          0.27197883130396555,
+          0.30162715765737086
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 175069
+    },
+    {
+      "id": "pile-vegetable-8",
+      "category": "crops",
+      "file": "pile-vegetable-8.gltf",
+      "parts": 32,
+      "triangles": 3616,
+      "vertices": 2640,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.34137401054430316,
+          0,
+          -0.3733762788111219
+        ],
+        "max": [
+          0.3033393007754354,
+          0.39197883130396555,
+          0.30162715765737086
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 199902
+    },
+    {
+      "id": "pile-vegetable-9",
+      "category": "crops",
+      "file": "pile-vegetable-9.gltf",
+      "parts": 36,
+      "triangles": 4068,
+      "vertices": 2970,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.34137401054430316,
+          0,
+          -0.37162715765737087
+        ],
+        "max": [
+          0.3033393007754354,
+          0.39197883130396555,
+          0.30162715765737086
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 224735
+    },
+    {
+      "id": "pile-vegetable-10",
+      "category": "crops",
+      "file": "pile-vegetable-10.gltf",
+      "parts": 40,
+      "triangles": 4520,
+      "vertices": 3300,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.34137401054430316,
+          0,
+          -0.4071271360846801
+        ],
+        "max": [
+          0.3033393007754354,
+          0.5119788313039655,
+          0.30162715765737086
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 249567
     },
     {
       "id": "pile-lettuce-1",
+      "category": "crops",
       "file": "pile-lettuce-1.gltf",
-      "parts": 4,
-      "triangles": 320,
-      "vertices": 960,
+      "parts": 5,
+      "triangles": 280,
+      "vertices": 588,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.14531168010724307,
+          -0.1008,
           0,
-          -0.1646696896536286
+          -0.09765
         ],
         "max": [
-          0.1613985463737538,
-          0.23785393936522076,
-          0.14517689168289843
+          0.1008,
+          0.1512,
+          0.09765
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 57610
+      "bytes": 37009
     },
     {
       "id": "pile-lettuce-2",
+      "category": "crops",
       "file": "pile-lettuce-2.gltf",
-      "parts": 8,
-      "triangles": 640,
-      "vertices": 1920,
+      "parts": 10,
+      "triangles": 560,
+      "vertices": 1176,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.27362199232617584,
+          -0.2208,
           0,
-          -0.1646696896536286
+          -0.09765
         ],
         "max": [
-          0.30139854637375385,
-          0.23844849716191324,
-          0.16057685484913084
+          0.2208,
+          0.1512,
+          0.09765
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 113935
+      "bytes": 72857
     },
     {
       "id": "pile-lettuce-3",
+      "category": "crops",
       "file": "pile-lettuce-3.gltf",
-      "parts": 12,
-      "triangles": 960,
-      "vertices": 2880,
+      "parts": 15,
+      "triangles": 840,
+      "vertices": 1764,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.23531168010724318,
+          -0.3408,
           0,
-          -0.3010614643640973
+          -0.09765
         ],
         "max": [
-          0.34139854637375383,
-          0.23844849716191324,
-          0.3164614275303298
+          0.3408,
+          0.1512,
+          0.09765
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 170257
+      "bytes": 108698
     },
     {
       "id": "pile-lettuce-4",
+      "category": "crops",
       "file": "pile-lettuce-4.gltf",
-      "parts": 16,
-      "triangles": 1280,
-      "vertices": 3840,
+      "parts": 20,
+      "triangles": 1120,
+      "vertices": 2352,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.23531168010724318,
+          -0.4608,
           0,
-          -0.3010614643640973
+          -0.09765
         ],
         "max": [
-          0.34139854637375383,
-          0.3878539393652207,
-          0.3164614275303298
+          0.4608,
+          0.1512,
+          0.09765
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 226576
+      "bytes": 144539
     },
     {
       "id": "pile-lettuce-5",
+      "category": "crops",
       "file": "pile-lettuce-5.gltf",
-      "parts": 20,
-      "triangles": 1600,
-      "vertices": 4800,
+      "parts": 25,
+      "triangles": 1400,
+      "vertices": 2940,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.23531168010724318,
+          -0.4608,
           0,
-          -0.3010614643640973
+          -0.22015
         ],
         "max": [
-          0.34139854637375383,
-          0.3884484971619132,
-          0.3164614275303299
+          0.4608,
+          0.1512,
+          0.22015
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 282897
+      "bytes": 180380
+    },
+    {
+      "id": "pile-lettuce-6",
+      "category": "crops",
+      "file": "pile-lettuce-6.gltf",
+      "parts": 30,
+      "triangles": 1680,
+      "vertices": 3528,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4608,
+          0,
+          -0.22015
+        ],
+        "max": [
+          0.4608,
+          0.1512,
+          0.22015
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 216220
+    },
+    {
+      "id": "pile-lettuce-7",
+      "category": "crops",
+      "file": "pile-lettuce-7.gltf",
+      "parts": 35,
+      "triangles": 1960,
+      "vertices": 4116,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4608,
+          0,
+          -0.22015
+        ],
+        "max": [
+          0.4608,
+          0.1512,
+          0.22015
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 252060
+    },
+    {
+      "id": "pile-lettuce-8",
+      "category": "crops",
+      "file": "pile-lettuce-8.gltf",
+      "parts": 40,
+      "triangles": 2240,
+      "vertices": 4704,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4608,
+          0,
+          -0.22015
+        ],
+        "max": [
+          0.4608,
+          0.1512,
+          0.22015
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 287901
+    },
+    {
+      "id": "pile-lettuce-9",
+      "category": "crops",
+      "file": "pile-lettuce-9.gltf",
+      "parts": 45,
+      "triangles": 2520,
+      "vertices": 5292,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4608,
+          0,
+          -0.34265
+        ],
+        "max": [
+          0.4608,
+          0.1512,
+          0.34265
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 323741
+    },
+    {
+      "id": "pile-lettuce-10",
+      "category": "crops",
+      "file": "pile-lettuce-10.gltf",
+      "parts": 50,
+      "triangles": 2800,
+      "vertices": 5880,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4608,
+          0,
+          -0.34265
+        ],
+        "max": [
+          0.4608,
+          0.1512,
+          0.34265
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 359583
     },
     {
       "id": "pile-chilledVegetable-1",
+      "category": "crops",
       "file": "pile-chilledVegetable-1.gltf",
       "parts": 3,
       "triangles": 36,
@@ -675,10 +3168,11 @@
         1,
         1
       ],
-      "bytes": 5710
+      "bytes": 5654
     },
     {
       "id": "pile-chilledVegetable-2",
+      "category": "crops",
       "file": "pile-chilledVegetable-2.gltf",
       "parts": 6,
       "triangles": 72,
@@ -700,10 +3194,11 @@
         1,
         1
       ],
-      "bytes": 10118
+      "bytes": 10062
     },
     {
       "id": "pile-chilledVegetable-3",
+      "category": "crops",
       "file": "pile-chilledVegetable-3.gltf",
       "parts": 9,
       "triangles": 108,
@@ -725,10 +3220,11 @@
         1,
         1
       ],
-      "bytes": 14549
+      "bytes": 14493
     },
     {
       "id": "pile-chilledVegetable-4",
+      "category": "crops",
       "file": "pile-chilledVegetable-4.gltf",
       "parts": 12,
       "triangles": 144,
@@ -750,10 +3246,11 @@
         1,
         1
       ],
-      "bytes": 18967
+      "bytes": 18911
     },
     {
       "id": "pile-chilledVegetable-5",
+      "category": "crops",
       "file": "pile-chilledVegetable-5.gltf",
       "parts": 15,
       "triangles": 180,
@@ -775,10 +3272,921 @@
         1,
         1
       ],
-      "bytes": 23383
+      "bytes": 23327
+    },
+    {
+      "id": "pile-rice-1",
+      "category": "crops",
+      "file": "pile-rice-1.gltf",
+      "parts": 36,
+      "triangles": 376,
+      "vertices": 258,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.10068892721464516,
+          0,
+          -0.2454927823812238
+        ],
+        "max": [
+          0.11939063829502887,
+          0.06480090683769245,
+          0.20949278238122382
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 21001
+    },
+    {
+      "id": "pile-rice-2",
+      "category": "crops",
+      "file": "pile-rice-2.gltf",
+      "parts": 72,
+      "triangles": 752,
+      "vertices": 516,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.19231574508374705,
+          0,
+          -0.2399874067074671
+        ],
+        "max": [
+          0.2154615103654785,
+          0.06535692351784085,
+          0.2516228137806771
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 40776
+    },
+    {
+      "id": "pile-rice-3",
+      "category": "crops",
+      "file": "pile-rice-3.gltf",
+      "parts": 108,
+      "triangles": 1128,
+      "vertices": 774,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2832670638818467,
+          0,
+          -0.25519322474363243
+        ],
+        "max": [
+          0.3137829748750306,
+          0.0658763389315577,
+          0.2454927823812238
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 60553
+    },
+    {
+      "id": "pile-rice-4",
+      "category": "crops",
+      "file": "pile-rice-4.gltf",
+      "parts": 144,
+      "triangles": 1504,
+      "vertices": 1032,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.252729822787078
+        ],
+        "max": [
+          0.41039772541835395,
+          0.06635346225487565,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 80337
+    },
+    {
+      "id": "pile-rice-5",
+      "category": "crops",
+      "file": "pile-rice-5.gltf",
+      "parts": 180,
+      "triangles": 1880,
+      "vertices": 1290,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.2846037921831332
+        ],
+        "max": [
+          0.41039772541835395,
+          0.1201753582281563,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 100113
+    },
+    {
+      "id": "pile-rice-6",
+      "category": "crops",
+      "file": "pile-rice-6.gltf",
+      "parts": 216,
+      "triangles": 2256,
+      "vertices": 1548,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.2888647304591648
+        ],
+        "max": [
+          0.41039772541835395,
+          0.12070762750893721,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 119890
+    },
+    {
+      "id": "pile-rice-7",
+      "category": "crops",
+      "file": "pile-rice-7.gltf",
+      "parts": 252,
+      "triangles": 2632,
+      "vertices": 1806,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.29054148539041774
+        ],
+        "max": [
+          0.41039772541835395,
+          0.1211994531369706,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 139667
+    },
+    {
+      "id": "pile-rice-8",
+      "category": "crops",
+      "file": "pile-rice-8.gltf",
+      "parts": 288,
+      "triangles": 3008,
+      "vertices": 2064,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.3154927823812238
+        ],
+        "max": [
+          0.41039772541835395,
+          0.17480090683769245,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 159443
+    },
+    {
+      "id": "pile-rice-9",
+      "category": "crops",
+      "file": "pile-rice-9.gltf",
+      "parts": 324,
+      "triangles": 3384,
+      "vertices": 2322,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.3099874067074671
+        ],
+        "max": [
+          0.41039772541835395,
+          0.17535692351784085,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 179220
+    },
+    {
+      "id": "pile-rice-10",
+      "category": "crops",
+      "file": "pile-rice-10.gltf",
+      "parts": 360,
+      "triangles": 3760,
+      "vertices": 2580,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.38174627055497956,
+          0,
+          -0.3546037921831332
+        ],
+        "max": [
+          0.41039772541835395,
+          0.23017535822815632,
+          0.25616489710042323
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 198999
+    },
+    {
+      "id": "pile-sapling-1",
+      "category": "natural-plants",
+      "file": "pile-sapling-1.gltf",
+      "parts": 11,
+      "triangles": 456,
+      "vertices": 502,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.10724269140237472,
+          0,
+          -0.08128590425685801
+        ],
+        "max": [
+          0.09592413512585213,
+          0.39584302774569546,
+          0.08128590425685801
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 35314
+    },
+    {
+      "id": "pile-sapling-2",
+      "category": "natural-plants",
+      "file": "pile-sapling-2.gltf",
+      "parts": 22,
+      "triangles": 912,
+      "vertices": 1004,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2422426914023747,
+          0,
+          -0.085
+        ],
+        "max": [
+          0.23533478478633107,
+          0.39584302774569546,
+          0.085
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 69361
+    },
+    {
+      "id": "pile-sapling-3",
+      "category": "natural-plants",
+      "file": "pile-sapling-3.gltf",
+      "parts": 33,
+      "triangles": 1368,
+      "vertices": 1506,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.37724269140237476,
+          0,
+          -0.085
+        ],
+        "max": [
+          0.37724269140237476,
+          0.39584302774569546,
+          0.085
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 103430
+    },
+    {
+      "id": "pile-sapling-4",
+      "category": "natural-plants",
+      "file": "pile-sapling-4.gltf",
+      "parts": 44,
+      "triangles": 1824,
+      "vertices": 2008,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.37724269140237476,
+          0,
+          -0.22500000000000003
+        ],
+        "max": [
+          0.37724269140237476,
+          0.39584302774569546,
+          0.24128590425685803
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 137531
+    },
+    {
+      "id": "pile-sapling-5",
+      "category": "natural-plants",
+      "file": "pile-sapling-5.gltf",
+      "parts": 55,
+      "triangles": 2280,
+      "vertices": 2510,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.37724269140237476,
+          0,
+          -0.22500000000000003
+        ],
+        "max": [
+          0.37724269140237476,
+          0.39584302774569546,
+          0.245
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 171586
+    },
+    {
+      "id": "pile-milledRice-1",
+      "category": "crops",
+      "file": "pile-milledRice-1.gltf",
+      "parts": 10,
+      "triangles": 268,
+      "vertices": 390,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.125734740971698,
+          0,
+          -0.13349510417309482
+        ],
+        "max": [
+          0.125734740971698,
+          0.29150000000000004,
+          0.13349510417309482
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 26321
+    },
+    {
+      "id": "pile-milledRice-2",
+      "category": "crops",
+      "file": "pile-milledRice-2.gltf",
+      "parts": 20,
+      "triangles": 536,
+      "vertices": 780,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.260734740971698,
+          0,
+          -0.13349510417309482
+        ],
+        "max": [
+          0.265,
+          0.29150000000000004,
+          0.13349510417309482
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 51400
+    },
+    {
+      "id": "pile-milledRice-3",
+      "category": "crops",
+      "file": "pile-milledRice-3.gltf",
+      "parts": 30,
+      "triangles": 804,
+      "vertices": 1170,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39573474097169803,
+          0,
+          -0.13349510417309482
+        ],
+        "max": [
+          0.39573474097169803,
+          0.29150000000000004,
+          0.13349510417309482
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 76510
+    },
+    {
+      "id": "pile-milledRice-4",
+      "category": "crops",
+      "file": "pile-milledRice-4.gltf",
+      "parts": 40,
+      "triangles": 1072,
+      "vertices": 1560,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39573474097169803,
+          0,
+          -0.27349510417309486
+        ],
+        "max": [
+          0.39573474097169803,
+          0.29150000000000004,
+          0.2934951041730948
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 101598
+    },
+    {
+      "id": "pile-milledRice-5",
+      "category": "crops",
+      "file": "pile-milledRice-5.gltf",
+      "parts": 50,
+      "triangles": 1340,
+      "vertices": 1950,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39573474097169803,
+          0,
+          -0.27349510417309486
+        ],
+        "max": [
+          0.39573474097169803,
+          0.29150000000000004,
+          0.2934951041730948
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 126686
+    },
+    {
+      "id": "pile-flour-1",
+      "category": "crops",
+      "file": "pile-flour-1.gltf",
+      "parts": 4,
+      "triangles": 292,
+      "vertices": 588,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.125734740971698,
+          0,
+          -0.13349510417309482
+        ],
+        "max": [
+          0.125734740971698,
+          0.30650000000000005,
+          0.13349510417309482
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 37256
+    },
+    {
+      "id": "pile-flour-2",
+      "category": "crops",
+      "file": "pile-flour-2.gltf",
+      "parts": 8,
+      "triangles": 584,
+      "vertices": 1176,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.260734740971698,
+          0,
+          -0.13349510417309482
+        ],
+        "max": [
+          0.265,
+          0.30650000000000005,
+          0.13349510417309482
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 73284
+    },
+    {
+      "id": "pile-flour-3",
+      "category": "crops",
+      "file": "pile-flour-3.gltf",
+      "parts": 12,
+      "triangles": 876,
+      "vertices": 1764,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39573474097169803,
+          0,
+          -0.13349510417309482
+        ],
+        "max": [
+          0.39573474097169803,
+          0.30650000000000005,
+          0.13349510417309482
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 109333
+    },
+    {
+      "id": "pile-flour-4",
+      "category": "crops",
+      "file": "pile-flour-4.gltf",
+      "parts": 16,
+      "triangles": 1168,
+      "vertices": 2352,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39573474097169803,
+          0,
+          -0.27349510417309486
+        ],
+        "max": [
+          0.39573474097169803,
+          0.30650000000000005,
+          0.2934951041730948
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 145365
+    },
+    {
+      "id": "pile-flour-5",
+      "category": "crops",
+      "file": "pile-flour-5.gltf",
+      "parts": 20,
+      "triangles": 1460,
+      "vertices": 2940,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.39573474097169803,
+          0,
+          -0.27349510417309486
+        ],
+        "max": [
+          0.39573474097169803,
+          0.30650000000000005,
+          0.2934951041730948
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 181398
+    },
+    {
+      "id": "pile-bread-1",
+      "category": "crops",
+      "file": "pile-bread-1.gltf",
+      "parts": 5,
+      "triangles": 196,
+      "vertices": 552,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.17213485607334636,
+          0,
+          -0.11528513535324979
+        ],
+        "max": [
+          0.17213485607334636,
+          0.2025,
+          0.11528513535324979
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 33791
+    },
+    {
+      "id": "pile-bread-2",
+      "category": "crops",
+      "file": "pile-bread-2.gltf",
+      "parts": 10,
+      "triangles": 392,
+      "vertices": 1104,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.30713485607334634,
+          0,
+          -0.11528513535324979
+        ],
+        "max": [
+          0.315,
+          0.2025,
+          0.11528513535324979
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 66361
+    },
+    {
+      "id": "pile-bread-3",
+      "category": "crops",
+      "file": "pile-bread-3.gltf",
+      "parts": 15,
+      "triangles": 588,
+      "vertices": 1656,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.44213485607334635,
+          0,
+          -0.11528513535324979
+        ],
+        "max": [
+          0.44213485607334635,
+          0.2025,
+          0.11528513535324979
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 98951
+    },
+    {
+      "id": "pile-bread-4",
+      "category": "crops",
+      "file": "pile-bread-4.gltf",
+      "parts": 20,
+      "triangles": 784,
+      "vertices": 2208,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.44213485607334635,
+          0,
+          -0.2552851353532498
+        ],
+        "max": [
+          0.44213485607334635,
+          0.2025,
+          0.2752851353532498
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 131525
+    },
+    {
+      "id": "pile-bread-5",
+      "category": "crops",
+      "file": "pile-bread-5.gltf",
+      "parts": 25,
+      "triangles": 980,
+      "vertices": 2760,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.44213485607334635,
+          0,
+          -0.2552851353532498
+        ],
+        "max": [
+          0.44213485607334635,
+          0.2025,
+          0.2752851353532498
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 164104
+    },
+    {
+      "id": "pile-roastedCarrot-1",
+      "category": "crops",
+      "file": "pile-roastedCarrot-1.gltf",
+      "parts": 25,
+      "triangles": 1108,
+      "vertices": 1068,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.1404,
+          0,
+          -0.16824
+        ],
+        "max": [
+          0.1404,
+          0.09563310734368718,
+          0.16824
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 105872
+    },
+    {
+      "id": "pile-roastedCarrot-2",
+      "category": "crops",
+      "file": "pile-roastedCarrot-2.gltf",
+      "parts": 50,
+      "triangles": 2216,
+      "vertices": 2136,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.29540000000000005,
+          0,
+          -0.16824
+        ],
+        "max": [
+          0.29540000000000005,
+          0.09563310734368718,
+          0.16824
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 209712
+    },
+    {
+      "id": "pile-roastedCarrot-3",
+      "category": "crops",
+      "file": "pile-roastedCarrot-3.gltf",
+      "parts": 75,
+      "triangles": 3324,
+      "vertices": 3204,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.4504,
+          0,
+          -0.16824
+        ],
+        "max": [
+          0.4504,
+          0.09563310734368718,
+          0.16824
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 313495
+    },
+    {
+      "id": "pile-roastedCarrot-4",
+      "category": "crops",
+      "file": "pile-roastedCarrot-4.gltf",
+      "parts": 100,
+      "triangles": 4432,
+      "vertices": 4272,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.4504,
+          0,
+          -0.35824000000000006
+        ],
+        "max": [
+          0.4504,
+          0.09563310734368718,
+          0.35824000000000006
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 417330
+    },
+    {
+      "id": "pile-roastedCarrot-5",
+      "category": "crops",
+      "file": "pile-roastedCarrot-5.gltf",
+      "parts": 125,
+      "triangles": 5540,
+      "vertices": 5340,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.4504,
+          0,
+          -0.35824000000000006
+        ],
+        "max": [
+          0.4504,
+          0.09563310734368718,
+          0.35824000000000006
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 521138
     },
     {
       "id": "crop-cell-vegetable-seedling",
+      "category": "crops",
       "file": "crop-cell-vegetable-seedling.gltf",
       "parts": 24,
       "triangles": 1632,
@@ -800,10 +4208,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 94022
+      "bytes": 93966
     },
     {
       "id": "crop-cell-vegetable-young",
+      "category": "crops",
       "file": "crop-cell-vegetable-young.gltf",
       "parts": 32,
       "triangles": 2176,
@@ -825,10 +4234,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 124919
+      "bytes": 124863
     },
     {
       "id": "crop-cell-vegetable-ready",
+      "category": "crops",
       "file": "crop-cell-vegetable-ready.gltf",
       "parts": 44,
       "triangles": 2816,
@@ -850,10 +4260,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 160329
+      "bytes": 160273
     },
     {
       "id": "crop-cell-wheat-seedling",
+      "category": "crops",
       "file": "crop-cell-wheat-seedling.gltf",
       "parts": 27,
       "triangles": 180,
@@ -875,10 +4286,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 16714
+      "bytes": 16658
     },
     {
       "id": "crop-cell-wheat-young",
+      "category": "crops",
       "file": "crop-cell-wheat-young.gltf",
       "parts": 108,
       "triangles": 720,
@@ -900,10 +4312,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 62797
+      "bytes": 62741
     },
     {
       "id": "crop-cell-wheat-ready",
+      "category": "crops",
       "file": "crop-cell-wheat-ready.gltf",
       "parts": 768,
       "triangles": 5760,
@@ -925,10 +4338,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 380242
+      "bytes": 380186
     },
     {
       "id": "crop-cell-lettuce-seedling",
+      "category": "crops",
       "file": "crop-cell-lettuce-seedling.gltf",
       "parts": 10,
       "triangles": 224,
@@ -950,10 +4364,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 40785
+      "bytes": 40729
     },
     {
       "id": "crop-cell-lettuce-young",
+      "category": "crops",
       "file": "crop-cell-lettuce-young.gltf",
       "parts": 10,
       "triangles": 224,
@@ -975,10 +4390,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 40765
+      "bytes": 40709
     },
     {
       "id": "crop-cell-lettuce-ready",
+      "category": "crops",
       "file": "crop-cell-lettuce-ready.gltf",
       "parts": 10,
       "triangles": 224,
@@ -1000,10 +4416,89 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 40743
+      "bytes": 40687
+    },
+    {
+      "id": "crop-cell-rice-seedling",
+      "category": "crops",
+      "file": "crop-cell-rice-seedling.gltf",
+      "parts": 54,
+      "triangles": 360,
+      "vertices": 468,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.23979431385127278,
+          0.1392305134106117,
+          -0.23080330709177774
+        ],
+        "max": [
+          0.23463371874650082,
+          0.2627560853888331,
+          0.2336472299357204
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 32020
+    },
+    {
+      "id": "crop-cell-rice-young",
+      "category": "crops",
+      "file": "crop-cell-rice-young.gltf",
+      "parts": 81,
+      "triangles": 540,
+      "vertices": 702,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.2655462457795363,
+          0.13846102682122338,
+          -0.2574031873536531
+        ],
+        "max": [
+          0.26246501718657184,
+          0.42428096534307314,
+          0.2565465712060775
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 47375
+    },
+    {
+      "id": "crop-cell-rice-ready",
+      "category": "crops",
+      "file": "crop-cell-rice-ready.gltf",
+      "parts": 396,
+      "triangles": 3024,
+      "vertices": 2664,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.3331562035031195,
+          0.15314312310686629,
+          -0.33823849278570517
+        ],
+        "max": [
+          0.337160387448271,
+          0.6624250249128855,
+          0.3358308531368399
+        ]
+      },
+      "footprint": [
+        0.6666666666666666,
+        0.6666666666666666
+      ],
+      "bytes": 191766
     },
     {
       "id": "crop-cell-seedling",
+      "category": "crops",
       "file": "crop-cell-seedling.gltf",
       "parts": 24,
       "triangles": 1632,
@@ -1025,10 +4520,11 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 94002
+      "bytes": 93946
     },
     {
       "id": "crop-cell-ready",
+      "category": "crops",
       "file": "crop-cell-ready.gltf",
       "parts": 44,
       "triangles": 2816,
@@ -1050,14 +4546,665 @@
         0.6666666666666666,
         0.6666666666666666
       ],
-      "bytes": 160309
+      "bytes": 160253
     },
     {
-      "id": "shop",
-      "file": "shop.gltf",
-      "parts": 67,
-      "triangles": 796,
-      "vertices": 1596,
+      "id": "nursery-empty",
+      "category": "buildings",
+      "file": "nursery-empty.gltf",
+      "parts": 30,
+      "triangles": 600,
+      "vertices": 1584,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.2425,
+          0,
+          -0.254
+        ],
+        "max": [
+          0.2425,
+          0.46,
+          0.254
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 122611
+    },
+    {
+      "id": "nursery-seeded",
+      "category": "buildings",
+      "file": "nursery-seeded.gltf",
+      "parts": 32,
+      "triangles": 760,
+      "vertices": 2064,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.2425,
+          0,
+          -0.254
+        ],
+        "max": [
+          0.2425,
+          0.46,
+          0.254
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 158456
+    },
+    {
+      "id": "nursery-growing",
+      "category": "buildings",
+      "file": "nursery-growing.gltf",
+      "parts": 36,
+      "triangles": 832,
+      "vertices": 1938,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.2425,
+          0,
+          -0.254
+        ],
+        "max": [
+          0.2425,
+          0.5855699268649505,
+          0.254
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 152712
+    },
+    {
+      "id": "nursery-ready",
+      "category": "buildings",
+      "file": "nursery-ready.gltf",
+      "parts": 40,
+      "triangles": 960,
+      "vertices": 2038,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.2425,
+          0,
+          -0.254
+        ],
+        "max": [
+          0.2425,
+          0.7732386887700062,
+          0.254
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 163205
+    },
+    {
+      "id": "sapling",
+      "category": "natural-plants",
+      "file": "sapling.gltf",
+      "parts": 11,
+      "triangles": 456,
+      "vertices": 502,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.10033478478633108,
+          0,
+          -0.085
+        ],
+        "max": [
+          0.10033478478633108,
+          0.3890040165775046,
+          0.085
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 35271
+    },
+    {
+      "id": "stone-mill",
+      "category": "buildings",
+      "file": "stone-mill.gltf",
+      "parts": 21,
+      "triangles": 372,
+      "vertices": 684,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.415,
+          0,
+          -0.39
+        ],
+        "max": [
+          0.415,
+          0.78,
+          0.45842306957453793
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 57711
+    },
+    {
+      "id": "mill",
+      "category": "buildings",
+      "file": "mill.gltf",
+      "parts": 84,
+      "triangles": 1116,
+      "vertices": 2184,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9267667539473247,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.9929498120112812,
+          2.0324999999999998,
+          0.91
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 177547
+    },
+    {
+      "id": "stone-oven",
+      "category": "buildings",
+      "file": "stone-oven.gltf",
+      "parts": 33,
+      "triangles": 732,
+      "vertices": 1656,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.44,
+          0,
+          -0.4
+        ],
+        "max": [
+          0.44,
+          1.517,
+          0.42
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 101193
+    },
+    {
+      "id": "bakery",
+      "category": "buildings",
+      "file": "bakery.gltf",
+      "parts": 119,
+      "triangles": 2160,
+      "vertices": 5004,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9267667539473247,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.985402240563387,
+          2.0324999999999998,
+          0.9450000000000001
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 391505
+    },
+    {
+      "id": "handcart",
+      "category": "buildings",
+      "file": "handcart.gltf",
+      "parts": 50,
+      "triangles": 768,
+      "vertices": 1320,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.355,
+          0,
+          -0.386
+        ],
+        "max": [
+          0.355,
+          0.6499999999999999,
+          0.4915656156369115
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 111107
+    },
+    {
+      "id": "warehouse-transport",
+      "category": "buildings",
+      "file": "warehouse-transport.gltf",
+      "parts": 174,
+      "triangles": 2180,
+      "vertices": 4284,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9267667539473247,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.9693273142010712,
+          2.0324999999999998,
+          0.9782524925095292
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 346112
+    },
+    {
+      "id": "wooden-pier",
+      "category": "buildings",
+      "file": "wooden-pier.gltf",
+      "parts": 65,
+      "triangles": 2700,
+      "vertices": 3216,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -0.9
+        ],
+        "max": [
+          0.9,
+          1.149,
+          0.9
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 294272
+    },
+    {
+      "id": "wooden-bridge-7",
+      "category": "buildings",
+      "file": "wooden-bridge-7.gltf",
+      "parts": 221,
+      "triangles": 8436,
+      "vertices": 10920,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -3.5
+        ],
+        "max": [
+          0.9,
+          1.149,
+          3.5
+        ]
+      },
+      "footprint": [
+        2,
+        7
+      ],
+      "bytes": 970902
+    },
+    {
+      "id": "wooden-bridge-8",
+      "category": "buildings",
+      "file": "wooden-bridge-8.gltf",
+      "parts": 263,
+      "triangles": 10068,
+      "vertices": 13008,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -4
+        ],
+        "max": [
+          0.9,
+          1.149,
+          4
+        ]
+      },
+      "footprint": [
+        2,
+        8
+      ],
+      "bytes": 1156756
+    },
+    {
+      "id": "wooden-bridge-9",
+      "category": "buildings",
+      "file": "wooden-bridge-9.gltf",
+      "parts": 303,
+      "triangles": 11676,
+      "vertices": 15048,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -4.5
+        ],
+        "max": [
+          0.9,
+          1.149,
+          4.5
+        ]
+      },
+      "footprint": [
+        2,
+        9
+      ],
+      "bytes": 1338777
+    },
+    {
+      "id": "wooden-bridge-10",
+      "category": "buildings",
+      "file": "wooden-bridge-10.gltf",
+      "parts": 320,
+      "triangles": 12120,
+      "vertices": 15816,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -5
+        ],
+        "max": [
+          0.9,
+          1.149,
+          5
+        ]
+      },
+      "footprint": [
+        2,
+        10
+      ],
+      "bytes": 1402137
+    },
+    {
+      "id": "wooden-bridge-11",
+      "category": "buildings",
+      "file": "wooden-bridge-11.gltf",
+      "parts": 360,
+      "triangles": 13728,
+      "vertices": 17856,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -5.5
+        ],
+        "max": [
+          0.9,
+          1.149,
+          5.5
+        ]
+      },
+      "footprint": [
+        2,
+        11
+      ],
+      "bytes": 1584158
+    },
+    {
+      "id": "wooden-bridge-12",
+      "category": "buildings",
+      "file": "wooden-bridge-12.gltf",
+      "parts": 377,
+      "triangles": 14172,
+      "vertices": 18624,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -6
+        ],
+        "max": [
+          0.9,
+          1.149,
+          6
+        ]
+      },
+      "footprint": [
+        2,
+        12
+      ],
+      "bytes": 1647514
+    },
+    {
+      "id": "wooden-bridge-13",
+      "category": "buildings",
+      "file": "wooden-bridge-13.gltf",
+      "parts": 419,
+      "triangles": 15804,
+      "vertices": 20712,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -6.5
+        ],
+        "max": [
+          0.9,
+          1.149,
+          6.5
+        ]
+      },
+      "footprint": [
+        2,
+        13
+      ],
+      "bytes": 1833375
+    },
+    {
+      "id": "wooden-bridge-14",
+      "category": "buildings",
+      "file": "wooden-bridge-14.gltf",
+      "parts": 434,
+      "triangles": 16224,
+      "vertices": 21432,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -7
+        ],
+        "max": [
+          0.9,
+          1.149,
+          7
+        ]
+      },
+      "footprint": [
+        2,
+        14
+      ],
+      "bytes": 1892891
+    },
+    {
+      "id": "wooden-bridge-15",
+      "category": "buildings",
+      "file": "wooden-bridge-15.gltf",
+      "parts": 476,
+      "triangles": 17856,
+      "vertices": 23520,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -7.5
+        ],
+        "max": [
+          0.9,
+          1.149,
+          7.5
+        ]
+      },
+      "footprint": [
+        2,
+        15
+      ],
+      "bytes": 2078751
+    },
+    {
+      "id": "wooden-bridge-16",
+      "category": "buildings",
+      "file": "wooden-bridge-16.gltf",
+      "parts": 491,
+      "triangles": 18276,
+      "vertices": 24240,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -8
+        ],
+        "max": [
+          0.9,
+          1.149,
+          8
+        ]
+      },
+      "footprint": [
+        2,
+        16
+      ],
+      "bytes": 2138267
+    },
+    {
+      "id": "dock-simple",
+      "category": "buildings",
+      "file": "dock-simple.gltf",
+      "parts": 90,
+      "triangles": 2968,
+      "vertices": 3816,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9,
+          -0.16000000000000003,
+          -0.9
+        ],
+        "max": [
+          0.9,
+          1.149,
+          0.9
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 341296
+    },
+    {
+      "id": "dock-pier-extension",
+      "category": "buildings",
+      "file": "dock-pier-extension.gltf",
+      "parts": 64,
+      "triangles": 2736,
+      "vertices": 3264,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.63,
+          -0.42,
+          0.8999999999999999
+        ],
+        "max": [
+          0.63,
+          1.149,
+          2.9
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 298513
+    },
+    {
+      "id": "boat",
+      "category": "buildings",
+      "file": "boat.gltf",
+      "parts": 55,
+      "triangles": 660,
+      "vertices": 1320,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.4818716673505947,
+          -0.0050000000000000044,
+          -0.8255
+        ],
+        "max": [
+          0.4818716673505947,
+          0.47750000000000004,
+          0.9303569987650975
+        ]
+      },
+      "footprint": [
+        1,
+        2
+      ],
+      "bytes": 107487
+    },
+    {
+      "id": "house",
+      "category": "buildings",
+      "file": "house.gltf",
+      "parts": 53,
+      "triangles": 624,
+      "vertices": 1260,
       "drawCalls": 1,
       "bounds": {
         "min": [
@@ -1066,49 +5213,103 @@
           -0.82
         ],
         "max": [
-          0.7969999999999999,
-          1.7349999999999999,
-          0.99
+          0.42676675394732466,
+          2.0324999999999998,
+          0.91
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 99126
+      "bytes": 78422
     },
     {
-      "id": "order-board",
-      "file": "order-board.gltf",
-      "parts": 15,
-      "triangles": 164,
-      "vertices": 354,
+      "id": "residence",
+      "category": "buildings",
+      "file": "residence.gltf",
+      "parts": 75,
+      "triangles": 1088,
+      "vertices": 2430,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.465,
+          -0.9267667539473247,
           0,
-          -0.24
+          -0.82
         ],
         "max": [
-          0.465,
-          1.45,
-          0.24
+          0.42676675394732466,
+          2.0324999999999998,
+          0.91
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 148256
+    },
+    {
+      "id": "shop",
+      "category": "buildings",
+      "file": "shop.gltf",
+      "parts": 129,
+      "triangles": 1424,
+      "vertices": 3084,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.9267667539473247,
+          0,
+          -0.82
+        ],
+        "max": [
+          0.9470000000000001,
+          2.0324999999999998,
+          0.91
+        ]
+      },
+      "footprint": [
+        2,
+        2
+      ],
+      "bytes": 245031
+    },
+    {
+      "id": "order-board",
+      "category": "buildings",
+      "file": "order-board.gltf",
+      "parts": 8,
+      "triangles": 80,
+      "vertices": 192,
+      "drawCalls": 2,
+      "bounds": {
+        "min": [
+          -0.41,
+          0,
+          -0.05
+        ],
+        "max": [
+          0.41,
+          0.96,
+          0.1345
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 22712
+      "bytes": 16857
     },
     {
       "id": "dock",
+      "category": "buildings",
       "file": "dock.gltf",
-      "parts": 38,
-      "triangles": 452,
-      "vertices": 906,
-      "drawCalls": 1,
+      "parts": 95,
+      "triangles": 1040,
+      "vertices": 2274,
+      "drawCalls": 2,
       "bounds": {
         "min": [
           -0.95,
@@ -1125,15 +5326,16 @@
         2,
         2
       ],
-      "bytes": 56801
+      "bytes": 180884
     },
     {
       "id": "warehouse-base",
+      "category": "buildings",
       "file": "warehouse-base.gltf",
-      "parts": 52,
-      "triangles": 616,
-      "vertices": 1236,
-      "drawCalls": 1,
+      "parts": 124,
+      "triangles": 1412,
+      "vertices": 2964,
+      "drawCalls": 2,
       "bounds": {
         "min": [
           -0.9267667539473247,
@@ -1141,24 +5343,25 @@
           -0.82
         ],
         "max": [
-          0.42676675394732466,
-          1.7349999999999999,
-          0.99
+          0.9693273142010712,
+          2.0324999999999998,
+          0.9485962570467436
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 77084
+      "bytes": 237018
     },
     {
       "id": "warehouse-expanded",
+      "category": "buildings",
       "file": "warehouse-expanded.gltf",
-      "parts": 56,
-      "triangles": 664,
-      "vertices": 1332,
-      "drawCalls": 1,
+      "parts": 150,
+      "triangles": 1692,
+      "vertices": 3588,
+      "drawCalls": 2,
       "bounds": {
         "min": [
           -0.9267667539473247,
@@ -1166,24 +5369,25 @@
           -0.82
         ],
         "max": [
-          0.9401875083986142,
-          1.7349999999999999,
-          0.99
+          0.9693273142010712,
+          2.0324999999999998,
+          0.9485962570467436
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 82979
+      "bytes": 285923
     },
     {
       "id": "warehouse-cold",
+      "category": "buildings",
       "file": "warehouse-cold.gltf",
-      "parts": 63,
-      "triangles": 744,
-      "vertices": 1500,
-      "drawCalls": 1,
+      "parts": 133,
+      "triangles": 1516,
+      "vertices": 3180,
+      "drawCalls": 2,
       "bounds": {
         "min": [
           -0.9267667539473247,
@@ -1191,19 +5395,20 @@
           -0.82
         ],
         "max": [
-          0.9339999999999999,
-          1.7349999999999999,
-          0.99
+          0.9693273142010712,
+          2.0324999999999998,
+          0.9485962570467436
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 93211
+      "bytes": 254171
     },
     {
       "id": "cooler",
+      "category": "buildings",
       "file": "cooler.gltf",
       "parts": 9,
       "triangles": 104,
@@ -1225,10 +5430,11 @@
         1,
         1
       ],
-      "bytes": 14395
+      "bytes": 14343
     },
     {
       "id": "farm-empty",
+      "category": "buildings",
       "file": "farm-empty.gltf",
       "parts": 8,
       "triangles": 96,
@@ -1250,10 +5456,11 @@
         2,
         2
       ],
-      "bytes": 13025
+      "bytes": 12973
     },
     {
       "id": "farm-seedling",
+      "category": "buildings",
       "file": "farm-seedling.gltf",
       "parts": 35,
       "triangles": 312,
@@ -1275,10 +5482,11 @@
         2,
         2
       ],
-      "bytes": 51069
+      "bytes": 51017
     },
     {
       "id": "farm-ready",
+      "category": "buildings",
       "file": "farm-ready.gltf",
       "parts": 35,
       "triangles": 312,
@@ -1300,35 +5508,37 @@
         2,
         2
       ],
-      "bytes": 51062
+      "bytes": 51010
     },
     {
       "id": "crate",
+      "category": "buildings",
       "file": "crate.gltf",
-      "parts": 6,
-      "triangles": 72,
-      "vertices": 144,
-      "drawCalls": 1,
+      "parts": 25,
+      "triangles": 268,
+      "vertices": 600,
+      "drawCalls": 2,
       "bounds": {
         "min": [
-          -0.22,
+          -0.2425,
           0,
-          -0.21
+          -0.254
         ],
         "max": [
-          0.22,
-          0.44,
-          0.2675
+          0.2425,
+          0.46,
+          0.254
         ]
       },
       "footprint": [
         1,
         1
       ],
-      "bytes": 10025
+      "bytes": 48983
     },
     {
       "id": "fence",
+      "category": "buildings",
       "file": "fence.gltf",
       "parts": 4,
       "triangles": 48,
@@ -1350,10 +5560,11 @@
         1,
         1
       ],
-      "bytes": 7075
+      "bytes": 7023
     },
     {
       "id": "tree",
+      "category": "natural-plants",
       "file": "tree.gltf",
       "parts": 8,
       "triangles": 400,
@@ -1375,10 +5586,11 @@
         1.2,
         1.2
       ],
-      "bytes": 66541
+      "bytes": 66494
     },
     {
       "id": "rock",
+      "category": "natural-inorganic",
       "file": "rock.gltf",
       "parts": 1,
       "triangles": 8,
@@ -1400,10 +5612,11 @@
         1,
         1
       ],
-      "bytes": 2677
+      "bytes": 2633
     },
     {
       "id": "path",
+      "category": "buildings",
       "file": "path.gltf",
       "parts": 5,
       "triangles": 48,
@@ -1425,10 +5638,11 @@
         1,
         1
       ],
-      "bytes": 8368
+      "bytes": 8316
     },
     {
       "id": "module-shell",
+      "category": "buildings",
       "file": "module-shell.gltf",
       "parts": 14,
       "triangles": 164,
@@ -1450,10 +5664,11 @@
         2,
         2
       ],
-      "bytes": 21450
+      "bytes": 21398
     },
     {
       "id": "module-roof",
+      "category": "buildings",
       "file": "module-roof.gltf",
       "parts": 29,
       "triangles": 344,
@@ -1475,85 +5690,89 @@
         2,
         2
       ],
-      "bytes": 43561
+      "bytes": 43509
     },
     {
       "id": "module-door",
+      "category": "buildings",
       "file": "module-door.gltf",
-      "parts": 5,
-      "triangles": 60,
-      "vertices": 120,
+      "parts": 10,
+      "triangles": 116,
+      "vertices": 240,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.5800000000000001,
-          0.22000000000000003,
-          0.515
+          -0.74,
+          0,
+          -0.535
         ],
         "max": [
-          0.08000000000000002,
-          1.08,
-          0.6625
+          0.31,
+          2.0324999999999998,
+          0.91
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 8612
+      "bytes": 15824
     },
     {
       "id": "module-deck",
+      "category": "buildings",
       "file": "module-deck.gltf",
-      "parts": 4,
-      "triangles": 48,
-      "vertices": 96,
+      "parts": 10,
+      "triangles": 120,
+      "vertices": 240,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          -0.87,
+          0.32,
           0,
-          0.55
+          -0.6699999999999999
         ],
         "max": [
-          0.37,
-          0.26,
-          0.99
+          0.96,
+          0.28750000000000003,
+          0.9485962570467436
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 7087
+      "bytes": 21030
     },
     {
       "id": "module-wing",
+      "category": "buildings",
       "file": "module-wing.gltf",
-      "parts": 4,
-      "triangles": 48,
-      "vertices": 96,
+      "parts": 11,
+      "triangles": 132,
+      "vertices": 264,
       "drawCalls": 1,
       "bounds": {
         "min": [
-          0.2798124916013857,
-          0,
-          -0.82
+          0.29067268579892885,
+          0.21000000000000002,
+          -0.715
         ],
         "max": [
-          0.9401875083986142,
-          1.0446473419365154,
-          0.58
+          0.9693273142010712,
+          1.222479771901887,
+          0.5950000000000001
         ]
       },
       "footprint": [
         2,
         2
       ],
-      "bytes": 7129
+      "bytes": 22983
     },
     {
       "id": "module-cooling",
+      "category": "buildings",
       "file": "module-cooling.gltf",
       "parts": 9,
       "triangles": 104,
@@ -1575,7 +5794,7 @@
         2,
         2
       ],
-      "bytes": 14411
+      "bytes": 14359
     }
   ]
 }
