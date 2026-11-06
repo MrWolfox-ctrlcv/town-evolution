@@ -90,8 +90,28 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
   assert.deepEqual((await titleState(page)).saves, before.saves, 'Menus never write saves');
   // Another tab waits for Web Locks but renders the same independent title island.
   const waiting = await page.context().newPage();
+  const waitingDiagnostics = [];
+  const pendingRequests = new Map();
+  waiting.on('request', (request) => pendingRequests.set(request, Date.now()));
+  waiting.on('requestfinished', (request) => pendingRequests.delete(request));
+  waiting.on('load', () => waitingDiagnostics.push({ event: 'load' }));
+  waiting.on('console', (message) => {
+    if (message.type() === 'error')
+      waitingDiagnostics.push({ event: 'consoleerror', message: message.text() });
+  });
+  waiting.on('pageerror', (error) =>
+    waitingDiagnostics.push({ event: 'pageerror', message: error.message }),
+  );
+  waiting.on('requestfailed', (request) =>
+    waitingDiagnostics.push({
+      event: 'requestfailed',
+      url: request.url(),
+      error: request.failure()?.errorText,
+    }),
+  );
   try {
-    await waiting.goto(page.url());
+    // Engine readiness below is the gate; the document load event is not.
+    await waiting.goto(page.url(), { waitUntil: 'domcontentloaded' });
     await ready(waiting);
     const blocked = await titleState(waiting);
     assert.match(blocked.warning, /只读/);
@@ -100,6 +120,27 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
     await driver(waiting, touch).button('开始游戏');
     assert.equal((await titleState(waiting)).session, false);
     assert.deepEqual((await titleState(waiting)).saves, before.saves);
+  } catch (error) {
+    fs.writeFileSync(
+      path.join(evidence, `${name}-waiting-errors.json`),
+      JSON.stringify(
+        {
+          error: String(error),
+          events: waitingDiagnostics,
+          pendingRequests: [...pendingRequests].map(([request, started]) => ({
+            url: request.url(),
+            type: request.resourceType(),
+            elapsedMs: Date.now() - started,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    await waiting
+      .screenshot({ path: path.join(evidence, `${name}-waiting-FAILED.png`), timeout: 5000 })
+      .catch((screenshotError) => console.error('Waiting-tab screenshot failed:', screenshotError));
+    throw error;
   } finally {
     await waiting.close();
   }
