@@ -4,9 +4,9 @@
 
 ## 快照范围
 
-本文按 **2026-11-06 的实际工作区文件**整理，包含已存在但尚未提交的源码。此前仓内没有独立完整代码树，因此新增本文件，不覆盖历史架构或验收报告。文件存在不等于功能已通过全部验收；源码、预览产物和仓库 HEAD 可能不是同一版本。
+本文按 **2026-11-06 的实际工作区文件**整理，包含 terrain6 集成候选。树按真实文件枚举，不覆盖历史架构或验收报告。文件存在不等于功能已通过全部验收；源码、预览产物和仓库 HEAD 可能不是同一版本。
 
-本次枚举有 **274 个 TypeScript 模块**：domain 90、application 39、art 64、presentation 81；另有 **177 个 `*.test.cjs` 测试文件**、资产清单中的 **222 个 glTF 条目**。这些是文件 / 条目数量，不是测试通过数量。新增模块后应重新枚举，不手工沿用旧数字。
+本次枚举有 **352 个 TypeScript 模块**：domain 119、application 50、art 85、presentation 98；另有 **194 个 `*.test.cjs` 测试文件**、资产清单中的 **222 个 glTF 条目**。这些是文件 / 条目数量，不是测试通过数量。新增模块后应重新枚举，不手工沿用旧数字。
 
 树中列全 `assets/scripts/` 的 TypeScript 源文件和 `scripts/` 的入口；`.meta`、图片、glTF 明细、测试辅助文件、构建输出与依赖目录按用途概括。它不是磁盘全部文件清单。
 
@@ -18,6 +18,8 @@
 4. **怎样存档**：`domain/save.ts` 做结构和版本校验；`storage.ts` 处理备份、升级档案、冲突与恢复；`application/ManualSaves.ts`、`ExclusiveGameStorage.ts` 管理手动栏位与并行页面。
 5. **画面从哪里来**：`presentation/TownView.ts` 同步场景，`ModelFactory.ts` / `AssetRenderer.ts` 使用 `art/AssetCatalog.ts` 的共享模型；`scripts/art/export.cjs` 导出同一批配方。
 6. **地形与采集**：`domain/world.ts` / `terrain.ts` / `island.ts` 选择旧版或 v5 规则；`v5-world.ts`、`v5-hydrology*.ts`、`v5-marine.ts` 给出 v5 资源、水域与填海依据；`art/V5*.ts` 和 `presentation/V5*.ts` 负责分块几何及发布。
+
+7. **terrain6 接入**：`domain/v6-world.ts` / `v6-preparation.ts` → `v6-edit-plan.ts` / `actions/terrain6-edit.ts` → `v6-save.ts`；`application/V6PreparationFlow.ts` 管准备，`presentation/V6IslandView.ts` / `V6TerrainTool.ts` 管实际显示与编辑输入。新旧地形分支不应混写。
 
 以下相对模块名均以 `assets/scripts/` 为起点，完整路径在文件树中。
 
@@ -53,6 +55,7 @@ town-evolution-latest/
 │   └── scripts/
 │       ├── application/
 │       │   ├── BuildingDragSelection.ts
+│       │   ├── BuildingGroundReady.ts
 │       │   ├── BuildingMergePreview.ts
 │       │   ├── CameraFraming.ts
 │       │   ├── CollectionPath.ts
@@ -73,6 +76,7 @@ town-evolution-latest/
 │       │   ├── HudLayout.ts
 │       │   ├── ManualSaves.ts
 │       │   ├── MapGesture.ts
+│       │   ├── MaterialQuantity.ts
 │       │   ├── MeshSurface.ts
 │       │   ├── MixedCraftSelection.ts
 │       │   ├── NaturalPicking.ts
@@ -85,12 +89,21 @@ town-evolution-latest/
 │       │   ├── StackDrop.ts
 │       │   ├── StartLayout.ts
 │       │   ├── StartMenu.ts
+│       │   ├── StartRecoveryActions.ts
+│       │   ├── StartSaveActions.ts
 │       │   ├── StrokeSampling.ts
 │       │   ├── SurfaceSupport.ts
 │       │   ├── TapGesture.ts
 │       │   ├── TitleIsland.ts
 │       │   ├── TownProfiles.ts
-│       │   └── TreeStreaming.ts
+│       │   ├── TreeStreaming.ts
+│       │   ├── V6PreparationFlow.ts
+│       │   ├── V6SlotInspection.ts
+│       │   ├── V6SurfaceSupport.ts
+│       │   ├── V6TerrainPicking.ts
+│       │   ├── V6TreeStreaming.ts
+│       │   ├── V6ViewNavigation.ts
+│       │   └── WorldVisibility.ts
 │       ├── art/
 │       │   ├── AssetCatalog.ts
 │       │   ├── AssetCategories.ts
@@ -154,6 +167,27 @@ town-evolution-latest/
 │       │   ├── V5ResourceField.ts
 │       │   ├── V5SurfaceStyle.ts
 │       │   ├── V5TreeGeometry.ts
+│       │   ├── V6BridgeFootings.ts
+│       │   ├── V6CellSpans.ts
+│       │   ├── V6Coast.ts
+│       │   ├── V6CoastCliff.ts
+│       │   ├── V6CoastFill.ts
+│       │   ├── V6ExactFlatCell.ts
+│       │   ├── V6FarSurfaceCell.ts
+│       │   ├── V6FarSurfaceMesh.ts
+│       │   ├── V6MeshUploadParts.ts
+│       │   ├── V6PierFootings.ts
+│       │   ├── V6SurfaceBudget.ts
+│       │   ├── V6SurfaceChunks.ts
+│       │   ├── V6SurfaceChunkWork.ts
+│       │   ├── V6SurfaceClip.ts
+│       │   ├── V6SurfaceContracts.ts
+│       │   ├── V6SurfaceMerge.ts
+│       │   ├── V6SurfaceMesh.ts
+│       │   ├── V6SurfaceNormals.ts
+│       │   ├── V6SurfaceSamples.ts
+│       │   ├── V6SurfaceWriter.ts
+│       │   ├── V6TreeGeometry.ts
 │       │   ├── WarehouseKit.ts
 │       │   └── WoodenBridgeKit.ts
 │       ├── domain/
@@ -173,6 +207,7 @@ town-evolution-latest/
 │       │   │   ├── orders.ts
 │       │   │   ├── processing.ts
 │       │   │   ├── production.ts
+│       │   │   ├── terrain6-edit.ts
 │       │   │   └── transport.ts
 │       │   ├── biomes.ts
 │       │   ├── bridge-crossing.ts
@@ -224,6 +259,8 @@ town-evolution-latest/
 │       │   ├── recipe-types.ts
 │       │   ├── recipes.ts
 │       │   ├── route-recipes.ts
+│       │   ├── save-limits.ts
+│       │   ├── save-version.ts
 │       │   ├── save.ts
 │       │   ├── saw-crafting.ts
 │       │   ├── state.ts
@@ -247,6 +284,32 @@ town-evolution-latest/
 │       │   ├── v5-noise.ts
 │       │   ├── v5-starter.ts
 │       │   ├── v5-world.ts
+│       │   ├── v6-build-cells.ts
+│       │   ├── v6-build-coast.ts
+│       │   ├── v6-build-starter.ts
+│       │   ├── v6-build-terrain.ts
+│       │   ├── v6-contracts.ts
+│       │   ├── v6-edit-level.ts
+│       │   ├── v6-edit-plan.ts
+│       │   ├── v6-edit-surface.ts
+│       │   ├── v6-edit-types.ts
+│       │   ├── v6-foundation.ts
+│       │   ├── v6-hydrology.ts
+│       │   ├── v6-landform.ts
+│       │   ├── v6-maritime.ts
+│       │   ├── v6-material-amount.ts
+│       │   ├── v6-material-volume.ts
+│       │   ├── v6-normal.ts
+│       │   ├── v6-preparation.ts
+│       │   ├── v6-prepared-coast.ts
+│       │   ├── v6-samples.ts
+│       │   ├── v6-save-header.ts
+│       │   ├── v6-save.ts
+│       │   ├── v6-terrain-builder.ts
+│       │   ├── v6-terrain.ts
+│       │   ├── v6-volume-integral.ts
+│       │   ├── v6-work.ts
+│       │   ├── v6-world.ts
 │       │   └── world.ts
 │       └── presentation/
 │           ├── ActionArtwork.ts
@@ -256,6 +319,7 @@ town-evolution-latest/
 │           ├── BuildingDrag.ts
 │           ├── BuildingOutline.ts
 │           ├── BuildingTexture.ts
+│           ├── BuildingVisualSignature.ts
 │           ├── CameraVisibility.ts
 │           ├── CoastalWaterMotion.ts
 │           ├── CollectionBinding.ts
@@ -264,6 +328,7 @@ town-evolution-latest/
 │           ├── CompostControls.ts
 │           ├── CropArtwork.ts
 │           ├── CropMotion.ts
+│           ├── DiggingToolCommand.ts
 │           ├── DropDrag.ts
 │           ├── DropSupport.ts
 │           ├── EntityAssemblyPreview.ts
@@ -279,6 +344,8 @@ town-evolution-latest/
 │           ├── HudDescription.ts
 │           ├── InputProvenance.ts
 │           ├── InputTapGesture.ts
+│           ├── IslandGroundActors.ts
+│           ├── IslandMeshUpload.ts
 │           ├── IslandView.ts
 │           ├── LooseDropView.ts
 │           ├── MapCamera.ts
@@ -309,6 +376,10 @@ town-evolution-latest/
 │           ├── StartScreen.ts
 │           ├── StatusToast.ts
 │           ├── StockDrag.ts
+│           ├── TerrainInteraction.ts
+│           ├── TerrainModeActions.ts
+│           ├── TerrainNavigation.ts
+│           ├── ToolOutline.ts
 │           ├── ToolRouter.ts
 │           ├── ToolTray.ts
 │           ├── ToolUseDrag.ts
@@ -316,10 +387,14 @@ town-evolution-latest/
 │           ├── TownBootstrap.ts
 │           ├── TownChanges.ts
 │           ├── TownController.ts
+│           ├── TownFarmPicking.ts
 │           ├── TownFeedback.ts
 │           ├── TownHUD.ts
 │           ├── TownObjectPicking.ts
+│           ├── TownStreamingFrame.ts
+│           ├── TownUiActions.ts
 │           ├── TownView.ts
+│           ├── TownViewContracts.ts
 │           ├── TrayColumn.ts
 │           ├── TrayIcons.ts
 │           ├── TreeSeedIcon.ts
@@ -327,6 +402,11 @@ town-evolution-latest/
 │           ├── V5ChunkMeshes.ts
 │           ├── V5IslandView.ts
 │           ├── V5TreeView.ts
+│           ├── V6ChunkMeshes.ts
+│           ├── V6IslandView.ts
+│           ├── V6TerrainTool.ts
+│           ├── V6TownNavigation.ts
+│           ├── V6TreeView.ts
 │           ├── Widgets.ts
 │           ├── WorldMaterial.ts
 │           └── WorldMesh.ts
@@ -365,6 +445,8 @@ town-evolution-latest/
 │   ├── recipe-handbook.md
 │   ├── settings-redesign.md
 │   ├── start-and-saves.md
+│   ├── terrain6-development-snapshot.md
+│   ├── terrain6-integration.md
 │   ├── touch-targeting.md
 │   ├── v5-integration.md
 │   ├── v5-tree-streaming.md
@@ -426,7 +508,7 @@ town-evolution-latest/
 │           ├── engine.json
 │           └── project.json
 ├── tests/
-│   └── [ 177 个 *.test.cjs，另有 fixtures/ 和 helpers/；见下方分组 ]
+│   └── [ 194 个 *.test.cjs，另有 fixtures/ 和 helpers/；见下方分组 ]
 ├── .gitignore
 ├── .prettierignore
 ├── .prettierrc.json
@@ -438,7 +520,6 @@ town-evolution-latest/
 ├── tsconfig.cocos-check.json
 ├── tsconfig.domain.json
 └── tsconfig.json
-
 ```
 
 ### 树中未展开的目录
@@ -480,83 +561,49 @@ town-evolution-latest/
 
 ## 版本与存储边界
 
-当前 `domain/world.ts` 的 `TerrainVersion` 为 1–5；`domain/state.ts` 新建默认版本为4；`domain/save.ts` 写 schema10，并接受 schema8 / 9 / 10。schema 号与地形版本是两条独立维度，不能把 schema10 当作 terrain10。
+当前 `domain/world.ts` 的 `TerrainVersion` 为 1–6；`domain/state.ts` 新建默认版本为4；`domain/save.ts` 写 schema10，并接受 schema8 / 9 / 10。schema 号与地形版本是两条独立维度，不能把 schema10 当作 terrain10。
 
-`application/TownProfiles.ts` 当前有四种 profile：
+`application/TownProfiles.ts` 当前有五种 profile：
 
 - `normal`：我的小镇，使用既有正常存储入口，新局 terrain4。
 - `demo`：演示岛，独立进度；模板版本变化不静默覆盖现有进度。
 - `v5-preview`：v5 新岛预览，使用带 `V5_GENERATOR_REVISION` 的独立 key 前缀。
 - `v5-bridge-demo`：木桥演示，同样使用独立且带 revision 的 key 前缀。
 
+- `v6-preview`：自然挖填实验，独立 `v6-natural-grass-edits-1` revision 和 key；不是默认游戏，也未替换在线 v31。
+
 当前 v5 revision 为 `v5-natural-coast-starter-1`。已有保存版本的生成器、ID 和初始库存语义不能原地替换。未知 schema / revision、损坏档案与未来版本均应保留原字节，不能为了演示新岛而重置用户进度。导入、迁移和备份细节以 `save.ts` / `storage.ts` 及测试为准。
 
-## terrain6：仓库外的独立研究目录
+## terrain6：当前集成模块与历史研究
 
-以下结构是同一开发工作区中的**兄弟目录**，不是上面 Git 仓库的子目录，也不会随单独 clone 获得。这里使用路径说明而不伪造可随仓库访问的链接。每个报告只证明对应冻结源码和命名测试的结果。
+本次 terrain6 已进入本仓库，不再仅存在于旁边的实验目录。完整功能与限制见 [terrain6 接入状态](terrain6-integration.md)。
+
+- **世界准备**：`domain/v6-contracts.ts`、`v6-terrain*.ts`、`v6-build-*.ts`、`v6-landform.ts`、`v6-samples.ts`、`v6-preparation.ts`、`v6-world.ts`。固定 revision、Float32 表面和完整准备结果；application 的 `V6PreparationFlow.ts` / `V6SlotInspection.ts` 将可取消准备接到新局、主档 / 备份和手动栏位。
+- **挖填与真实材料**：`v6-edit-types.ts` / `v6-edit-plan.ts` / `v6-edit-surface.ts` / `v6-edit-level.ts` 和 `actions/terrain6-edit.ts`。`v6-material-volume.ts` / `v6-volume-integral.ts` 积分真实几何，`v6-material-amount.ts` 校验4096分量；共享土石库存、掉落与地堆保留分数，不采用仓外研究token。
+- **检查点 / 保存**：`v6-save.ts` / `v6-save-header.ts` / `save-limits.ts`。正式路径保存每格当前状态，不用逐操作journal；4百万字符的命令预检防止发布不可保存的新状态，不替代浏览器存储错误处理。
+- **基础与海域**：`v6-foundation.ts` / `v6-maritime.ts`、共享 `geometry.ts` / `bridge-terrain.ts`。真实高程与完整占地校验；v6桥保留安全gate，不因存在 `V6BridgeFootings.ts` 就声称已能建桥。
+- **表面 / 远景**：art 的 `V6Surface*.ts` / `V6Coast*.ts` / `V6FarSurface*.ts` / `V6CellSpans.ts` / `V6ExactFlatCell.ts` 提供权威几何、分块、远景和精确平面简化；`V6SurfaceBudget.ts` 是显示内存记账，不是GPU实测。
+- **渲染 / 输入**：presentation 的 `V6IslandView.ts` / `V6ChunkMeshes.ts` / `V6TreeView.ts` / `V6TerrainTool.ts` / `V6TownNavigation.ts`，application 的 `V6TerrainPicking.ts` / `V6SurfaceSupport.ts` / `V6TreeStreaming.ts` / `V6ViewNavigation.ts`。显示、精细交互就绪、回家缩放和输入取消分别管理。
+- **共用入口拆分**：`BuildingGroundReady.ts`、`TownFarmPicking.ts` 等小模块承接实际占地就绪与农田目标；完整命名以本页真实树为准，保持旧版本分支不被terrain6误用。
+
+工作区兄弟目录 `terrain-v5-lab/` 不随单独clone获取，保留以下历史研究与审计资料：
 
 ```text
-工作区/
-├── town-evolution-latest/             # 本文描述的主游戏仓库
-└── terrain-v5-lab/
-    └── grass-relief/
-        ├── INTEGRATION6-SCOPE.md      # 正式接入所需状态、保存、交互、性能门槛
-        ├── REFERENCE-AND-GATES.md     # 视觉方向与验收边界
-        ├── compatibility/            # 旧地形兼容性研究与报告
-        ├── surface/                  # 表面风格实验
-        ├── rolling/                  # 自然起伏草地实验
-        ├── world6/                   # 冻结的完整岛基础，非正式游戏
-        │   ├── V6Terrain.ts          # 高度、资源、地基查询入口
-        │   ├── V6Landform.ts         # 自然地貌配方
-        │   ├── V6Contracts.ts        # Float32 层面与数据契约
-        │   ├── V6State.ts            # 完整资源 / 树快照与采集
-        │   ├── V6Normal.ts           # 权威面法线
-        │   ├── World6Mesh.ts         # 地形 / 资源 CPU 网格
-        │   ├── World6MeshWriter.ts   # 共享晶格、边界与切面
-        │   ├── World6Coast.ts        # 唯一地表归属与原水文适配
-        │   ├── World6Picking.ts      # CPU first-hit 检查，不是正式 picker
-        │   └── REPORT.zh-CN.md
-        ├── world6-staged/            # 基线等价的分步构造、取消、重启
-        │   ├── V6TerrainBuilder.ts
-        │   ├── V6Initialization.ts
-        │   ├── baseline/             # 冻结源码及依赖闭包
-        │   ├── README.md
-        │   └── REPORT.md
-        ├── world6-reclaimed/         # 完整扩地 overlay、真实侧墙与查询适配
-        │   ├── ReclaimedV6.ts
-        │   ├── ReclaimedCoast.ts
-        │   ├── ReclaimedMeshes.ts
-        │   ├── ReadonlyCollections.ts
-        │   └── REPORT.zh-CN.md
-        ├── world6-edits/             # 普通陆地分层挖填，独立材料层账本
-        │   ├── TerrainEdits.ts
-        │   ├── Source.ts
-        │   ├── Types.ts
-        │   ├── EditMesh.ts
-        │   ├── EditMeshWriter.ts
-        │   ├── Picking.ts
-        │   ├── Persistence.ts         # 独立 journal 重放，非主游戏存档
-        │   └── verify.cjs
-        ├── world6-rocks-smooth/      # 岩山对照，未选为正式地貌
-        ├── world6-rocks-layered/     # 岩山对照，含已否决方案记录
-        ├── world6-rocks-ridges/      # 岩脊体量对照，未定稿
-        └── world6-rock-comparison/   # 同镜头离线对照与说明
+terrain-v5-lab/
+├── grass-relief/
+│   ├── world6/                   # 冻结的完整岛自然地貌与资源基线
+│   ├── world6-staged/            # 与基线等价的分步准备实验
+│   ├── world6-reclaimed/         # 填海适配实验
+│   ├── world6-edits/             # 旧token/journal原型，不是正式库存或存档接口
+│   └── world6-rocks-*/           # 未定稿岩山造型对照
+├── terrain6-integration-domain/  # 正式材料、检查点、大小边界定向证据
+├── terrain6-integration-compat/  # 冻结旧版本与跨Node运行时对比
+├── terrain6-integration-memory/  # 分块、记账、失败恢复与CPU测量
+├── terrain6-integration-render/  # 生产几何离线图，不是Cocos截图
+└── terrain6-piled-bridge/        # 未接入的高桩桥实验
 ```
 
-已有独立报告记录：world6 的8项测试、staged 的11项测试和六 seed 等价检查、reclaimed 的10项测试。本文没有重跑这些重型研究测试，也不把它们合计为主游戏通过数。`world6-edits` 的最终报告仍在整理，其临时测试数不写成固定验收结论。
-
-当前方向是**保留自然地貌，玩家改造产生规则层面与竖直边界**。普通高台的编辑不制造假天然资源 ID；独立层账本防止重复开采 / 重放增发，但还不是已定价的库存经济。当前填土实验要求先挖出规则平台，不支持直接给未经整平的天然斜面补土。山体造型对照也没有得到正式采用。
-
-正式接入仍需 terrain6 专属 version / revision / profile / 导入、所有物体的完整足迹与高度、建造 / 移动 / 旋转 / 合并 / 种田 / 掉落 / 拾取统一表面，以及流式加载的原子发布。海上填海的 CPU 适配不覆盖正式库存消费、全部建筑 / 船坞泊位占用或陆地整平价格。
-
-研究复现须先取得这些独立目录，从工作区根运行，例如：
-
-```sh
-node town-evolution-latest/node_modules/typescript/bin/tsc -p terrain-v5-lab/grass-relief/world6/tsconfig.json
-node --test terrain-v5-lab/grass-relief/world6/verify.cjs terrain-v5-lab/grass-relief/world6/mesh-verify.cjs
-```
-
-staged / reclaimed 的完整命令与 benchmark 以各自报告为准。全岛测试、Blender 渲染和性能测量应串行，避免并行负载污染结果。分步构造总工作仍为秒级，GC 尾时和初始化峰值仍需处理；CPU 查询、离线图片及理论缓冲量都不是 Cocos / GPU / 手机性能验收。
+主游戏源码的事实优先于这些旧实验的API说明。旧实验“只允许先挖后填、不接库存”等限制不应套用到当前生产挖填；反过来，研究测试通过也不能算正式Cocos / GPU / 手机验收。当前在线v31仍不含这次terrain6，Git源码推进与试玩部署是两项不同操作。
 
 ## 测试与运行入口
 
@@ -570,21 +617,24 @@ npm run demo:domain
 
 常用的聚焦测试入口如下。示例列出代表文件，不代表该组全部用例，也不表示本轮已经运行：
 
-| 关注点                    | 代表测试                                                                                                                                             |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 规则与原子性              | `game.test.cjs`、`invariants.test.cjs`、`foundation.test.cjs`                                                                                        |
-| 保存与恢复                | `storage.test.cjs`、`schema9-save.test.cjs`、`schema10-save.test.cjs`、`save-concurrency.test.cjs`                                                   |
-| 标题 / profile / 手动栏位 | `game-start.test.cjs`、`town-profiles.test.cjs`、`exclusive-game-storage.test.cjs`、`manual-save-capacity.test.cjs`                                  |
-| 种田与收割                | `farm-cells.test.cjs`、`farm-sweep.test.cjs`、`paddy-crops.test.cjs`、`farm-box.test.cjs`、`harvest-targeting.test.cjs`                              |
-| 掉落与材料守恒            | `loose-drops.test.cjs`、`loose-drops-save.test.cjs`、`drop-move.test.cjs`、`stack-limits.test.cjs`、`mixed-crafting.test.cjs`                        |
-| 配方与装配                | `tool-crafting-v9.test.cjs`、`entity-assembly.test.cjs`、`material-hammer.test.cjs`、`merge-plan-v9.test.cjs`                                        |
-| 生产与交易                | `nursery.test.cjs`、`processing-core.test.cjs`、`compost-integration.test.cjs`、`roasted-carrot.test.cjs`、`commerce.test.cjs`、`transport.test.cjs` |
-| 木桥                      | `bridge-crossing.test.cjs`、`bridge-profile.test.cjs`、`bridge-save.test.cjs`、`bridge-drag-ui.test.cjs`                                             |
-| 拾取 / 输入中断           | `model-picking-identity.test.cjs`、`input-owner-lifecycle.test.cjs`、`map-contact-lifecycle.test.cjs`、`touch-input-picking.test.cjs`                |
-| 地形与旧档兼容            | `terrain-v5-compatibility.test.cjs`、`terrain-v5-lifecycle.test.cjs`、`v5-revision-boundary.test.cjs`                                                |
-| 海岸、填海、港口          | `terrain-v5-expansion.test.cjs`、`v5-hydrology-coast.test.cjs`、`v5-natural-port-lifecycle.test.cjs`、`v5-pier-footings.test.cjs`                    |
-| 分块与树木                | `v5-resource-chunks.test.cjs`、`v5-coast-chunks.test.cjs`、`v5-tree-streaming.test.cjs`                                                              |
-| 模型与图片                | `art.test.cjs`、`building-inheritance.test.cjs`、`crop-geometry.test.cjs`、`generated-product-icons.test.cjs`                                        |
+| 关注点                    | 代表测试                                                                                                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 规则与原子性              | `game.test.cjs`、`invariants.test.cjs`、`foundation.test.cjs`                                                                                                                                            |
+| 保存与恢复                | `storage.test.cjs`、`schema9-save.test.cjs`、`schema10-save.test.cjs`、`save-concurrency.test.cjs`                                                                                                       |
+| 标题 / profile / 手动栏位 | `game-start.test.cjs`、`town-profiles.test.cjs`、`exclusive-game-storage.test.cjs`、`manual-save-capacity.test.cjs`                                                                                      |
+| 种田与收割                | `farm-cells.test.cjs`、`farm-sweep.test.cjs`、`paddy-crops.test.cjs`、`farm-box.test.cjs`、`harvest-targeting.test.cjs`                                                                                  |
+| 掉落与材料守恒            | `loose-drops.test.cjs`、`loose-drops-save.test.cjs`、`drop-move.test.cjs`、`stack-limits.test.cjs`、`mixed-crafting.test.cjs`                                                                            |
+| 配方与装配                | `tool-crafting-v9.test.cjs`、`entity-assembly.test.cjs`、`material-hammer.test.cjs`、`merge-plan-v9.test.cjs`                                                                                            |
+| 生产与交易                | `nursery.test.cjs`、`processing-core.test.cjs`、`compost-integration.test.cjs`、`roasted-carrot.test.cjs`、`commerce.test.cjs`、`transport.test.cjs`                                                     |
+| 木桥                      | `bridge-crossing.test.cjs`、`bridge-profile.test.cjs`、`bridge-save.test.cjs`、`bridge-drag-ui.test.cjs`                                                                                                 |
+| 拾取 / 输入中断           | `model-picking-identity.test.cjs`、`input-owner-lifecycle.test.cjs`、`map-contact-lifecycle.test.cjs`、`touch-input-picking.test.cjs`                                                                    |
+| 地形与旧档兼容            | `terrain-v5-compatibility.test.cjs`、`terrain-v5-lifecycle.test.cjs`、`v5-revision-boundary.test.cjs`                                                                                                    |
+| 海岸、填海、港口          | `terrain-v5-expansion.test.cjs`、`v5-hydrology-coast.test.cjs`、`v5-natural-port-lifecycle.test.cjs`、`v5-pier-footings.test.cjs`                                                                        |
+| 分块与树木                | `v5-resource-chunks.test.cjs`、`v5-coast-chunks.test.cjs`、`v5-tree-streaming.test.cjs`                                                                                                                  |
+| terrain6 材料 / 保存      | `terrain6-domain-edit.test.cjs`、`terrain6-domain-maritime.test.cjs`、`terrain6-save-size.test.cjs`                                                                                                      |
+| terrain6 兼容             | `terrain6-compatibility-old-worlds.test.cjs`、`terrain6-compatibility-new-worlds.test.cjs`、`terrain6-compatibility-material.test.cjs`、`terrain6-compatibility-profiles.test.cjs`                       |
+| terrain6 显示 / 控制      | `v6-surface-authority.test.cjs`、`v6-far-surface.test.cjs`、`v6-object-elevation.test.cjs`、`v6-resident-recovery.test.cjs`、`terrain6-controls-start.test.cjs`、`terrain6-controls-navigation.test.cjs` |
+| 模型与图片                | `art.test.cjs`、`building-inheritance.test.cjs`、`crop-geometry.test.cjs`、`generated-product-icons.test.cjs`                                                                                            |
 
 运行单个测试前先 `npm run build:domain`，再用 `node --test tests/对应文件.test.cjs`。完整 `npm test` 会自动编译。名字带 `ui` 的 Node 测试可检查逻辑 / 路由 / 源码约束，不能因命名就视为真实浏览器点击结果。
 
