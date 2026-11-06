@@ -142,9 +142,9 @@ async function until(page, predicate, message, timeout = 10000) {
   }
   throw new Error(`UI verification timed out: ${message}; ${JSON.stringify(await inspect(page))}`);
 }
-async function ready(page) {
+async function ready(page, timeout = 45000) {
   await page.waitForFunction(() => window.__townPreview?.ready === true, undefined, {
-    timeout: 45000,
+    timeout,
   });
 }
 async function worldPoint(page, point) {

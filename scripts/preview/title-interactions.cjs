@@ -91,6 +91,8 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
   // Another tab waits for Web Locks but renders the same independent title island.
   const waiting = await page.context().newPage();
   const waitingDiagnostics = [];
+  const waitingStarted = Date.now();
+  let waitingInitializationMs = null;
   const pendingRequests = new Map();
   waiting.on('request', (request) => pendingRequests.set(request, Date.now()));
   waiting.on('requestfinished', (request) => pendingRequests.delete(request));
@@ -112,7 +114,12 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
   try {
     // Engine readiness below is the gate; the document load event is not.
     await waiting.goto(page.url(), { waitUntil: 'domcontentloaded' });
-    await ready(waiting);
+    waitingDiagnostics.push({ event: 'domcontentloaded', elapsedMs: Date.now() - waitingStarted });
+    // CI software WebGL renders two independent islands here. Keep a bounded
+    // startup budget while preserving the real-frame and behavioral gates.
+    await ready(waiting, 120000);
+    waitingInitializationMs = Date.now() - waitingStarted;
+    console.log(`${name} waiting-tab real engine ready after ${waitingInitializationMs}ms`);
     const blocked = await titleState(waiting);
     assert.match(blocked.warning, /只读/);
     assert.equal(blocked.titleWorlds, 1);
@@ -126,6 +133,7 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
       JSON.stringify(
         {
           error: String(error),
+          elapsedMs: Date.now() - waitingStarted,
           events: waitingDiagnostics,
           pendingRequests: [...pendingRequests].map(([request, started]) => ({
             url: request.url(),
@@ -171,6 +179,7 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
       {
         passed: true,
         input: touch ? 'touch' : 'mouse',
+        waitingInitializationMs,
         checks: [
           'real mesh renderer, camera and live crop wind',
           'fixed immutable demo template and growth',
