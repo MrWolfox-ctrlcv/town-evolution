@@ -8,14 +8,14 @@ export interface V6NavigationPort {
 /** View-only intent. A requested overview never exposes an unready distant surface. */
 export class V6ViewNavigation {
   private pendingOverview = true;
-  private overviewReady = false;
+  private overviewVisible = false;
   private disposed = false;
   constructor(private readonly port: V6NavigationPort) {}
-  update(overviewReady: boolean, userInteracting = false): void {
+  update(overviewVisible: boolean, userInteracting = false): void {
     if (this.disposed) return;
-    this.overviewReady = overviewReady;
+    this.overviewVisible = overviewVisible;
     if (userInteracting) this.pendingOverview = false;
-    if (!this.pendingOverview || !overviewReady) return;
+    if (!this.pendingOverview || !overviewVisible) return;
     this.pendingOverview = false;
     this.prepare();
     this.port.overview();
@@ -29,7 +29,7 @@ export class V6ViewNavigation {
   overview(): void {
     if (this.disposed) return;
     this.pendingOverview = true;
-    if (this.overviewReady) this.update(true);
+    if (this.overviewVisible) this.update(true);
     else this.prepare();
   }
   zoom(delta: number): void {
