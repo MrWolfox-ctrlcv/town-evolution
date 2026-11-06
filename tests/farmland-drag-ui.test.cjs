@@ -55,6 +55,8 @@ function load() {
           },
         };
       if (id === './ModelFactory') return { ModelFactory };
+      if (id === './TerrainInteraction')
+        return require('./helpers/selection-ui.cjs').load('TerrainInteraction');
       if (id === './BuildingOutline')
         return require('./helpers/farm-picking-ui.cjs').load('BuildingOutline', { cc: { Node } });
       throw new Error(`Unexpected dependency ${id}`);
@@ -283,7 +285,15 @@ function uiModule(name, dependencies, browser) {
   new Function('require', 'module', 'exports', 'window', 'navigator', source)(
     (id) => {
       if (id in dependencies) return dependencies[id];
-      if (id === './CameraVisibility') return uiModule('CameraVisibility', dependencies, browser);
+      if (
+        [
+          './CameraVisibility',
+          './V6TownNavigation',
+          './TownStreamingFrame',
+          './TownUiActions',
+        ].includes(id)
+      )
+        return uiModule(id.slice(2), dependencies, browser);
       if (id === '../domain/game') return game;
       if (id === '../domain/world') return require('../.domain-build/domain/world');
       if (id.startsWith('../application/')) return require(`../.domain-build/${id.slice(3)}`);
@@ -423,7 +433,7 @@ function focusFixture(...browserArgs) {
       './BrowserInputGuard': guard,
       './InputProvenance': provenance,
       './SceneLighting': { configureTownLighting() {} },
-      '../application/GameStart': { GameStart: class {} },
+      '../application/GameStart': require('../.domain-build/application/GameStart'),
       '../application/ExclusiveGameStorage': {
         ExclusiveGameStorage: class {
           warning = '';

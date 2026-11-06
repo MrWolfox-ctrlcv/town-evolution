@@ -32,6 +32,7 @@ class Factory {
 }
 const dependencies = {
   '../application/DropSnapshot': require('../.domain-build/application/DropSnapshot'),
+  './TerrainInteraction': require('./helpers/selection-ui.cjs').load('TerrainInteraction'),
   './UiContracts': require('./helpers/selection-ui.cjs').load('UiContracts'),
   cc: {
     Node,

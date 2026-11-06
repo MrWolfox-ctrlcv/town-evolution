@@ -499,3 +499,137 @@ test('terrain6 normal memoization is exact, bounded, and separates original coor
   assert.equal(n[0], 0.123456789);
   assert.ok(Object.isFrozen(n));
 });
+
+test('v6 coarse/detail switching is atomic, blocks interactions and cannot revive edited branches on revisit', () => {
+  const keys = ['0,0', '1,0', '0,1', '1,1'];
+  const initial = source();
+  const chunks = new V6SurfaceChunks(initial, { ...coast, keys });
+  const settle = () => {
+    while (!chunks.isSettled()) ready(chunks).commit();
+  };
+  chunks.request(keys, []);
+  settle();
+  assert.ok(
+    [...chunks.resident().values()].every(
+      (c) =>
+        c.detail === false &&
+        !c.support &&
+        !c.surface.resources.length &&
+        c.mesh.triangles.every((t) => t.resourceId === null),
+    ),
+  );
+  assert.equal(chunks.visible(15, 15), true);
+  assert.equal(chunks.ready(15, 15), false);
+  const old = chunks.resident().get('0,0');
+  chunks.request(keys, ['0,0']);
+  const pending = ready(chunks);
+  assert.equal(chunks.resident().get('0,0'), old);
+  assert.equal(chunks.ready(15, 15), false);
+  pending.commit();
+  settle();
+  assert.equal(chunks.ready(15, 15), true);
+  const edits = new Map([['15,15', { cut: v6Plane(2), level: 2, fills: [] }]]);
+  const branch = source(edits); // Same revision token, distinct immutable snapshot.
+  chunks.update(branch, [{ x: 15, z: 15 }]);
+  assert.equal(chunks.ready(15, 15), false);
+  const changed = ready(chunks);
+  assert.deepEqual(new Set(changed.chunks.map((c) => c.key)), new Set(keys));
+  changed.commit();
+  settle();
+  const ray = { o: { x: 15.5, y: 20, z: 15.5 }, d: { x: 0, y: -1, z: 0 } };
+  const picker = new V6TerrainPicking();
+  const height = () => {
+    picker.sync(chunks.resident().values());
+    return picker.pick(ray).point.y;
+  };
+  assert.equal(height(), v6Plane(2));
+  chunks.request(keys, []);
+  settle();
+  assert.equal(height(), v6Plane(2));
+  chunks.request([], []);
+  settle();
+  assert.equal(chunks.resident().size, 0);
+  chunks.request(keys, ['0,0']);
+  settle();
+  assert.equal(height(), v6Plane(2));
+  // A new legal branch with the same revision must invalidate the old cell geometry.
+  chunks.update(
+    source(
+      new Map([['15,15', { cut: v6Plane(2), level: 3, fills: [{ level: 3, material: 'soil' }] }]]),
+    ),
+    [{ x: 15, z: 15 }],
+  );
+  settle();
+  assert.equal(height(), v6Plane(3));
+});
+
+test('v6 far edit invalidates the second-ring transition edge across chunks and on revisit', () => {
+  const keys = ['0,0', '1,0'],
+    chunks = new V6SurfaceChunks(source(), { ...coast, keys });
+  const settle = () => {
+    while (!chunks.isSettled()) ready(chunks).commit();
+  };
+  const edge = () => {
+    const m = chunks.resident().get('1,0').mesh,
+      out = [];
+    for (let t = 0; t < m.triangles.length; t++) {
+      const meta = m.triangles[t];
+      if (meta.x !== 17 || meta.z !== 8 || meta.surface === 'wall') continue;
+      for (let j = 0; j < 3; j++) {
+        const a = m.indices[t * 3 + j] * 3,
+          b = m.indices[t * 3 + ((j + 1) % 3)] * 3;
+        if (m.positions[a] === 17 && m.positions[b] === 17)
+          out.push([
+            Math.min(m.positions[a + 2], m.positions[b + 2]),
+            Math.max(m.positions[a + 2], m.positions[b + 2]),
+          ]);
+      }
+    }
+    return out.sort((a, b) => a[0] - b[0]);
+  };
+  chunks.request(keys, []);
+  settle();
+  assert.deepEqual(edge(), [[8, 9]]);
+  chunks.update(source(new Map([['15,8', { cut: v6Plane(2), level: 2, fills: [] }]])), [
+    { x: 15, z: 8 },
+  ]);
+  const tx = ready(chunks);
+  assert.deepEqual(new Set(tx.chunks.map((c) => c.key)), new Set(keys));
+  assert.deepEqual(edge(), [[8, 9]]);
+  tx.commit();
+  settle();
+  const quarter = [
+    [8, 8.25],
+    [8.25, 8.5],
+    [8.5, 8.75],
+    [8.75, 9],
+  ];
+  assert.deepEqual(edge(), quarter);
+  chunks.request([], []);
+  settle();
+  chunks.request(keys, []);
+  settle();
+  assert.deepEqual(edge(), quarter);
+});
+
+test('v6 sample fast paths never assume optional vertex capability proves a real unmodified world', () => {
+  const { v6WorldHeight, v6WorldNormal } = require(path.join(root, 'art/V6SurfaceSamples'));
+  const fake = source().world;
+  let calls = 0;
+  fake.vertex = () => {
+    throw Error('Untrusted vertex capability was used');
+  };
+  fake.normal = () => {
+    calls++;
+    return [-0, 1, 0];
+  };
+  assert.equal(v6WorldHeight(fake, 8.25, 8.5, true), v6Plane(2));
+  assert.deepEqual(v6WorldNormal(fake, 8.25, 8.5, false), [-0, 1, 0]);
+  assert.equal(calls, 1);
+  const { V6Terrain } = require(path.join(root, 'domain/v6-terrain'));
+  const overridden = Object.create(V6Terrain.prototype);
+  Object.defineProperty(overridden, 'normal', { value: () => [1, 0, 0] });
+  Object.defineProperty(overridden, 'groundHeight', { value: () => 7 });
+  assert.equal(v6WorldHeight(overridden, 8, 8, true), 7);
+  assert.deepEqual(v6WorldNormal(overridden, 8, 8, false), [1, 0, 0]);
+});

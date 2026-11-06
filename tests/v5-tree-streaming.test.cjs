@@ -149,8 +149,15 @@ test('Cocos controller advances view streaming every frame for v5 and v6 and pre
   const controller = fs.readFileSync('assets/scripts/presentation/TownController.ts', 'utf8');
   assert.match(
     controller,
-    /terrainVersion === 5\)[\s\S]{0,80}this\.town\.frame\(this\.map\.visibleBounds\(64\), this\.map\.visibleBounds\(4\)\)/,
+    /streamTownFrame\(this.session.state.terrainVersion, this.map, this.town\)/,
   );
+  const stream = fs.readFileSync('assets/scripts/presentation/TownStreamingFrame.ts', 'utf8');
+  assert.match(
+    stream,
+    /version === 5\) town.frame\(map.visibleBounds\(64\), map.visibleBounds\(4\)\)/,
+  );
+  assert.match(stream, /version === 6/);
+  assert.match(stream, /map.maxOverviewError\(\)/);
   const ground = fs.readFileSync('assets/scripts/presentation/GroundObjects.ts', 'utf8');
   assert.match(
     ground,

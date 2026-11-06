@@ -207,7 +207,10 @@ test('settings uses the shared tap gate, cancels interrupted/multitouch input an
     /this\.settings = new ActionButton\(this\.canvas, explain, this\.settingsArt\)/,
   );
   assert.match(hud, /cancelMultiTouch[\s\S]*?this\.settings\.cancelGesture\(\)/);
-  assert.match(hud, /cancelGestures\(\): void \{\s*this\.settings\.cancelGesture\(\)/);
+  assert.match(
+    hud,
+    /cancelGestures\(\): void \{\s*this\.terrainNavigation\?\.cancel\(\);\s*this\.settings\.cancelGesture\(\)/,
+  );
   assert.match(
     hud,
     /coversMapPoint[\s\S]*?this\.settings\.node\.getComponent\(UITransform\)!\.hitTest/,

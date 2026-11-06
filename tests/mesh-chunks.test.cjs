@@ -156,16 +156,22 @@ test('island uploads every chunk with inherited shadows and releases old mesh/no
     worldModule,
     worldModule.exports,
   );
+  const upload = require('./helpers/farm-picking-ui.cjs').load('IslandMeshUpload', {
+    cc,
+    './WorldMesh': worldModule.exports,
+  });
   const module = { exports: {} };
   new Function('require', 'module', 'exports', code)(
     (id) =>
-      id === 'cc'
-        ? cc
-        : id === '../art/MeshChunks'
-          ? { splitMesh16 }
-          : id === './WorldMesh'
-            ? worldModule.exports
-            : {},
+      id === './IslandMeshUpload'
+        ? upload
+        : id === 'cc'
+          ? cc
+          : id === '../art/MeshChunks'
+            ? { splitMesh16 }
+            : id === './WorldMesh'
+              ? worldModule.exports
+              : {},
     module,
     module.exports,
   );

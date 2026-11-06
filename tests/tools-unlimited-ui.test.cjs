@@ -14,6 +14,9 @@ function presentation(name, dependencies) {
   new Function('require', 'module', 'exports', source)(
     (id) => {
       if (id === '../domain/game') return game;
+      if (id.startsWith('../application/')) return require('../.domain-build/' + id.slice(3));
+      if (['./TerrainModeActions', './V6TerrainTool'].includes(id))
+        return require('./helpers/selection-ui.cjs').load(id.slice(2));
       if (id === './InputProvenance') return require('./helpers/input-provenance.cjs');
       assert.ok(Object.hasOwn(dependencies, id), `Missing isolated dependency: ${id}`);
       return dependencies[id];

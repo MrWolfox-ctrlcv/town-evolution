@@ -15,6 +15,9 @@ function loadPresentation(name, collaborators) {
   new Function('require', 'module', 'exports', outputText)(
     (id) => {
       if (id === '../domain/game') return game;
+      if (id.startsWith('../application/')) return require('../.domain-build/' + id.slice(3));
+      if (['./TerrainInteraction', './V6TerrainTool'].includes(id))
+        return require('./helpers/selection-ui.cjs').load(id.slice(2));
       if (id === './InputProvenance') return require('./helpers/input-provenance.cjs');
       assert.ok(id in collaborators, `Unexpected dependency: ${id}`);
       return collaborators[id];

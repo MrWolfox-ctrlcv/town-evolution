@@ -562,3 +562,20 @@ test('legacy and v4 clip/shadow depth follow portrait and landscape layout witho
       near(map.zoom, homeZoom(size));
     }
 });
+test('v6 prospective overview error uses its actual target scale and framebuffer without moving the live camera', () => {
+  for (const dpr of [1, 2, 3]) {
+    const { map } = fixture(6, null, { width: 390, height: 844, dpr });
+    map.camera.camera.window = { height: 844 * dpr };
+    map.camera.camera.viewport = map.camera.rect;
+    const before = { zoom: map.zoom, focus: { ...map.focus }, height: map.camera.orthoHeight };
+    const target = Math.min(0.25, (0.75 * 2 * fittedOrthoHeight(390 / 844, 192)) / (844 * dpr));
+    near(map.maxOverviewError(), target);
+    assert.deepEqual(
+      { zoom: map.zoom, focus: { ...map.focus }, height: map.camera.orthoHeight },
+      before,
+    );
+    assert.ok(map.maxTerrainError() < map.maxOverviewError());
+    map.overview();
+    near(map.maxTerrainError(), target);
+  }
+});

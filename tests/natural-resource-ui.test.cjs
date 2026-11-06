@@ -20,6 +20,8 @@ function presentation(name, dependencies) {
   new Function('require', 'module', 'exports', outputText)(
     (id) => {
       if (id === '../domain/game') return game;
+      if (id === '../application/MaterialQuantity')
+        return require('../.domain-build/application/MaterialQuantity');
       if (
         id === '../application/BuildingDragSelection' ||
         id === '../application/BuildingMergePreview'
@@ -32,6 +34,11 @@ function presentation(name, dependencies) {
       if (id === '../application/EntityAssemblySelection')
         return require('../.domain-build/application/EntityAssemblySelection');
       if (
+        id === './TerrainNavigation' ||
+        id === './DiggingToolCommand' ||
+        id === './ToolOutline' ||
+        id === './TerrainInteraction' ||
+        id === './V6TerrainTool' ||
         id === './SingleHammerPreview' ||
         id === './BuildingOutline' ||
         id === './HammerTarget' ||

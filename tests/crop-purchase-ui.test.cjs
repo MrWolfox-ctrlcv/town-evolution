@@ -87,6 +87,7 @@ const dependencies = {
       draw() {}
     },
   },
+  './V6TerrainTool': require('./helpers/selection-ui.cjs').load('V6TerrainTool'),
   './FarmTools': { FarmTools: IdleDrag },
   './StockDrag': { StockDrag: IdleDrag },
   './ToolUseDrag': { ToolUseDrag: IdleDrag },

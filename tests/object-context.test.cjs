@@ -12,6 +12,7 @@ function presentation(name, dependencies = {}) {
   new Function('require', 'module', 'exports', code)(
     (id) => {
       if (id in dependencies) return dependencies[id];
+      if (id === './TerrainModeActions') return presentation('TerrainModeActions');
       if (id.startsWith('../')) return require(`../.domain-build/${id.slice(3)}.js`);
       throw new Error(`Missing dependency ${id}`);
     },

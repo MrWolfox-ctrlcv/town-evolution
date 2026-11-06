@@ -57,6 +57,7 @@ test('v6 dirty and budget-failed views reject old ground, show persistent failur
     failure: null,
     failureView: '',
     pending: null,
+    requestedFine: new Set(),
     chunks: {
       request() {},
       isCurrent: () => true,
@@ -88,7 +89,7 @@ test('v6 dirty and budget-failed views reject old ground, show persistent failur
   const warn = console.warn;
   console.warn = () => {};
   try {
-    assert.equal(view.frame(bounds), false);
+    assert.equal(view.frame(bounds, {}, undefined, undefined, 0.25, 0.25), false);
   } finally {
     console.warn = warn;
   }
@@ -96,17 +97,23 @@ test('v6 dirty and budget-failed views reject old ground, show persistent failur
   assert.match(view.surfaceProblem(), /地形细节过多/);
   ready = true;
   assert.equal(view.pickTerrain({}), null);
-  assert.equal(view.frame(bounds), false);
+  assert.equal(view.frame(bounds, {}, undefined, undefined, 0.25, 0.25), false);
   assert.equal(calls, 1);
   fail = false;
-  assert.equal(view.frame({ ...bounds, maxX: 10 }, { maxUploadBytes: 8 }), true);
+  assert.equal(
+    view.frame({ ...bounds, maxX: 10 }, { maxUploadBytes: 8 }, undefined, undefined, 0.25, 0.25),
+    true,
+  );
   assert.equal(uploadBudget, 8);
   assert.equal(published, 1);
   assert.equal(view.surfaceProblem(), null);
   assert.equal(view.pickTerrain({}), hit);
 });
 test('v6 natural touch and direct picks reject the first blocked owner without selecting through it; v5 unchanged', () => {
-  const { GroundObjects } = presentation('GroundObjects', { '../art/TreeKit': {} });
+  const { GroundObjects } = presentation('GroundObjects', {
+    '../art/TreeKit': {},
+    './V6TreeView': { V6TreeView: class {} },
+  });
   const objects = Object.create(GroundObjects.prototype);
   let ready = false,
     picks = 0;

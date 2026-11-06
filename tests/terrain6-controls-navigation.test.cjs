@@ -115,7 +115,7 @@ test('v6 navigation presents truthful persistent stages and cancels when detail 
   const town = {
     surfaceProblem: null,
     surfaceStatus: {
-      overviewReady: false,
+      overviewVisible: false,
       phase: 'overview',
       readyChunks: 0,
       requestedChunks: 196,
@@ -131,12 +131,17 @@ test('v6 navigation presents truthful persistent stages and cancels when detail 
   nav.tick();
   assert.equal(calls.includes('overview'), false);
   assert.match(messages.at(-1), /正在准备真实全岛远景/);
-  town.surfaceStatus.overviewReady = true;
+  town.surfaceStatus.overviewVisible = true;
   nav.tick();
   assert.equal(calls.at(-1), 'overview');
   handlers.home();
   assert.deepEqual(calls.slice(-3), ['cancel', 'close', ['home', 6]]);
-  town.surfaceStatus = { overviewReady: true, phase: 'detail', readyChunks: 3, requestedChunks: 8 };
+  town.surfaceStatus = {
+    overviewVisible: true,
+    phase: 'detail',
+    readyChunks: 3,
+    requestedChunks: 8,
+  };
   nav.tick();
   assert.match(messages.at(-1), /3\/8 块已就绪/);
   town.surfaceStatus.phase = 'ready';
@@ -322,4 +327,170 @@ test('off-screen tall casters remain requested when their real sun-direction sha
     true,
     'unknown/horizontal shadow extent is retained',
   );
+});
+test('the four v6 camera buttons remain available outside the six-action shelf with persistent readable status', () => {
+  class Transform {
+    setContentSize(width, height) {
+      this.width = width;
+      this.height = height;
+    }
+    hitTest(p) {
+      const c = this.node.position;
+      return Math.abs(p.x - c.x) <= this.width / 2 && Math.abs(p.y - c.y) <= this.height / 2;
+    }
+  }
+  class UiNode {
+    constructor() {
+      this.position = { x: 0, y: 0 };
+      this.children = [];
+      this.transform = new Transform();
+      this.transform.node = this;
+      this.activeInHierarchy = true;
+    }
+    getComponent() {
+      return this.transform;
+    }
+    addComponent() {
+      return {};
+    }
+    setPosition(x, y) {
+      this.position = { x, y };
+    }
+    destroy() {
+      this.activeInHierarchy = false;
+    }
+  }
+  const buttons = [],
+    calls = [];
+  const widgetDependencies = {
+    cc: {
+      Label: { HorizontalAlign: { CENTER: 1 } },
+      LabelOutline: class {},
+      UITransform: Transform,
+      Vec2: class {
+        constructor(x, y) {
+          Object.assign(this, { x, y });
+        }
+      },
+    },
+    './Palette': { color: (value) => value },
+    './Widgets': {
+      uiNode: () => new UiNode(),
+      consumeTouches: () => {},
+      label: () => ({ node: new UiNode(), string: '' }),
+      ActionButton: class {
+        constructor() {
+          this.node = new UiNode();
+          this.cancelled = 0;
+          buttons.push(this);
+        }
+        set(action) {
+          this.action = action;
+        }
+        layout(x, y, width, options) {
+          Object.assign(this, { x, y, width, options });
+        }
+        cancelGesture() {
+          this.cancelled++;
+        }
+      },
+    },
+  };
+  const { TerrainNavigation } = presentation('TerrainNavigation', widgetDependencies);
+  const widget = new TerrainNavigation(new UiNode(), {
+    home: () => calls.push('home'),
+    overview: () => calls.push('overview'),
+    zoom: (delta) => calls.push(delta),
+  });
+  assert.deepEqual(
+    buttons.map((b) => b.action.text),
+    ['回家', '全岛', '＋', '−'],
+  );
+  for (const [width, height] of [
+    [320, 568],
+    [390, 844],
+    [844, 390],
+  ]) {
+    widget.layout(width, height);
+    for (const b of buttons) {
+      assert.ok(b.options.height >= 44);
+      assert.ok(b.x - b.width / 2 >= -(width - 24) / 2);
+      assert.ok(b.x + b.width / 2 <= (width - 24) / 2);
+    }
+    assert.equal(widget.covers({ x: 0, y: height / 2 - 76 }), true);
+    assert.equal(widget.covers({ x: 0, y: 0 }), false);
+  }
+  const status = '全岛远景 18/196 · 拉近或回家后操作';
+  widget.render(status);
+  widget.render(status);
+  assert.equal(widget.status.string, status);
+  assert.equal(buttons.length, 4, 'progress must not recreate button gestures');
+  for (const b of buttons) b.action.run();
+  assert.deepEqual(calls, ['home', 'overview', -1, 1]);
+  widget.cancel();
+  assert.ok(buttons.every((b) => b.cancelled >= 4));
+  widget.dispose();
+  assert.equal(widget.regions().length, 0);
+});
+test('actual IslandView status flows through TownView to navigation without calling full coarse editable', () => {
+  const { V6IslandView } = presentation('V6IslandView', {
+    '../art/V6SurfaceBudget': { V6SurfaceBudgetError: class extends Error {} },
+  });
+  const { IslandView } = presentation('IslandView');
+  const { TownView } = presentation('TownView');
+  const { V6TownNavigation } = presentation('V6TownNavigation');
+  const live = new Map(),
+    keys = Array.from({ length: 196 }, (_, i) => String(i));
+  let settled = false;
+  const surface = Object.create(V6IslandView.prototype);
+  surface.chunks = { resident: () => live, isSettled: () => settled };
+  surface.coast = { keys };
+  surface.requestedOverview = keys.length;
+  surface.requestedFine = new Set();
+  surface.failure = null;
+  const island = Object.create(IslandView.prototype);
+  island.v6 = surface;
+  const town = Object.create(TownView.prototype);
+  town.island = island;
+  const calls = [],
+    messages = [];
+  const nav = new V6TownNavigation(
+    { setTerrainNavigation() {}, closeDetails() {}, terrainStatus: (text) => messages.push(text) },
+    { interacting: false, overview: () => calls.push('overview'), reset() {}, zoomBy() {} },
+    town,
+    () => calls.push('cancel'),
+    () => false,
+  );
+  nav.tick();
+  assert.equal(town.surfaceStatus.overviewVisible, false);
+  assert.equal(calls.includes('overview'), false);
+  live.set('0', { mesh: { indices: [0, 1, 2] }, detail: false });
+  nav.tick();
+  assert.equal(town.surfaceStatus.overviewVisible, true);
+  assert.equal(town.surfaceStatus.overviewComplete, false);
+  assert.equal(calls.filter((v) => v === 'overview').length, 1);
+  assert.match(messages.at(-1), /1\/196/);
+  assert.match(messages.at(-1), /正在绘制全岛/);
+  for (const key of keys) live.set(key, { mesh: { indices: [0, 1, 2] }, detail: false });
+  settled = true;
+  nav.tick();
+  assert.equal(town.surfaceStatus.overviewComplete, true);
+  assert.equal(town.surfaceStatus.phase, 'overview');
+  assert.match(messages.at(-1), /远景浏览 196\/196/);
+  assert.doesNotMatch(messages.at(-1), /可开田|已就绪/);
+  surface.requestedFine.add('0');
+  settled = false;
+  nav.tick();
+  assert.equal(town.surfaceStatus.phase, 'detail');
+  assert.match(messages.at(-1), /0\/1 块已就绪/);
+  live.set('0', { mesh: { indices: [0, 1, 2] }, detail: true });
+  settled = true;
+  nav.tick();
+  assert.equal(town.surfaceStatus.phase, 'ready');
+  assert.match(messages.at(-1), /当前区域已就绪/);
+  surface.requestedFine.clear();
+  nav.tick();
+  assert.equal(town.surfaceStatus.phase, 'overview');
+  assert.match(messages.at(-1), /拉近或回家后操作/);
+  assert.equal(calls.at(-1), 'cancel');
 });

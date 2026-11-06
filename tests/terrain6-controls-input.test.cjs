@@ -216,7 +216,9 @@ test('nearby touch candidates are occluded on their own sample ray, not only the
   assert.equal(visible.hit({}).id, 'behind-hill');
 });
 test('controller streams both v5 and v6 each frame without changing legacy scheduling', () => {
-  const { TownController } = load('TownController');
+  const { TownController } = load('TownController', {
+    './TownStreamingFrame': load('TownStreamingFrame'),
+  });
   for (const version of [1, 2, 3, 4, 5, 6]) {
     const controller = Object.create(TownController.prototype);
     let frames = 0;
@@ -225,6 +227,7 @@ test('controller streams both v5 and v6 each frame without changing legacy sched
     controller.map = {
       tick() {},
       maxTerrainError: () => 0.05,
+      maxOverviewError: () => 0.25,
       visibleBounds: (height) => ({ height, minX: 0, minZ: 0, maxX: 12, maxZ: 14 }),
     };
     controller.town = {
@@ -540,13 +543,16 @@ test('a detail eviction seen by the actual controller frame cancels a drag perma
   const { ToolRouter } = load('ToolRouter');
   const router = Object.create(ToolRouter.prototype);
   router.terrain = f.tool;
-  const { TownController } = load('TownController');
+  const { TownController } = load('TownController', {
+    './TownStreamingFrame': load('TownStreamingFrame'),
+  });
   const controller = Object.create(TownController.prototype);
   controller.session = f.session;
   controller.hud = { tick() {} };
   controller.map = {
     tick() {},
     maxTerrainError: () => 0.05,
+    maxOverviewError: () => 0.25,
     visibleBounds: () => ({ minX: 0, minZ: 0, maxX: 12, maxZ: 14 }),
   };
   controller.town = { frame() {} };
@@ -565,4 +571,239 @@ test('a detail eviction seen by the actual controller frame cancels a drag perma
   controller.tick(0.01);
   f.tool.end(4, { x: 100, y: 100 });
   assert.deepEqual(f.commands, [], 'reappearing fine geometry cannot revive the old pointer');
+});
+test('display-only buildings stay opaque but cannot be selected through center or neighboring rays', () => {
+  const sample = {},
+    context = {};
+  let ready = false;
+  const { TownObjectPicking } = load('TownObjectPicking', {
+    './TouchPicking': {
+      touchPickContext: () => context,
+      nearerHit: (a, b) => (!a || b.distance < a.distance ? b : a),
+      nearbyTouchHit: (_context, candidates) =>
+        candidates
+          .map((c) => c.pick(sample))
+          .filter(Boolean)
+          .sort((a, b) => a.distance - b.distance)[0] ?? null,
+    },
+  });
+  const resources = {
+    pickTree: () => null,
+    pickStack: () => null,
+    pickNatural: () => null,
+    pickDrop: () => null,
+    touchCandidates: () => [],
+  };
+  const surfaces = [
+    { id: 'far-visible', surface: { nearScreen: () => true, distance: () => 4 } },
+    { id: 'ready-behind', surface: { nearScreen: () => true, distance: () => 6 } },
+  ];
+  for (const center of [true, false]) {
+    const picker = new TownObjectPicking(
+      () => resources,
+      () => (center ? { id: 'far-visible', distance: 4 } : null),
+      () => surfaces,
+      () => 10,
+      (hit) => hit.id !== 'far-visible' || ready,
+    );
+    assert.equal(
+      picker.hit({}),
+      null,
+      'an unusable opaque winner must not reveal a usable object behind it',
+    );
+    ready = true;
+    assert.equal(picker.hit({}).id, 'far-visible');
+    ready = false;
+  }
+});
+test('far or pending farm surfaces cannot harvest or plant, while the same saved IDs work after detail readiness', () => {
+  const { TownView } = load('TownView', { './TownFarmPicking': load('TownFarmPicking') });
+  const town = Object.create(TownView.prototype);
+  let ready = false,
+    groundDistance = 20;
+  town.island = { isGroundReady: () => ready, terrainDistance: () => groundDistance };
+  const farm = {
+    id: 'saved-farm',
+    kind: 'farm',
+    x: 3,
+    z: 4,
+    rotation: 0,
+    farmSize: 3,
+    cropJobs: Array(9).fill(null),
+  };
+  town.previous = { terrainVersion: 6, buildings: [farm], lastSeenAt: 1 };
+  town.lifted = null;
+  town.resources = {
+    pickTree: () => null,
+    pickStack: () => null,
+    pickNatural: () => null,
+    pickDrop: () => null,
+  };
+  town.buildings = new Map([
+    [
+      farm.id,
+      {
+        kind: 'farm',
+        crops: { cellAt: () => 4, isSoil: () => false },
+        surface: { hit: () => ({ node: {}, distance: 5 }) },
+      },
+    ],
+  ]);
+  const ray = { o: { x: 0, y: 10, z: 0 }, d: { x: 0, y: -1, z: 0 } };
+  assert.equal(town.pickCrop(ray), null);
+  assert.equal(town.pickPlant(ray), null);
+  ready = true;
+  assert.equal(town.pickCrop(ray).buildingId, 'saved-farm');
+  assert.equal(town.pickPlant(ray).cell, 4);
+  groundDistance = 3;
+  assert.equal(
+    town.pickCrop(ray),
+    null,
+    'the displayed distant hill still occludes a ready crop behind it',
+  );
+  town.previous.terrainVersion = 4;
+  ready = false;
+  assert.equal(
+    town.pickCrop(ray).buildingId,
+    'saved-farm',
+    'legacy worlds do not acquire terrain6 readiness restrictions',
+  );
+});
+test('the actual bootstrap session replacement disposes old terrain gestures before opening a restored branch', () => {
+  for (const seed of [7, 8]) {
+    const f = fixture();
+    f.session.state.mapSeed = 7;
+    f.tool.begin(9, 'fill', 'soil');
+    const replacement = {
+      state: { ...f.session.state, mapSeed: seed, terrain6: { ...f.session.state.terrain6 } },
+    };
+    const order = [];
+    const { TownBootstrap } = load('TownBootstrap', {
+      cc: { _decorator: { ccclass: () => (Type) => Type }, Component: class {}, Node },
+      './TownController': {
+        TownController: class {
+          constructor() {
+            order.push('new');
+          }
+          layout() {}
+          resume() {
+            order.push('resume');
+          }
+        },
+      },
+    });
+    const boot = Object.create(TownBootstrap.prototype);
+    boot.controllerSession = f.session;
+    boot.controller = {
+      dispose: () => {
+        order.push('dispose');
+        f.tool.dispose();
+      },
+    };
+    boot.stage = new Node('old');
+    boot.node = new Node('parent');
+    boot.menu = { hide() {} };
+    boot.flow = {
+      session: replacement,
+      page: 'game',
+      profile: 'v6-preview',
+      consumeTownActions: () => false,
+    };
+    boot.render();
+    assert.deepEqual(order, ['dispose', 'new', 'resume']);
+    f.tool.end(9, { x: 100, y: 100 });
+    assert.deepEqual(f.commands, []);
+  }
+});
+test('unready visible resources occlude ready objects before usability gating for center and neighboring samples', () => {
+  const sample = {},
+    context = {};
+  const { TownObjectPicking } = load('TownObjectPicking', {
+    './TouchPicking': {
+      touchPickContext: () => context,
+      nearerHit: (a, b) => (!a || b.distance < a.distance ? b : a),
+      nearbyTouchHit: (_context, candidates) =>
+        candidates
+          .map((c) => c.pick(sample))
+          .filter(Boolean)
+          .sort((a, b) => a.distance - b.distance)[0] ?? null,
+    },
+  });
+  for (const kind of ['tree', 'pile', 'natural', 'drop'])
+    for (const center of [true, false]) {
+      const blocker = {
+        kind,
+        id: 'unready-visible',
+        distance: 4,
+        x: 3,
+        z: 4,
+        point: { x: 3, y: 2, z: 4 },
+      };
+      const seen = [];
+      const resources = {
+        pickTree: () => null,
+        pickStack: () => null,
+        pickNatural: () => null,
+        pickDrop: () => null,
+        touchCandidates: (_context, _exclude, includeBlocked) => {
+          seen.push(includeBlocked);
+          return !center && includeBlocked ? [{ pick: () => blocker }] : [];
+        },
+      };
+      const name = {
+        tree: 'pickTree',
+        pile: 'pickStack',
+        natural: 'pickNatural',
+        drop: 'pickDrop',
+      }[kind];
+      resources[name] = (_ray, ...args) => {
+        const includeBlocked = args.at(-1);
+        seen.push(includeBlocked);
+        return center && includeBlocked ? blocker : null;
+      };
+      const picker = new TownObjectPicking(
+        () => resources,
+        () => (center ? { id: 'behind', distance: 6 } : null),
+        () => [{ id: 'behind', surface: { nearScreen: () => true, distance: () => 6 } }],
+        () => 10,
+        (hit) => hit.kind === 'building',
+      );
+      assert.equal(
+        picker.hit({}),
+        null,
+        kind + ' must not be skipped to select the building behind',
+      );
+      assert.ok(seen.every(Boolean));
+    }
+});
+test('display-only trees and drops still block farm tools instead of disappearing from the nearest-surface query', () => {
+  const { townFarmToolSurface } = load('TownFarmPicking');
+  const buildings = new Map([
+    [
+      'farm',
+      {
+        kind: 'farm',
+        surface: { hit: () => ({ node: {}, distance: 5 }) },
+        crops: { cellAt: () => 0, isSoil: () => false },
+      },
+    ],
+  ]);
+  for (const kind of ['pickTree', 'pickStack', 'pickNatural', 'pickDrop']) {
+    const resources = {
+      pickTree: () => null,
+      pickStack: () => null,
+      pickNatural: () => null,
+      pickDrop: () => null,
+    };
+    resources[kind] = (_ray, ...args) => (args.at(-1) ? { distance: 4 } : null);
+    const hit = townFarmToolSurface(
+      {},
+      buildings,
+      null,
+      resources,
+      () => 10,
+      () => true,
+    );
+    assert.equal(hit.buildingId, null, kind + ' must remain an opaque foreground blocker');
+  }
 });
