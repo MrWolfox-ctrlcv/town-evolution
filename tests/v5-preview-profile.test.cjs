@@ -69,9 +69,9 @@ test('adding the explicit preview does not change normal new-town generation', (
   assert.equal(townSession(store, 'normal', () => 0).state.terrainVersion, 4);
   assert.equal(profileStorage(store, 'normal'), store);
 });
-test('seven real title actions fit supported narrow and wide layouts', () => {
+test('eight real title actions fit supported narrow and wide layouts', () => {
   const menu = startMenu(new GameStart(memory(), () => 0), () => {});
-  assert.equal(menu.actions.length, 7);
+  assert.equal(menu.actions.length, 8);
   for (const [w, h] of [
     [360, 640],
     [390, 844],
@@ -79,7 +79,7 @@ test('seven real title actions fit supported narrow and wide layouts', () => {
     [1024, 768],
   ]) {
     const layout = startLayout(w, h, menu.actions.length, true);
-    assert.equal(layout.buttons.length, 7);
+    assert.equal(layout.buttons.length, 8);
     for (const p of layout.buttons) {
       assert.ok(Math.abs(p.x) + layout.buttonWidth / 2 <= w / 2);
       assert.ok(Math.abs(p.y) + layout.buttonHeight / 2 < h / 2);

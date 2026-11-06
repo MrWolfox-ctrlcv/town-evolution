@@ -125,8 +125,8 @@ const output = ts.transpileModule(source, {
 const moduleFixture = { exports: {} };
 new Function('require', 'module', 'exports', output)(
   (id) =>
-    id === './TownObjectPicking'
-      ? require('./helpers/farm-picking-ui.cjs').load('TownObjectPicking')
+    ['./TownObjectPicking', './TownFarmPicking'].includes(id)
+      ? require('./helpers/farm-picking-ui.cjs').load(id.slice(2))
       : id.startsWith('../')
         ? require(`../.domain-build/${id.slice(3)}`)
         : {},
@@ -244,7 +244,7 @@ test('all interaction paths share mesh picking and logical footprint remains pla
   assert.match(model, /WeakMap<Mesh/);
   assert.doesNotMatch(model, /normalize/);
   assert.match(source, /surface: new ModelPicking\(node\)/);
-  assert.match(source, /buildingOutline\(this.root/);
+  assert.match(source, /buildingOutline\(\s*this.root/);
   const outline = fs.readFileSync('assets/scripts/presentation/BuildingOutline.ts', 'utf8');
   assert.match(outline, /footprint\(rotated\)/);
   assert.match(outline, /farmBoxCell/);

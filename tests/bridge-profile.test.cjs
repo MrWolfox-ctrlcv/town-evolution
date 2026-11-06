@@ -125,9 +125,9 @@ test('framing derives from real source/result positions, works after reload and 
       }
   }
 });
-test('seven title choices retain 44px targets, no overlap, readable headings at small and wide sizes', () => {
+test('eight title choices retain 44px targets, no overlap, readable headings at small and wide sizes', () => {
   const menu = startMenu(new GameStart(memory(), () => 0), () => {});
-  assert.equal(menu.actions.length, 7);
+  assert.equal(menu.actions.length, 8);
   for (const [w, h] of [
     [320, 568],
     [360, 640],

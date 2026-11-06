@@ -83,8 +83,9 @@ test('one camera-fitted shadow map has explicit caster/receiver and material set
   assert.match(source('AssetRenderer'), /mesh = worldMesh\(data\)/);
   assert.match(source('ModelFactory'), /worldShadows\(renderer\)/);
   assert.match(source('IslandView'), /if \(!water\) worldShadows/);
-  assert.match(source('IslandView'), /splitMesh16\(data\)\.map/);
-  assert.match(source('IslandView'), /const mesh = worldMesh\(chunk\)/);
+  assert.match(source('IslandView'), /return replaceIslandMesh\(/);
+  assert.match(source('IslandMeshUpload'), /splitMesh16\(data\)\.map/);
+  assert.match(source('IslandMeshUpload'), /const mesh = worldMesh\(chunk\)/);
   assert.match(source('TownBootstrap'), /configureTownLighting\(this\.node\.scene!\)/);
   assert.match(fs.readFileSync('scripts/preview/effects.cjs', 'utf8'), /builtin-standard\.effect/);
 });

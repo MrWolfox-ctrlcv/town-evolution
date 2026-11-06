@@ -161,6 +161,7 @@ const dependencies = {
   './FarmTools': { FarmTools: IdleDrag },
   './StockDrag': { StockDrag: IdleDrag },
   './ToolUseDrag': { ToolUseDrag: IdleDrag },
+  './V6TerrainTool': { V6TerrainTool: IdleDrag },
   './TownView': {},
   './MapCamera': {},
   './ObjectDrag': {},

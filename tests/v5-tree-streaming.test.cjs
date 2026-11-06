@@ -145,18 +145,22 @@ test('near/far transitions retain valid old geometry until replacement publishes
   mature.append();
   assert.deepEqual([...f.published.values()][0].mesh, mature.finish().mesh);
 });
-test('Cocos controller advances view streaming every frame only for v5 and preserves old renderer branch', () => {
+test('Cocos controller advances view streaming every frame for v5 and v6 and preserves old renderer branch', () => {
   const controller = fs.readFileSync('assets/scripts/presentation/TownController.ts', 'utf8');
   assert.match(
     controller,
     /terrainVersion === 5\)[\s\S]{0,80}this\.town\.frame\(this\.map\.visibleBounds\(64\), this\.map\.visibleBounds\(4\)\)/,
   );
   const ground = fs.readFileSync('assets/scripts/presentation/GroundObjects.ts', 'utf8');
-  assert.match(ground, /state\.terrainVersion === 5 \? \[\] : state\.trees/);
+  assert.match(
+    ground,
+    /state\.terrainVersion === 5 \|\| state\.terrainVersion === 6 \? \[\] : state\.trees/,
+  );
+  assert.match(ground, /new V6TreeView[\s\S]{0,180}heightInCell/);
   assert.match(ground, /if \(this\.v5Trees\) return this\.v5Trees\.pick\(ray\)/);
   const town = fs.readFileSync('assets/scripts/presentation/TownView.ts', 'utf8');
-  assert.match(town, /if \(this\.previous\?\.terrainVersion !== 5\) return/);
-  assert.match(town, /this\.resources\.frame\(treeBounds\) \|\| changed/);
+  assert.match(town, /if \(!this\.previous \|\| this\.previous\.terrainVersion < 5\) return/);
+  assert.match(town, /this\.resources\.frame\(treeBounds, treeLodSpan\) \|\| changed/);
 });
 test('camera visible bounds use the actual viewport and elevated tree envelope rather than a fixed chunk count', () => {
   const code = ts.transpileModule(
