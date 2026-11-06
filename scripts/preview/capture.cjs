@@ -36,7 +36,11 @@ const server = http.createServer((req, res) => {
   });
 });
 async function capture(browser, width, height, name) {
-  const page = await browser.newPage({ viewport: { width, height }, hasTouch: name === 'mobile' });
+  const context = await browser.newContext({
+    viewport: { width, height },
+    hasTouch: name === 'mobile',
+  });
+  const page = await context.newPage();
   const errors = [];
   const browserWarnings = [];
   page.on('pageerror', (error) => {
@@ -104,7 +108,7 @@ async function capture(browser, width, height, name) {
     );
     throw error;
   } finally {
-    await page.close();
+    await context.close();
   }
 }
 async function main() {
