@@ -134,6 +134,16 @@ function load(name, dependencies = {}) {
           ? { ModelFactory }
           : [
                 './TownObjectPicking',
+                './TownFarmPicking',
+                './TerrainInteraction',
+                './DiggingToolCommand',
+                './ToolOutline',
+                './CameraVisibility',
+                './TownStreamingFrame',
+                './V6TownNavigation',
+                './TownUiActions',
+                './UiContracts',
+                './RouteActions',
                 './TouchPicking',
                 './TownChanges',
                 './LooseDropView',
