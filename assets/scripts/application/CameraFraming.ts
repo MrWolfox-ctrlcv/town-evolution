@@ -66,13 +66,12 @@ export function steppedMapZoom(zoom: number, delta: number, gridSize: number): n
  * leaves visible land behind the camera at overview/pan limits, even on old
  * 40-cell worlds. Retreat along the existing direction, preserving projection.
  */
-export function cameraDepth(gridSize: number, orthoHeight: number) {
+export const V6_VIEW_TOP = 64.015 + 8;
+export function cameraDepth(gridSize: number, orthoHeight: number, top = MAX_TERRAIN_HEIGHT + 4) {
   const length = Math.hypot(15, 20, 18);
   const up = 20 / length;
   const horizontal = Math.hypot(15, 18) / length;
-  // Sixteen terrain layers, plus foliage/roofs and a submerged coast allowance.
-  const top = MAX_TERRAIN_HEIGHT + 4,
-    bottom = 4;
+  const bottom = 4;
   // Water extends from -size to 2*size; panning allows four cells of margin.
   const worldDepth = (gridSize * 2 + 4) * horizontal * Math.SQRT2;
   const visibleDepth = (Math.max(0, orthoHeight) * horizontal) / up;

@@ -8,7 +8,10 @@ const shapes = new Map<
 >();
 /** Shared rendered footprint for coast protection, support and the persistent drop model. */
 export function dropShape(drop: Pick<LooseDrop, 'item' | 'amount'>) {
-  const asset = `pile-${drop.item}-${drop.amount}`;
+  const visualAmount = Number.isInteger(drop.amount)
+    ? drop.amount
+    : Math.max(1, Math.ceil(drop.amount));
+  const asset = `pile-${drop.item}-${visualAmount}`;
   if (!shapes.has(asset)) {
     const mesh = compileAsset(ASSETS[asset]!);
     const width = mesh.max[0]! - mesh.min[0]!,

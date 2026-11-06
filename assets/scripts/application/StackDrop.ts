@@ -1,3 +1,4 @@
+import { materialQuantity } from './MaterialQuantity';
 import {
   stackLimitFor,
   stackIntoDropPlan,
@@ -81,7 +82,9 @@ export function stackDropCommand(
 export function stackDropHint(state: GameState, command: Command): string {
   if (command.type === 'mergeStackIntoDrop') {
     const { transferAmount: amount, remaining } = stackIntoDropPlan(state, command);
-    return remaining ? `合并${amount}份 · 余下留原地` : `松手合并${amount}份`;
+    return remaining
+      ? `合并${materialQuantity(amount)}份 · 余下留原地`
+      : `松手合并${materialQuantity(amount)}份`;
   }
   if (command.type === 'depositCompost') return `松手投入${command.quantity}份`;
   if (command.type === 'pickupStack') return '松手收回仓库';
@@ -97,7 +100,9 @@ export function stackDropHint(state: GameState, command: Command): string {
   if (source?.item === 'mud') return '';
   if (!source || !target || source === target) return '松手移动';
   const amount = Math.min(source.amount, stackLimitFor(source.item) - target.amount);
-  return amount < source.amount ? `合并${amount}份 · 余下留原地` : `松手合并${amount}份`;
+  return amount < source.amount
+    ? `合并${materialQuantity(amount)}份 · 余下留原地`
+    : `松手合并${materialQuantity(amount)}份`;
 }
 export function stackDropMarker(state: GameState, command: Command) {
   if (command.type === 'mergeStackIntoDrop')

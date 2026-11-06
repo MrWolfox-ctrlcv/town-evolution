@@ -29,7 +29,7 @@ export function pickFarmCrop(
         far = Infinity;
       for (const [axis, lo, hi] of [
         ['x', center.x - 0.31, center.x + 0.31],
-        ['y', 0.17, height],
+        ['y', (b.baseElevation ?? 0) + 0.17, (b.baseElevation ?? 0) + height],
         ['z', center.z - 0.31, center.z + 0.31],
       ] as const) {
         const origin = ray.o[axis],

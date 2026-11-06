@@ -1,6 +1,7 @@
 /** Native logical-pixel layout: 44px tap targets and compact columns on short screens. */
 export function startLayout(width: number, height: number, count: number, title: boolean) {
-  const compact = height < 560 || (title && count > 6 && height < 650);
+  const compact =
+    height < 560 || (title && count > 6 && height < 650) || (title && count > 7 && height < 710);
   const columns = compact ? (height < 360 && width >= 480 && count > 5 ? 3 : 2) : 1;
   const rows = Math.ceil(count / columns);
   const cardWidth = Math.min(width - 32, columns > 1 ? 620 : 400);
