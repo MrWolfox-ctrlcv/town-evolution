@@ -1,0 +1,84 @@
+name: Read-only render diagnosis
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: Existing release artifact run
+        default: '42849656843'
+        required: true
+        type: string
+      source_sha:
+        description: Exact upstream commit that produced the release
+        default: 'dc88a433deba2a3c30d79b139e903f6a239f95dd'
+        required: true
+        type: string
+      device:
+        type: choice
+        options: [desktop, mobile]
+        default: desktop
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      DIAG_SOURCE_ROOT: ${{ github.workspace }}/target
+      PREVIEW_OUT: ${{ github.workspace }}/target/build/preview
+      PREVIEW_EVIDENCE: ${{ github.workspace }}/diagnostic-evidence
+      PREVIEW_TOOLS: ${{ github.workspace }}/tools
+      PREVIEW_MODE: release
+      EXPECTED_SHA: ${{ inputs.source_sha }}
+      DIAG_TOOL_COMMIT: ${{ github.sha }}
+      DIAG_ARTIFACT_RUN: ${{ inputs.artifact_run_id }}
+      DIAG_DEVICE: ${{ inputs.device }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: diagnostic-source
+      - uses: actions/checkout@v4
+        with:
+          path: target
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocos-standalone-preview
+          path: target/build/preview
+          run-id: ${{ inputs.artifact_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocos-build-evidence
+          path: target/build
+          run-id: ${{ inputs.artifact_run_id }}
+          github-token: ${{ github.token }}
+      - name: Restore exact verified artifact source without changing diagnostic tools
+        working-directory: target
+        run: |
+          test "$(cat build/ci-derived-source/upstream-commit.txt)" = "$EXPECTED_SHA"
+          git bundle verify build/ci-derived-source/derived.bundle
+          git fetch build/ci-derived-source/derived.bundle HEAD
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$(cat build/ci-derived-source/derived-commit.txt)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          npm ci --ignore-scripts
+          npm run build:domain
+      - name: Install isolated browser tools
+        run: |
+          mkdir -p "$PREVIEW_TOOLS"
+          npm install --prefix "$PREVIEW_TOOLS" --ignore-scripts --no-audit --no-fund playwright@1.56.1
+          cd "$PREVIEW_TOOLS"
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Run read-only diagnosis (internal total deadline 180 seconds)
+        run: node diagnostic-source/scripts/diagnostics/render-diagnose.cjs --device="$DIAG_DEVICE"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: render-diagnose-${{ inputs.device }}
+          path: diagnostic-evidence
+          if-no-files-found: warn
