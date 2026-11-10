@@ -44,6 +44,17 @@ jobs:
         run: npm ci --ignore-scripts
       - name: Regenerate effects for this runner with real Mesa
         run: npm run preview:effects:generate -- --mesa
+      - name: Record runner-specific effect source without changing the remote branch
+        run: |
+          mkdir -p build/ci-derived-source
+          git rev-parse HEAD > build/ci-derived-source/upstream-commit.txt
+          test "$(git diff --name-only)" = "scripts/preview/generated/effects.cache.json"
+          test -z "$(git diff --cached --name-only)"
+          git diff --binary -- scripts/preview/generated/effects.cache.json > build/ci-derived-source/effect-cache.patch
+          cp scripts/preview/generated/effects.cache.json build/ci-derived-source/effects.cache.json
+          git add -- scripts/preview/generated/effects.cache.json
+          git -c user.name='Town Evolution CI' -c user.email='town-evolution-ci@users.noreply.github.com' commit -m 'build: record runner-specific compiled effect cache'
+          git rev-parse HEAD > build/ci-derived-source/derived-commit.txt
       - name: Build actual engine and project scripts
         run: node scripts/preview/build.cjs
       - name: Verify actual compiled tween scheduling
@@ -60,6 +71,7 @@ jobs:
           path: |
             build/screenshots
             build/tween-smoke.json
+            build/ci-derived-source
           if-no-files-found: warn
       - name: Preserve standalone preview with license notices
         if: always()
