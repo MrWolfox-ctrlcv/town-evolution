@@ -53,7 +53,7 @@ test('tap jitter never pans, and pan starts from original ground anchor', () => 
 test('held building candidate becomes a drag, drop occurs once on release', () => {
   const { gesture: g, events: e, setTime } = setup('cooler');
   begin(g, 1, 0);
-  move(g, 1, 11);
+  move(g, 1, 3);
   assert.equal(e.length, 0);
   setTime(400);
   move(g, 1, 20);
@@ -208,3 +208,42 @@ test('navigation state distinguishes held pan/pinch from object drag and cancell
   move(object.gesture, 1, 30);
   assert.equal(object.gesture.navigating, true, 'quick swipe on an object is still a pan');
 });
+
+for (const touch of [false, true]) {
+  test(`${touch ? 'touch' : 'mouse'} movement before hold deadline cancels long press without changing pan threshold`, () => {
+    const { gesture: g, events: e, setTime } = setup('house');
+    const p = (x) => ({ x, y: 0, touch });
+    g.begin(1, p(0), p(0));
+    setTime(200);
+    g.move(1, p(5), p(5));
+    setTime(400);
+    g.poll();
+    assert.equal(e.length, 0, '5px movement cannot lift an object at the hold deadline');
+    g.move(1, p(0), p(0));
+    g.poll();
+    assert.equal(e.length, 0, 'returning to origin does not rearm long press');
+    g.move(1, p(12), p(12));
+    assert.equal(e.length, 0);
+    g.move(1, p(13), p(13));
+    assert.equal(e[0][0], 'pan');
+    g.end(1, p(13), p(13));
+    assert.equal(
+      e.some(([type]) => type === 'drag' || type === 'drop'),
+      false,
+    );
+  });
+  test(`${touch ? 'touch' : 'mouse'} stationary hold and 4px jitter still lift and drop exactly once`, () => {
+    for (const offset of [0, 4]) {
+      const { gesture: g, events: e, setTime } = setup('house');
+      const p = (x) => ({ x, y: 0, touch });
+      g.begin(1, p(0), p(0));
+      setTime(200);
+      g.move(1, p(offset), p(offset));
+      setTime(400);
+      g.poll();
+      assert.equal(e[0][0], 'drag');
+      g.end(1, p(offset), p(offset));
+      assert.equal(e.filter(([type]) => type === 'drop').length, 1);
+    }
+  });
+}

@@ -83,8 +83,12 @@ export class MapGesture {
     }
     let from = old.point;
     if (this.mode === 'pending') {
-      if (!this.origin || Math.hypot(ui.x - this.origin.ui.x, ui.y - this.origin.ui.y) <= 12)
-        return;
+      if (!this.origin) return;
+      const distance = Math.hypot(ui.x - this.origin.ui.x, ui.y - this.origin.ui.y);
+      // A slow swipe must not become a long press while waiting for the next frame.
+      // Cancel only the lift candidate; retain the existing 12px pan/tap threshold.
+      if (distance > 4 && this.now() - this.startedAt < 400) this.candidate = null;
+      if (distance <= 12) return;
       this.mode = this.candidate && this.now() - this.startedAt >= 400 ? 'drag' : 'pan';
       from = this.origin.point;
     }

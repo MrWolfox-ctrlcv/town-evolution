@@ -5,17 +5,24 @@ const frame = (page) =>
   );
 const finger = (point, id) => ({ x: point.x, y: point.y, id, radiusX: 2, radiusY: 2, force: 1 });
 const pause = () => new Promise((resolve) => setTimeout(resolve, 20));
-async function drag(page, from, to, touch, holdMs = 0) {
+async function drag(page, from, to, touch, holdMs = 0, observe = async () => {}) {
   if (!touch) {
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
+    await observe('pressed', from);
     if (holdMs) await new Promise((resolve) => setTimeout(resolve, holdMs));
+    await observe('held', from);
     for (let i = 1; i <= 12; i++) {
       await page.mouse.move(
         from.x + ((to.x - from.x) * i) / 12,
         from.y + ((to.y - from.y) * i) / 12,
       );
       await pause();
+      if (i === 6 || i === 12)
+        await observe(`move-${i}`, {
+          x: from.x + ((to.x - from.x) * i) / 12,
+          y: from.y + ((to.y - from.y) * i) / 12,
+        });
     }
     await page.mouse.up();
   } else {
@@ -25,7 +32,9 @@ async function drag(page, from, to, touch, holdMs = 0) {
         type: 'touchStart',
         touchPoints: [finger(from, 1)],
       });
+      await observe('pressed', from);
       if (holdMs) await new Promise((resolve) => setTimeout(resolve, holdMs));
+      await observe('held', from);
       for (let i = 1; i <= 12; i++) {
         await cdp.send('Input.dispatchTouchEvent', {
           type: 'touchMove',
@@ -37,12 +46,18 @@ async function drag(page, from, to, touch, holdMs = 0) {
           ],
         });
         await pause();
+        if (i === 6 || i === 12)
+          await observe(`move-${i}`, {
+            x: from.x + ((to.x - from.x) * i) / 12,
+            y: from.y + ((to.y - from.y) * i) / 12,
+          });
       }
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     } finally {
       await cdp.detach();
     }
   }
+  await observe('released', to);
   await frame(page);
 }
 async function pinch(page, center, startRadius = 24, endRadius = 42) {

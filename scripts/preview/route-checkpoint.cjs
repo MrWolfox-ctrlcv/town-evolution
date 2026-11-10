@@ -71,6 +71,10 @@ module.exports = async (page, evidence, name, touch, { dragTool, showTool }) => 
     view.drops.find((d) => d.id === target.id),
     touch,
     650,
+    require('./drop-drag-trace.cjs')(page, path.join(evidence, `${name}-drop-drag-trace.json`), [
+      source.id,
+      target.id,
+    ]),
   );
   view = await until(
     page,
