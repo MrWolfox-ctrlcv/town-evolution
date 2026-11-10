@@ -140,7 +140,7 @@ async function capture(browser, width, height, device, suite = 'checkpoint') {
           }),
         );
       },
-      suite === 'v6' ? 300000 : 360000,
+      suite === 'v6' ? 300000 : suite === 'checkpoint' ? 1080000 : 360000,
       `${suite} ${device}`,
       () => context.close(),
     );

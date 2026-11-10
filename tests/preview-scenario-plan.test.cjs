@@ -29,6 +29,11 @@ function fixture() {
   const events = [];
   const page = {};
   const options = {
+    trace: async (_label, run) => run(),
+    deadline: async (run, milliseconds) => {
+      assert.equal(milliseconds, 360000);
+      return run();
+    },
     controls: {
       button: async (name) => events.push(name),
       townActions: async () => events.push('townActions'),
@@ -112,4 +117,39 @@ test('checkpoint keeps three complete rounds sequentially in the same page, with
     '确认',
     ['checkpoint', 'case-round3'],
   ]);
+});
+
+test('round deadline includes reset and aborts later rounds on failure', async () => {
+  const f = fixture(),
+    budgets = [];
+  let active = false;
+  const original = f.options.controls.townActions;
+  f.options.controls.townActions = async () => {
+    assert.equal(active, true);
+    await original();
+  };
+  f.options.deadline = async (run, milliseconds, label) => {
+    budgets.push({ milliseconds, label });
+    active = true;
+    try {
+      return await run();
+    } finally {
+      active = false;
+    }
+  };
+  const error = new Error('round two timed out');
+  f.options.run = async (_module, suffix) => {
+    assert.equal(active, true);
+    if (suffix.endsWith('round2')) throw error;
+    return 'round one';
+  };
+  await assert.rejects(
+    runScenario('checkpoint', f.page, '', 'case', false, f.options),
+    (actual) => actual === error,
+  );
+  assert.deepEqual(budgets, [
+    { milliseconds: 360000, label: 'case checkpoint round 1' },
+    { milliseconds: 360000, label: 'case checkpoint round 2' },
+  ]);
+  assert.equal(f.events.filter((event) => event === '重置演示岛').length, 1);
 });

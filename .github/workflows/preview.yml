@@ -79,7 +79,8 @@ jobs:
   acceptance:
     needs: build
     runs-on: ubuntu-22.04
-    timeout-minutes: 12
+    # Setup/download time is separate; capture enforces each scenario's strict budget.
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:

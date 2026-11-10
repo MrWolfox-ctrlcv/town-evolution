@@ -1,5 +1,6 @@
 /** Every setup uses visible UI; no live state/save injection. Rounds stay in one context. */
 const { driver, until } = require('./ui-driver.cjs');
+const { withDeadline } = require('./acceptance-deadline.cjs');
 async function runScenario(suite, page, evidence, name, touch, overrides = {}) {
   const run =
     overrides.run ??
@@ -41,14 +42,29 @@ async function runScenario(suite, page, evidence, name, touch, overrides = {}) {
   if (suite === 'settings') return run('settings');
   if (suite !== 'checkpoint') throw new Error(`Unknown scenario: ${suite}`);
   const checkpoint = [];
+  const trace = overrides.trace ?? require('./phase-trace.cjs')(evidence, `${name}-rounds`);
+  const deadline = overrides.deadline ?? withDeadline;
   for (let cycle = 0; cycle < 3; cycle++) {
-    if (cycle) {
-      await controls.townActions();
-      await controls.button('存档', { exact: true });
-      await controls.button('重置演示岛');
-      await controls.button('确认');
-    }
-    checkpoint.push(await run('checkpoint', `${name}-round${cycle + 1}`));
+    const label = `${name} checkpoint round ${cycle + 1}`;
+    checkpoint.push(
+      await trace(label, () =>
+        deadline(
+          async () => {
+            // Reset belongs to the upcoming round's budget, never an unbounded gap.
+            if (cycle) {
+              await controls.townActions();
+              await controls.button('存档', { exact: true });
+              await controls.button('重置演示岛');
+              await controls.button('确认');
+            }
+            return run('checkpoint', `${name}-round${cycle + 1}`);
+          },
+          360000,
+          label,
+          () => page.context().close(),
+        ),
+      ),
+    );
   }
   return checkpoint;
 }

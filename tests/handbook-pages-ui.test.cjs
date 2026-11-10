@@ -407,3 +407,47 @@ test('fertilizer discovery shows a five-input alternative pool with one total co
   assert.ok(!captions(f.diagram).some((t) => /胡萝卜|作物|树种|必须/.test(t)));
   assert.equal(game.exportSave(result.state), saved);
 });
+
+test('detail navigation reuses directory nodes and directory navigation reuses current detail', () => {
+  const f = fixture(game.createGame(NOW, 1, 1));
+  const equations = () =>
+    f
+      .rows()
+      .map((row) => row.children.find((node) => node.name === 'RecipeEquation').children.slice());
+  const before = equations();
+  f.tap('RecipeNext');
+  equations().forEach((nodes, i) => nodes.forEach((node, j) => assert.equal(node, before[i][j])));
+  const detail = f.diagram.children.slice();
+  f.tap('RecipeDirectoryNext');
+  f.diagram.children.forEach((node, i) => assert.equal(node, detail[i]));
+  assert.ok(
+    f
+      .rows()
+      .every(
+        (row) =>
+          !['gather-wood', 'build-order-board', 'build-crate', 'build-house'].some(
+            (id) => row.name === `RecipeCategory-${id}`,
+          ),
+      ),
+  );
+});
+
+test('new discovery updates both sheets while count-only changes preserve directory nodes', () => {
+  const state = game.createGame(NOW, 1, 1);
+  const f = fixture(state);
+  state.fusion.discoveries['gather-wood'] = { count: 1, firstDiscoveredAt: NOW };
+  f.pages.setState(state);
+  assert.ok(icons(f.diagram).includes('tree'));
+  assert.ok(icons(f.rows()[0]).includes('tree'));
+  const equation = f.rows()[0].children.find((node) => node.name === 'RecipeEquation');
+  const rowNodes = equation.children.slice();
+  const detailNode = f.diagram.children[0];
+  state.fusion.discoveries['gather-wood'].count = 2;
+  f.pages.setState(state);
+  equation.children.forEach((node, i) => assert.equal(node, rowNodes[i]));
+  assert.notEqual(f.diagram.children[0], detailNode);
+  assert.ok(captions(f.diagram).includes('✓ ×2'));
+  const stable = f.diagram.children.slice();
+  f.pages.setState(state);
+  f.diagram.children.forEach((node, i) => assert.equal(node, stable[i]));
+});

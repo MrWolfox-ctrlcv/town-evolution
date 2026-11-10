@@ -18,7 +18,8 @@ export class HandbookPages {
   private readonly progress: Label;
   private readonly rows: Node[] = [];
   private readonly detailPage: Label;
-  private key = '';
+  private directoryKey = '';
+  private detailKey = '';
   constructor(
     directory: Node,
     paper: Node,
@@ -43,7 +44,7 @@ export class HandbookPages {
         254,
         () => {
           this.selected = this.directoryPage * HANDBOOK_PAGE_SIZE + index;
-          this.refresh(true);
+          this.refresh();
           this.open();
         },
       );
@@ -65,41 +66,51 @@ export class HandbookPages {
     this.state = state;
     this.refresh();
   }
-  refresh(force = false): void {
+  refresh(): void {
     if (!this.state) return;
     const view = handbookView(this.state, this.selected, this.directoryPage);
     const { entries } = view;
     this.selected = view.selected;
     this.directoryPage = view.directoryPage;
-    const key = JSON.stringify([
-      this.selected,
-      this.directoryPage,
-      entries.map((entry) => entry.count),
-    ]);
-    if (!force && this.key === key) return;
-    this.key = key;
     this.progress.string = `✓  ${view.progress} / ${entries.length}`;
-    this.rows.forEach((row, index) => {
-      this.drawings.clear(row);
-      const entry = view.directoryEntries[index];
-      row.parent!.active = Boolean(entry);
-      if (!entry) return;
-      row.parent!.name = `RecipeCategory-${entry.recipe.id}`;
-      this.drawings.equation(row, entry.discovered ? entry.recipe : null);
-    });
+    // Detail navigation does not change the directory's equations. Keep those nodes,
+    // thumbnail bindings and sprites instead of rebuilding a hidden sheet on every tap.
+    const directoryKey = JSON.stringify([
+      this.directoryPage,
+      view.directoryEntries.map((entry) => [entry.recipe.id, entry.discovered]),
+    ]);
+    if (this.directoryKey !== directoryKey) {
+      this.directoryKey = directoryKey;
+      this.rows.forEach((row, index) => {
+        this.drawings.clear(row);
+        const entry = view.directoryEntries[index];
+        row.parent!.active = Boolean(entry);
+        if (!entry) return;
+        row.parent!.name = `RecipeCategory-${entry.recipe.id}`;
+        this.drawings.equation(row, entry.discovered ? entry.recipe : null);
+      });
+    }
     this.directoryPageLabel.string = `${this.directoryPage + 1} / ${view.directoryPageCount}`;
-    this.drawings.clear(this.diagram);
     const entry = view.detail;
-    this.drawings.detail(this.diagram, entry?.discovered ? entry.recipe : null, entry?.count ?? 0);
+    const detailKey = JSON.stringify([entry?.recipe.id, entry?.discovered, entry?.count]);
+    if (this.detailKey !== detailKey) {
+      this.detailKey = detailKey;
+      this.drawings.clear(this.diagram);
+      this.drawings.detail(
+        this.diagram,
+        entry?.discovered ? entry.recipe : null,
+        entry?.count ?? 0,
+      );
+    }
     this.detailPage.string = `${this.selected + 1} / ${entries.length}`;
   }
   private turnDirectory(delta: number): void {
     this.directoryPage += delta;
-    this.refresh(true);
+    this.refresh();
   }
   private turnRecipe(delta: number): void {
     this.selected += delta;
-    this.refresh(true);
+    this.refresh();
   }
   private text(
     parent: Node,
