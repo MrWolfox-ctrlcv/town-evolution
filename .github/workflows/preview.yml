@@ -37,14 +37,14 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Install Chinese UI fonts
         run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+      - name: Install project build dependencies
+        run: npm ci --ignore-scripts
       - name: Build actual engine and project scripts
         run: node scripts/preview/build.cjs
       - name: Verify actual compiled tween scheduling
         run: node scripts/preview/tween-smoke.cjs
       - name: Prepare domain fixtures for browser interaction checks
-        run: |
-          npm ci --ignore-scripts
-          npm run build:domain
+        run: npm run build:domain
       - name: Render actual game at desktop and mobile sizes
         run: node scripts/preview/capture.cjs
       - name: Preserve screenshots and diagnostic evidence
