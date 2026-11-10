@@ -290,7 +290,7 @@ test('moving away and back before a transaction finishes reuses the still-active
   assert.ok(f.parent.children.filter((n) => n.active).every((n) => !n.destroyed));
 });
 
-test('same-seed loaded state invalidates cached edits through the real view sync; new seed disposes all old meshes', () => {
+test('same-seed loaded state invalidates cached edits through the real view sync; new seed disposes all old meshes', (t) => {
   const fs = require('node:fs'),
     ts = require('typescript');
   const f = uploader(),
@@ -330,9 +330,11 @@ test('same-seed loaded state invalidates cached edits through the real view sync
       clearCoastChunks() {},
     },
   );
+  t.after(() => view.dispose());
   const initial = {
     mapSeed: 1,
     buildings: [],
+    groundStacks: [],
     trees: [],
     naturalResources: [],
     landExtensions: [],
