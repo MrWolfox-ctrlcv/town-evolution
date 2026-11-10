@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs');
-const { inspect, until, ready, worldPoint, driver } = require('./ui-driver.cjs');
+const { inspect, until, ready, gameSceneReady, worldPoint, driver } = require('./ui-driver.cjs');
 const { drag, pinch } = require('./pointer-input.cjs');
 const { ACTIVE_RECIPE_DEFINITIONS } = require('../../.domain-build/domain/recipes.js');
 const recipeIds = ACTIVE_RECIPE_DEFINITIONS.map((recipe) => recipe.id);
@@ -15,8 +15,8 @@ module.exports = async (page, evidence, name, touch) => {
   const { click, button, townActions } = driver(page, touch);
   const started = Date.now(),
     phases = [];
-  const phase = (step) => {
-    phases.push({ step, elapsedMs: Date.now() - started });
+  const phase = (step, detail) => {
+    phases.push({ step, elapsedMs: Date.now() - started, ...(detail ? { detail } : {}) });
     fs.writeFileSync(
       path.join(evidence, `${name}-checkpoint-phases.json`),
       JSON.stringify(phases, null, 2),
@@ -83,11 +83,16 @@ module.exports = async (page, evidence, name, touch) => {
   await button('游览演示岛');
   state = await until(
     page,
-    (s) => s.save?.fusion.discoveries['expand-warehouse'],
-    'upgrade persisted',
+    (s) =>
+      gameSceneReady(s, 'demo') &&
+      s.save?.fusion.discoveries['expand-warehouse'] &&
+      s.buildings.some((building) => building.id === warehouseId),
+    'upgrade persisted in the rendered game scene',
   );
   assert.equal(state.save.fusion.attachments[warehouseId].wood, 1);
-  await click(state.buildings.find((b) => b.id === warehouseId));
+  const warehousePoint = state.buildings.find((b) => b.id === warehouseId);
+  phase('warehouse detail target', { point: warehousePoint, panel: state.panel });
+  await click(warehousePoint);
   await button('取回木材');
   await until(page, (s) => !s.save.fusion.attachments[warehouseId], 'remaining wood retrieved');
 

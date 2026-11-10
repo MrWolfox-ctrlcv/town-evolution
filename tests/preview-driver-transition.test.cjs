@@ -1,7 +1,7 @@
 /** Driver synchronization unit checks; not a substitute for actual browser acceptance. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { driver, until } = require('../scripts/preview/ui-driver.cjs');
+const { driver, until, gameSceneReady } = require('../scripts/preview/ui-driver.cjs');
 
 test('townActions waits for visible context, not only the flow page or stale settings labels', async () => {
   let stage = 0,
@@ -63,4 +63,38 @@ test('scene transition polling awaits inspection and returns the exact snapshot 
   );
   assert.equal(reads, 2);
   assert.equal(result.ready, true);
+});
+
+test('persisted upgrade cannot provide title-camera coordinates before the game scene is ready', async () => {
+  const saved = { fusion: { discoveries: { 'expand-warehouse': { count: 1 } } } };
+  const states = [
+    {
+      profile: 'demo',
+      save: saved,
+      panel: { page: 'game', menuVisible: true, gameWorldReady: false },
+      buildings: [{ id: 'b6', x: 10, y: 20 }],
+    },
+    {
+      profile: 'demo',
+      save: saved,
+      panel: { page: 'game', menuVisible: false, gameWorldReady: false },
+      buildings: [{ id: 'b6', x: 15, y: 25 }],
+    },
+    {
+      profile: 'demo',
+      save: saved,
+      panel: { page: 'game', menuVisible: false, gameWorldReady: true },
+      buildings: [{ id: 'b6', x: 214, y: 392 }],
+    },
+  ];
+  let reads = 0;
+  const state = await until(
+    null,
+    (view) => gameSceneReady(view, 'demo') && view.save.fusion.discoveries['expand-warehouse'],
+    'actual game target',
+    1000,
+    async () => states[reads++],
+  );
+  assert.equal(reads, 3);
+  assert.deepEqual(state.buildings[0], { id: 'b6', x: 214, y: 392 });
 });

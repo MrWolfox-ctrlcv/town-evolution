@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const { verifyPackage, inventory } = require('./provenance.cjs');
 const { verifyFixtures } = require('./acceptance-fixtures.cjs');
 const { withDeadline } = require('./acceptance-deadline.cjs');
+const loadMetrics = require('./load-metrics.cjs');
 const { capturePlan } = require('./capture-plan.cjs');
 const selection = capturePlan(process.argv.slice(2));
 const engine = path.resolve(process.env.COCOS_ENGINE || 'temp/cocos-engine');
@@ -20,6 +21,7 @@ const evidence = path.resolve(
 let evidenceStarted = false;
 const failures = [];
 let verifiedFiles;
+let verifiedMetricProvenance;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -77,6 +79,11 @@ async function capture(browser, width, height, device, suite = 'checkpoint') {
     );
     throw error;
   }
+  loadMetrics.start(
+    page,
+    path.join(evidence, `${name}-load-metrics.json`),
+    verifiedMetricProvenance,
+  );
   const errors = [];
   const browserWarnings = [];
   page.on('pageerror', (error) => {
@@ -109,6 +116,7 @@ async function capture(browser, width, height, device, suite = 'checkpoint') {
             timeout: 45000,
           }),
         );
+        await loadMetrics.collect(page, 'initial engine ready');
         const pixels = PNG.sync.read(
           await trace('canvas screenshot', () => page.locator('#GameCanvas').screenshot()),
         );
@@ -160,6 +168,7 @@ async function capture(browser, width, height, device, suite = 'checkpoint') {
     );
     throw error;
   } finally {
+    await loadMetrics.collect(page, 'capture end');
     await withDeadline(() => context.close(), 5000, `${suite} ${device} context cleanup`).catch(
       (error) => console.error(error),
     );
@@ -175,6 +184,13 @@ async function main() {
     JSON.stringify({ status: 'running', selection, failures }),
   );
   const checked = verifyPackage(sourceRoot, out, process.env.PREVIEW_PROVENANCE_SHA256);
+  if (process.env.PREVIEW_MODE)
+    assert.equal(
+      checked.provenance.buildMode,
+      process.env.PREVIEW_MODE,
+      'Requested preview mode must match verified package',
+    );
+  verifiedMetricProvenance = { ...checked.provenance, provenanceSha256: checked.provenanceSha256 };
   const fixtures = verifyFixtures(sourceRoot);
   // Load every suite and late checkpoint helper before the long browser run.
   for (const name of [

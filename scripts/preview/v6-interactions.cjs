@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { inspect, ready, driver, worldPoint } = require('./ui-driver.cjs');
 const { drag, pinch, frame } = require('./pointer-input.cjs');
+const loadMetrics = require('./load-metrics.cjs');
 const { withDeadline } = require('./acceptance-deadline.cjs');
 const { V6_GENERATOR_REVISION, V6_SIZE } = require('../../.domain-build/domain/v6-contracts');
 const { V6_EDIT_MAX_LEVEL, v6EditPlane } = require('../../.domain-build/domain/v6-material-volume');
@@ -670,10 +671,13 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
     };
     const saved = await savedState();
     assert.deepEqual(relevant(saved), relevant(filled));
+    await loadMetrics.collect(page, 'v6 before reload');
     await progress.run('navigation', 'reload', () =>
       page.reload({ waitUntil: 'domcontentloaded' }),
     );
+    await loadMetrics.collect(page, 'v6 after reload navigation');
     await ready(page);
+    await loadMetrics.collect(page, 'v6 reloaded engine ready');
     assert.equal((await scene(page)).page, 'title', 'Reload follows the real title lifecycle');
     await ui.button('自然挖填实验');
     const resumed = await waitScene(

@@ -70,6 +70,12 @@ async function inspect(page) {
           menuVisible: boot?.menu.root.activeInHierarchy,
           contextVisible: bottom?.context.activeInHierarchy,
           tab: boot?.controller?.ui.tab,
+          gameWorldReady: Boolean(
+            boot?.flow.session &&
+              boot.controllerSession === boot.flow.session &&
+              town &&
+              world?.node.name === 'WorldCamera',
+          ),
         },
         labels,
         targets: scene
@@ -163,6 +169,14 @@ async function until(page, predicate, message, timeout = 10000, read = inspect) 
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
   throw new Error(`UI verification timed out: ${message}; ${JSON.stringify(await read(page))}`);
+}
+function gameSceneReady(state, profile) {
+  return (
+    state.profile === profile &&
+    state.panel?.page === 'game' &&
+    state.panel.menuVisible === false &&
+    state.panel.gameWorldReady === true
+  );
 }
 async function ready(page, timeout = 45000) {
   await page.waitForFunction(() => window.__townPreview?.ready === true, undefined, {
@@ -265,4 +279,4 @@ async function useTool(page, name, touch, buildingId) {
   assert.ok(tool && target, `Rendered ${name} and farm target exist`);
   await require('./pointer-input.cjs').drag(page, tool, target, touch);
 }
-module.exports = { inspect, until, ready, worldPoint, driver, useTool };
+module.exports = { inspect, until, ready, gameSceneReady, worldPoint, driver, useTool };

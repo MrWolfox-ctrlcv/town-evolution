@@ -13,6 +13,7 @@ jobs:
     env:
       COCOS_ENGINE: ${{ github.workspace }}/temp/cocos-engine
       COCOS_CLI: ${{ github.workspace }}/temp/cocos-cli
+      PREVIEW_MODE: release
       PREVIEW_OUT: ${{ github.workspace }}/build/preview
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +88,7 @@ jobs:
         suite: [v6, title, profiles, settings, checkpoint]
         device: [desktop, mobile]
     env:
+      PREVIEW_MODE: release
       PREVIEW_OUT: ${{ github.workspace }}/build/preview
       PREVIEW_TOOLS: ${{ github.workspace }}/temp/preview-tools
     steps:
