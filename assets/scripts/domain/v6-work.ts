@@ -15,6 +15,11 @@ export type WorkStage =
   | 'cell-finalize'
   | 'initial-resources'
   | 'initial-trees'
+  | 'transfer-validate'
+  | 'qualification-cells'
+  | 'qualification-connectivity'
+  | 'qualification-border'
+  | 'qualification-water'
   | 'complete';
 export type Work<T> = Generator<WorkStage, T, void>;
 /** Stable bottom-up merge sort with at most one copied item per yielded unit. */

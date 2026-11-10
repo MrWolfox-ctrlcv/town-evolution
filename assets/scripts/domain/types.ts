@@ -9,6 +9,8 @@ import type { TerrainVersion } from './world';
 export type BuildingKind =
   | 'farm'
   | 'crate'
+  | 'fence'
+  | 'bench'
   | 'house'
   | 'residence'
   | 'warehouse'
@@ -212,6 +214,7 @@ export type Command =
   | { type: 'collectCompost'; buildingId: string; jobId: string }
   | { type: 'moveDrop'; source: DropSnapshot; target: DropMoveTarget }
   | { type: 'mergeStackIntoDrop'; source: GroundStack; target: DropSnapshot }
+  | { type: 'mergeStockIntoDrop'; source: ItemAmount; target: DropSnapshot }
   | { type: 'hammerAssembly'; tool: 'hammer'; sources: EntitySnapshot[] }
   | { type: 'pickupDrop'; dropId: string }
   | { type: 'attachFarmBox'; buildingId: string; crateId: string }
@@ -278,7 +281,7 @@ export type Command =
       item: Item;
       quantity: number;
       side: 'buy' | 'sell';
-      source?: LandCell;
+      source?: LandCell | { type: 'drop'; drop: DropSnapshot };
     }
   | { type: 'orderFulfill'; buildingId: string; orderId: Item; offerId: number }
   | {
@@ -287,7 +290,7 @@ export type Command =
       item: Item;
       quantity: number;
       direction: 'stage' | 'return';
-      source?: LandCell;
+      source?: LandCell | { type: 'drop'; drop: DropSnapshot };
     }
   | { type: 'dockShip'; buildingId: string; shipmentId: number }
   | { type: 'dockCollect'; buildingId: string; shipmentId: number };

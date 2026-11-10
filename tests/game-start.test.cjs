@@ -24,7 +24,17 @@ test('title, menus and guide do not create or overwrite a town', () => {
   const menu = startMenu(flow, () => guides++);
   assert.deepEqual(
     menu.actions.map((a) => a.id),
-    ['start', 'demo', 'v5-preview', 'v5-bridge-demo', 'v6-preview', 'saves', 'guide', 'exit'],
+    [
+      'start',
+      'demo',
+      'v5-preview',
+      'v5-bridge-demo',
+      'v6-preview',
+      'v7-preview',
+      'saves',
+      'guide',
+      'exit',
+    ],
   );
   assert.equal(menu.actions[0].text, '开始游戏');
   menu.actions.find((a) => a.id === 'guide').run();

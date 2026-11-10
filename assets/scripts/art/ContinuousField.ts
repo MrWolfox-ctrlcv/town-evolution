@@ -18,8 +18,8 @@ export const TERRAIN_BASE = 0.015;
 export class ContinuousField {
   private readonly cover: PositiveField;
   private readonly stone: PositiveField;
-  private readonly initial = new Map<string, number>();
-  private readonly heights = new Map<string, number>();
+  private readonly initial = new Map<number, Map<number, number>>();
+  private readonly heights = new Map<number, Map<number, number>>();
   readonly resources = new Map<string, CurvedResource>();
   constructor(
     size: number,
@@ -32,7 +32,9 @@ export class ContinuousField {
       for (let x = 0; x < size; x++) {
         const cell = reference(x, z);
         if (!cell || !(cell.elevation! > 0)) continue;
-        this.initial.set(key(x, z), cell.elevation!);
+        let row = this.initial.get(x);
+        if (!row) this.initial.set(x, (row = new Map()));
+        row.set(z, cell.elevation!);
         this.cover.add(x + 2, z + 2, 1);
         if (cell.biome === 'mountain') this.stone.add(x + 2, z + 2, 1);
       }
@@ -54,7 +56,7 @@ export class ContinuousField {
   }
   /** An uncut column has no horizontal artificial cap. */
   cutHeight(resource: CurvedResource): number {
-    return resource.amount < (this.initial.get(key(resource.x, resource.z)) ?? resource.amount)
+    return resource.amount < (this.initial.get(resource.x)?.get(resource.z) ?? resource.amount)
       ? TERRAIN_BASE + resource.amount
       : Infinity;
   }
@@ -67,16 +69,16 @@ export class ContinuousField {
   }
   /** Bounded, immutable surface samples can be reused for the lifetime of this seed. */
   naturalHeight(x: number, z: number): number {
-    const id = key(x, z),
-      cached = this.heights.get(id);
+    let row = this.heights.get(x);
+    const cached = row?.get(z);
     if (cached !== undefined) return cached;
     const ix = Math.floor(x),
       iz = Math.floor(z);
-    if (!this.initial.has(key(ix, iz))) return TERRAIN_BASE;
+    if (!this.initial.get(ix)?.has(iz)) return TERRAIN_BASE;
     let distance = Infinity;
     for (let a = ix - 1; a <= ix + 1; a++)
       for (let b = iz - 1; b <= iz + 1; b++) {
-        if (this.initial.has(key(a, b))) continue;
+        if (this.initial.get(a)?.has(b)) continue;
         distance = Math.min(
           distance,
           Math.hypot(Math.max(a - x, 0, x - a - 1), Math.max(b - z, 0, z - b - 1)),
@@ -95,7 +97,8 @@ export class ContinuousField {
         0.06 * (1 - 2 * Math.abs(perlin(x * 3.1, z * 3.1, this.seed + 811)))) *
       (0.45 + 0.55 * rock);
     const height = TERRAIN_BASE + Math.max(0.05, this.seedElevation(x, z) + relief) * envelope;
-    this.heights.set(id, height);
+    if (!row) this.heights.set(x, (row = new Map()));
+    row.set(z, height);
     return height;
   }
   /** Interpolating the saved seed heights, rather than averaging them, preserves sharp summits.
@@ -118,7 +121,7 @@ export class ContinuousField {
       maximum = 0;
     for (let i = 0; i < 4; i++)
       for (let j = 0; j < 4; j++) {
-        const value = this.initial.get(key(ix + i - 1, iz + j - 1)) ?? 0;
+        const value = this.initial.get(ix + i - 1)?.get(iz + j - 1) ?? 0;
         height += value * a[i]! * b[j]!;
         maximum = Math.max(maximum, value);
       }
@@ -132,9 +135,6 @@ export class ContinuousField {
     return [nx / d, 1 / d, nz / d];
   }
   color(resource: CurvedResource, x: number, z: number, h: number, normal: V3): number[] {
-    const grass = [0.55, 0.69, 0.32].map(
-      (c) => c * (1 + terrainNoise(x * 0.45, z * 0.45, this.seed) * 0.08),
-    );
     let c: number[];
     if (resource.kind === 'soil') {
       const t = clamp01(
@@ -142,13 +142,10 @@ export class ContinuousField {
       );
       c = [0.59, 0.45, 0.29].map((v, i) => v * (1 - t) + [0.53, 0.65, 0.31][i]! * t);
     } else {
-      c = [0.57, 0.56, 0.54].map(
-        (v) =>
-          v +
-          Math.min(1, h / 4) * 0.12 +
-          terrainNoise(x * 0.6, z * 0.6, this.seed) * 0.045 +
-          perlin(x * 2.1 + h * 0.53, z * 2.1 - h * 0.37, this.seed + 811) * 0.055,
-      );
+      const heightTone = Math.min(1, h / 4) * 0.12;
+      const terrainTone = terrainNoise(x * 0.6, z * 0.6, this.seed) * 0.045;
+      const detailTone = perlin(x * 2.1 + h * 0.53, z * 2.1 - h * 0.37, this.seed + 811) * 0.055;
+      c = [0.57, 0.56, 0.54].map((v) => v + heightTone + terrainTone + detailTone);
       const moss =
         clamp01((1.5 - h) * 0.8) *
         clamp01((normal[1] - 0.3) * 1.7) *
@@ -156,6 +153,8 @@ export class ContinuousField {
       c = c.map((v, i) => v * (1 - moss) + [0.4, 0.53, 0.27][i]! * moss);
     }
     if (h < 0.26) {
+      const grassTone = 1 + terrainNoise(x * 0.45, z * 0.45, this.seed) * 0.08;
+      const grass = [0.55, 0.69, 0.32].map((v) => v * grassTone);
       const t = smooth01((h - 0.015) / 0.245);
       c = c.map((v, i) => grass[i]! * (1 - t) + v * t);
     }

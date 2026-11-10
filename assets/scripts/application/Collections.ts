@@ -1,4 +1,6 @@
 import { footprint, farmBoxCell } from '../domain/game';
+import { getV6EditSurface } from '../domain/v6-edit-surface';
+import { v6TreeRoot } from '../art/V6TreeGeometry';
 import type { Command, GameState, Item, Tool } from '../domain/game';
 import { farmCellCenter } from './FarmCells';
 import type { SurfacePoint } from './NaturalPicking';
@@ -29,32 +31,49 @@ export function collectionOrigin(
   event: CollectionEvent,
   naturalOrigin?: (id: string) => SurfacePoint | null,
   dropOrigin?: (id: string) => SurfacePoint | null,
+  stackOrigin?: (x: number, z: number) => SurfacePoint | null,
 ): { x: number; y: number; z: number } | null {
   const { command: c, before } = event;
   if (c.type === 'pickupDrop') return dropOrigin?.(c.dropId) ?? null;
-  if (c.type === 'pickupProduct' || c.type === 'pickupStack')
-    return { x: c.x + 0.5, y: 0.4, z: c.z + 0.5 };
+  const pileOrigin = (x: number, z: number) =>
+    before.terrainVersion === 6 || before.terrainVersion === 7
+      ? (stackOrigin?.(x, z) ?? null)
+      : { x: x + 0.5, y: 0.4, z: z + 0.5 };
+  if (c.type === 'pickupProduct' || c.type === 'pickupStack') return pileOrigin(c.x, c.z);
   if (c.type === 'gatherNatural') {
     const resource = before.naturalResources.find((item) => item.id === c.resourceId);
     return resource ? (naturalOrigin?.(resource.id) ?? null) : null;
   }
   if (c.type === 'useTool') {
-    if (c.tool === 'saw') return { x: c.x + 0.5, y: 0.4, z: c.z + 0.5 };
+    if (c.tool === 'saw') return pileOrigin(c.x, c.z);
     if (c.tool === 'axe') {
       const tree = before.trees.find((t) => t.id === c.treeId);
-      return tree ? { x: tree.x + 0.5, y: 1, z: tree.z + 0.5 } : null;
+      if (!tree) return null;
+      if (before.terrainVersion === 6 || before.terrainVersion === 7) {
+        const surface = getV6EditSurface(before);
+        const root = v6TreeRoot(before.mapSeed, tree.x, tree.z, (x, z) =>
+          surface.heightInCell(x, z, tree.x, tree.z),
+        );
+        return { ...root, y: root.y + 1 };
+      }
+      return { x: tree.x + 0.5, y: 1, z: tree.z + 0.5 };
     }
   }
   if ('buildingId' in c) {
     const b = before.buildings.find((item) => item.id === c.buildingId);
     if (!b) return null;
+    const elevation = b.baseElevation ?? 0;
     if (c.type === 'withdrawFarmBox') {
       const box = farmBoxCell(b);
-      return box ? { x: box.x + 0.5, y: 0.6, z: box.z + 0.5 } : null;
+      return box ? { x: box.x + 0.5, y: elevation + 0.6, z: box.z + 0.5 } : null;
     }
-    if (c.type === 'harvestCell') return { ...farmCellCenter(b, c.cell), y: 0.3 };
+    if (c.type === 'harvestCell') return { ...farmCellCenter(b, c.cell), y: elevation + 0.3 };
     const f = footprint(b);
-    return { x: b.x + f.width / 2, y: b.kind === 'farm' ? 0.3 : 1, z: b.z + f.depth / 2 };
+    return {
+      x: b.x + f.width / 2,
+      y: elevation + (b.kind === 'farm' ? 0.3 : 1),
+      z: b.z + f.depth / 2,
+    };
   }
   return null;
 }

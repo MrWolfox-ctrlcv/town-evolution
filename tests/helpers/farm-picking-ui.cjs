@@ -134,6 +134,7 @@ function load(name, dependencies = {}) {
           ? { ModelFactory }
           : [
                 './TownObjectPicking',
+                './GroundTreePicking',
                 './TownFarmPicking',
                 './V6TreeView',
                 './TerrainInteraction',

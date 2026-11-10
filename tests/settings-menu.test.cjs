@@ -204,7 +204,7 @@ test('settings uses the shared tap gate, cancels interrupted/multitouch input an
   const bootstrap = fs.readFileSync('assets/scripts/presentation/TownBootstrap.ts', 'utf8');
   assert.match(
     hud,
-    /this\.settings = new ActionButton\(this\.canvas, explain, this\.settingsArt\)/,
+    /this\.settings = new ActionButton\(this\.controls\.root, explain, this\.settingsArt\)/,
   );
   assert.match(hud, /cancelMultiTouch[\s\S]*?this\.settings\.cancelGesture\(\)/);
   assert.match(

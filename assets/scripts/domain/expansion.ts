@@ -32,8 +32,8 @@ export function importLandExtensions(
     keys.add(key);
     cells.push({ x: p.x, z: p.z });
   }
-  if (version === 5 || version === 6) {
-    if (version === 6) validateV6Extensions(seed, cells);
+  if (version === 5 || version === 6 || version === 7) {
+    if (version === 6 || version === 7) validateV6Extensions(seed, cells, version);
     else validateV5Extensions(seed, cells);
     return cells;
   }

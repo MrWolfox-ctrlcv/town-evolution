@@ -14,7 +14,7 @@ export interface TreeBatch {
   mesh: MeshData;
   surfaces: Map<string, MeshSurface>;
   bytes: number;
-  anchors: Array<{ x: number; z: number }>;
+  anchors: Array<{ x: number; y: number; z: number }>;
 }
 const meshes = new Map<string, MeshData>();
 /** Matches the approved lab generator-v2 proposedTreeVisual, shared visual identity, terrain6 has actual elevated anchors. */
@@ -30,6 +30,18 @@ export function v5TreeVisual(seed: number, x: number, z: number) {
     ] as const,
     offset: [(v5Hash(seed + 521, x, z) - 0.5) * 0.28, 0, (v5Hash(seed + 541, x, z) - 0.5) * 0.28],
   };
+}
+/** Shared by standing geometry and feedback so a sloped trunk never falls from sea level. */
+export function v6TreeRoot(
+  seed: number,
+  x: number,
+  z: number,
+  height: (x: number, z: number) => number,
+) {
+  const visual = v5TreeVisual(seed, x, z);
+  const rootX = x + 0.5 + visual.offset[0]!,
+    rootZ = z + 0.5 + visual.offset[2]!;
+  return { x: rootX, y: height(rootX, rootZ), z: rootZ };
 }
 function treeMesh(asset: string, far: boolean): MeshData {
   const key = `${asset}:${far}`;
@@ -67,7 +79,7 @@ export class V6TreeBatchBuilder {
     max: [-Infinity, -Infinity, -Infinity],
   };
   private readonly surfaces = new Map<string, MeshSurface>();
-  private readonly anchors: Array<{ x: number; z: number }> = [];
+  private readonly anchors: TreeBatch['anchors'] = [];
   private index = 0;
   constructor(
     private readonly seed: number,
@@ -90,32 +102,33 @@ export class V6TreeBatchBuilder {
       angle = (visual.yaw * Math.PI) / 180,
       c = Math.cos(angle),
       s = Math.sin(angle),
-      elevation = this.height(tree.x + 0.5 + visual.offset[0]!, tree.z + 0.5 + visual.offset[2]!),
+      root = v6TreeRoot(this.seed, tree.x, tree.z, this.height),
       base = this.mesh.positions.length / 3,
       positions: number[] = [];
     for (let i = 0; i < mesh.positions.length; i += 3) {
       const x = mesh.positions[i]! * scale[0]!,
         y = mesh.positions[i + 1]! * scale[1]!,
         z = mesh.positions[i + 2]! * scale[2]!;
-      const p = [
-        tree.x + 0.5 + visual.offset[0]! + x * c + z * s,
-        elevation + y,
-        tree.z + 0.5 + visual.offset[2]! - x * s + z * c,
-      ];
-      for (let axis = 0; axis < 3; axis++) p[axis] = Math.fround(p[axis]!);
-      positions.push(...p);
-      this.mesh.positions.push(...p);
-      for (let axis = 0; axis < 3; axis++) {
-        this.mesh.min[axis] = Math.min(this.mesh.min[axis]!, p[axis]!);
-        this.mesh.max[axis] = Math.max(this.mesh.max[axis]!, p[axis]!);
-      }
+      // Keep the exact operation order and F32 rounding, without allocating
+      // one temporary array per vertex or rescanning its three generic axes.
+      const px = Math.fround(root.x + x * c + z * s),
+        py = Math.fround(root.y + y),
+        pz = Math.fround(root.z - x * s + z * c);
+      positions.push(px, py, pz);
+      this.mesh.positions.push(px, py, pz);
+      this.mesh.min[0] = Math.min(this.mesh.min[0]!, px);
+      this.mesh.min[1] = Math.min(this.mesh.min[1]!, py);
+      this.mesh.min[2] = Math.min(this.mesh.min[2]!, pz);
+      this.mesh.max[0] = Math.max(this.mesh.max[0]!, px);
+      this.mesh.max[1] = Math.max(this.mesh.max[1]!, py);
+      this.mesh.max[2] = Math.max(this.mesh.max[2]!, pz);
       const nx = mesh.normals[i]! / scale[0]!,
         ny = mesh.normals[i + 1]! / scale[1]!,
         nz = mesh.normals[i + 2]! / scale[2]!,
         length = Math.hypot(nx, ny, nz);
       this.mesh.normals.push((nx * c + nz * s) / length, ny / length, (-nx * s + nz * c) / length);
     }
-    this.anchors.push({ x: tree.x + 0.5 + visual.offset[0]!, z: tree.z + 0.5 + visual.offset[2]! });
+    this.anchors.push(root);
     this.mesh.colors.push(...mesh.colors);
     this.mesh.indices.push(...mesh.indices.map((i) => i + base));
     this.surfaces.set(tree.id, new MeshSurface(positions, mesh.indices));

@@ -20,7 +20,10 @@ export function peekTerrain6Save(
   requireRule(raw && typeof raw === 'object' && !Array.isArray(raw), '存档结构无效');
   const value = raw as Record<string, unknown>;
   if (value.terrainVersion !== 6) return null;
-  if (value.schemaVersion !== 10 || value.terrainRevision !== V6_GENERATOR_REVISION)
+  if (
+    (value.schemaVersion !== 10 && value.schemaVersion !== 11) ||
+    value.terrainRevision !== V6_GENERATOR_REVISION
+  )
     throw new SaveVersionError('此 v6 地形版本不兼容，请保留原始存档；不会重新生成或重解释旧数据');
   requireRule(integer(value.mapSeed) && value.mapSeed > 0, '地图种子无效');
   return { mapSeed: value.mapSeed, terrainVersion: 6, terrainRevision: V6_GENERATOR_REVISION };

@@ -1,6 +1,7 @@
 import {
   dropMovePlan,
   stackIntoDropPlan,
+  stockIntoDropPlan,
   requireDropSnapshot,
   requireStackSnapshot,
 } from '../drop-move';
@@ -43,4 +44,14 @@ export function mergeStackIntoDrop(
   source.amount = plan.remaining;
   if (!source.amount) s.groundStacks = s.groundStacks.filter((p) => p !== source);
   return [plan.remaining ? `已叠放${plan.transferAmount}份，余量保留原处` : '已合并地面物品'];
+}
+export function mergeStockIntoDrop(
+  s: GameState,
+  c: Extract<Command, { type: 'mergeStockIntoDrop' }>,
+): string[] {
+  const plan = stockIntoDropPlan(s, c);
+  requireRule(!plan.reason, plan.reason ?? '物品无法合并');
+  requireDropSnapshot(s, c.target).amount += plan.transferAmount;
+  s.inventory[c.source.item] = plan.remaining;
+  return [`已叠放${plan.transferAmount}份`];
 }

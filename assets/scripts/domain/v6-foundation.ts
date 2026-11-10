@@ -1,4 +1,5 @@
-import { getV6World } from './v6-world';
+import { getEditableWorld } from './editable-world';
+import type { TerrainVersion } from './world';
 import type { V6Resource } from './v6-contracts';
 interface Point {
   x: number;
@@ -14,10 +15,11 @@ export function createV6Foundation(
   seed: number,
   blockedCells: readonly Point[] = [],
   nextTreeId = 1,
+  version: TerrainVersion = 6,
 ): V6NewFoundation {
   if (!Number.isInteger(nextTreeId) || nextTreeId < 1 || nextTreeId >= 1_000_000_000)
     throw Error('Invalid tree sequence');
-  const world = getV6World(seed),
+  const world = getEditableWorld(seed, version),
     key = (p: Point) => `${p.x},${p.z}`;
   const blocked = new Set(blockedCells.map(key));
   const naturalResources = world

@@ -1,3 +1,4 @@
+import { pickGroundTree } from './GroundTreePicking';
 import { V5TreeView } from './V5TreeView';
 import { V6TreeView } from './V6TreeView';
 import { getV6EditSurface } from '../domain/v6-edit-surface';
@@ -55,15 +56,16 @@ export class GroundObjects {
       this.drops ??= new LooseDropView(this.root, this.groundReady);
       this.drops.sync(state, support);
     }
-    if (state.terrainVersion === 6) this.v6Surface = getV6EditSurface(state);
-    if (state.terrainVersion === 5 || state.terrainVersion === 6) {
+    if (state.terrainVersion === 6 || state.terrainVersion === 7)
+      this.v6Surface = getV6EditSurface(state);
+    if (state.terrainVersion === 5 || state.terrainVersion === 6 || state.terrainVersion === 7) {
       if (this.treeVersion !== state.terrainVersion) {
         this.v5Trees?.dispose();
         this.v5Trees = null;
         this.treeVersion = state.terrainVersion;
       }
       this.v5Trees ??=
-        state.terrainVersion === 6
+        state.terrainVersion === 6 || state.terrainVersion === 7
           ? new V6TreeView(
               this.root,
               this.groundReady,
@@ -78,17 +80,22 @@ export class GroundObjects {
       this.treeVersion = 0;
       this.v6Surface = null;
     }
-    const trees = state.terrainVersion === 5 || state.terrainVersion === 6 ? [] : state.trees;
+    const trees =
+      state.terrainVersion === 5 || state.terrainVersion === 6 || state.terrainVersion === 7
+        ? []
+        : state.trees;
     const stages = trees.map((tree) =>
       Math.floor(treeGrowthProgress(tree, Math.max(now, state.lastSeenAt)) * 3),
     );
     this.natural.sync(surface, state.naturalResources);
     const signature = JSON.stringify([
       state.mapSeed,
+      state.terrainVersion,
+      state.terrainRevision,
       trees,
       stages,
       state.groundStacks,
-      ...(state.terrainVersion === 6 ? [support?.revision] : []),
+      ...(state.terrainVersion === 6 || state.terrainVersion === 7 ? [support?.revision] : []),
     ]);
     if (signature === this.signature) return;
     this.signature = signature;
@@ -120,7 +127,7 @@ export class GroundObjects {
     this.piles = state.groundStacks.map((pile) => {
       const key = `pile:${pile.x}:${pile.z}`;
       const elevation =
-        state.terrainVersion === 6
+        state.terrainVersion === 6 || state.terrainVersion === 7
           ? (support?.height({
               minX: pile.x + 0.01,
               minZ: pile.z + 0.01,
@@ -128,14 +135,14 @@ export class GroundObjects {
               maxZ: pile.z + 0.99,
             }) ?? null)
           : 0;
-      const signature = `${pile.item}:${pile.amount}${state.terrainVersion === 6 ? ':' + elevation : ''}`;
+      const signature = `${pile.item}:${pile.amount}${state.terrainVersion === 6 || state.terrainVersion === 7 ? ':' + elevation : ''}`;
       const old = oldPiles.get(key);
       oldPiles.delete(key);
       if (old?.signature === signature) return old;
       old?.node.destroy();
       const node = pileModel(this.factory, pile, key);
       this.root.addChild(node);
-      if (state.terrainVersion === 6)
+      if (state.terrainVersion === 6 || state.terrainVersion === 7)
         node.setPosition(node.position.x, (elevation ?? 0) + 0.009, node.position.z);
       node.active = this.lifted !== key && elevation !== null;
       return {
@@ -192,7 +199,7 @@ export class GroundObjects {
       : null;
   }
   private naturalReady(id: string): boolean {
-    if (this.treeVersion !== 6) return true;
+    if (this.treeVersion !== 6 && this.treeVersion !== 7) return true;
     const owner = this.natural.origin(id);
     return !!owner && this.groundReady(Math.floor(owner.x), Math.floor(owner.z));
   }
@@ -231,7 +238,7 @@ export class GroundObjects {
           pick: (ray) => {
             if (
               !includeBlocked &&
-              this.treeVersion === 6 &&
+              (this.treeVersion === 6 || this.treeVersion === 7) &&
               (!pile.ready || !this.groundReady(pile.x, pile.z))
             )
               return null;
@@ -260,12 +267,15 @@ export class GroundObjects {
     return hit && (includeBlocked || this.isUsable({ kind: 'drop', ...hit })) ? hit : null;
   }
   isUsable(hit: VisibleHit): boolean {
-    if (this.treeVersion !== 6) return true;
+    if (this.treeVersion !== 6 && this.treeVersion !== 7) return true;
     if (hit.kind === 'natural') return this.naturalReady(hit.id);
     if (hit.kind === 'tree')
       return this.v5Trees instanceof V6TreeView && this.v5Trees.isReady(hit.id);
     const p = hit.kind === 'pile' ? hit : hit.kind === 'drop' ? this.drops?.origin(hit.id) : null;
     return !!p && this.groundReady(Math.floor(p.x), Math.floor(p.z));
+  }
+  stackOrigin(x: number, z: number) {
+    return this.piles.find((p) => p.x === x && p.z === z && p.ready)?.node.position ?? null;
   }
   dropOrigin(id: string) {
     return this.drops?.origin(id) ?? null;
@@ -276,16 +286,7 @@ export class GroundObjects {
   pickTree(ray: geometry.Ray, includeBlocked = false): { id: string; distance: number } | null {
     if (this.v5Trees instanceof V6TreeView) return this.v5Trees.pick(ray, includeBlocked);
     if (this.v5Trees) return this.v5Trees.pick(ray);
-    let id: string | null = null,
-      distance = Infinity;
-    for (const tree of this.trees) {
-      const hit = tree.surface.distance(ray, distance);
-      if (hit !== null && (hit < distance || (hit === distance && (id === null || tree.id < id)))) {
-        distance = hit;
-        id = tree.id;
-      }
-    }
-    return id ? { id, distance } : null;
+    return pickGroundTree(this.trees, ray);
   }
   dispose(): void {
     this.drops?.dispose();

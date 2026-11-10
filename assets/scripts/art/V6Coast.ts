@@ -1,7 +1,9 @@
+import { V7_FIELD_EPSILON, V7_HYDROLOGY_REVISION } from '../domain/v7-contracts';
 import type { MeshData } from './AssetTypes';
 import { v6OwnsSurfaceCell } from './V6SurfaceContracts';
 import type { V6SurfaceWorld } from './V6SurfaceContracts';
 import { buildCoastalWater } from './CoastalWater';
+import { cachedV6CoastSamples } from './V6CoastSamples';
 import type { CoastalWaterData } from './CoastalWater';
 import { v5MeshWriter, v5SurfaceSampler } from './V5CoastMesh';
 import type { V5SurfaceVertex } from './V5CoastMesh';
@@ -38,6 +40,8 @@ export function createV6CoastSource(
 ): V5CoastSource {
   const seed = world.seed;
   const field = world.hydrology;
+  // Enlarge retained bounds only for the normalized seeded-coast field.
+  const guard = field.base.version === V7_HYDROLOGY_REVISION ? V7_FIELD_EPSILON : 0;
   const fills = extensions.map((p) => ({ x: p.x, z: p.z }));
   const filled = new Set(fills.map((p) => v5FillKey(p.x, p.z)));
   const water = reusedWater ?? buildCoastalWater(field.size, seed, []);
@@ -55,10 +59,11 @@ export function createV6CoastSource(
       water.colors[i * 4 + 1] = 0.75 * (1 - d) + 0.43 * d;
       water.colors[i * 4 + 2] = 0.73 * (1 - d) + 0.58 * d;
     }
+  const sampledField = cachedV6CoastSamples(field);
   function begin(key: string, visualOnly = false): V5CoastJob {
     const [x0, z0, x1, z1] = v5CoastChunkBounds(key);
     const writer = v5MeshWriter(),
-      sample = v5SurfaceSampler(field);
+      sample = v5SurfaceSampler(sampledField);
     const cliff = v5CliffTileBuilder(field, filled),
       bounds = field.featureBounds;
     const local = fills.filter((p) => p.x >= x0 && p.x < x1 && p.z >= z0 && p.z < z1);
@@ -93,7 +98,7 @@ export function createV6CoastSource(
           all &&= hit;
         }
       const d = field.fields(cx, cz).dry,
-        r = (width * Math.SQRT2) / 2 + 0.25 * Math.SQRT2;
+        r = (width * Math.SQRT2) / 2 + 0.25 * Math.SQRT2 + guard;
       const cliffOverlap =
         x < bounds.x1 && x + width > bounds.x0 && z < bounds.z1 && z + width > bounds.z0;
       // Far display only: the complete block is below the opaque water's global

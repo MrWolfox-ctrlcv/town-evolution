@@ -4,7 +4,7 @@ import type { AssetRecipe, Part, V3 } from './AssetTypes';
 import { woodenCrate } from './BuildingAccessories';
 import { cropProductUnit } from './CropPileKit';
 import { farmBed } from './FarmCellKit';
-import { compileAsset } from './MeshCompiler';
+import { assetBounds } from './MeshCompiler';
 
 export const FARM_BOX_SCALE = 1.65;
 const BOX_CROPS: readonly Crop[] = ['vegetable', 'wheat', 'lettuce', 'rice'];
@@ -35,7 +35,7 @@ export function farmCollectionBox(stock: FarmBoxVisualStock = {}): AssetRecipe {
   const parts: Part[] = move(woodenCrate(), [0, 0, 0], FARM_BOX_SCALE);
   crops.forEach((crop, index) => {
     const source = cropProductUnit(crop);
-    const mesh = compileAsset({ id: crop, footprint: [1, 1], parts: source });
+    const mesh = assetBounds({ id: crop, footprint: [1, 1], parts: source });
     const scale = 0.52;
     const x = crops.length === 1 ? 0 : index % 2 ? 0.16 : -0.16;
     const z = crops.length < 3 ? 0 : index < 2 ? -0.16 : 0.16;

@@ -1,6 +1,7 @@
 /** Engine-independent source of truth for every exported and in-game mesh. */
 export type V3 = readonly [number, number, number];
 export type Shape =
+  | 'sawnTimber'
   | 'box'
   | 'gable'
   | 'gem'

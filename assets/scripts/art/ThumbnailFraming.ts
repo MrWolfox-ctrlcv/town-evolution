@@ -1,7 +1,7 @@
 import type { MeshData, V3 } from './AssetTypes';
 
 export const THUMBNAIL_COLUMNS = 4;
-// Forty-one canonical models still fit the existing 2 MiB atlas budget.
+// Forty-four canonical models still fit the existing 2 MiB atlas budget.
 export const THUMBNAIL_PIXELS = 108;
 export const THUMBNAIL_EYE: V3 = [6, 5, 8];
 const length = (v: V3) => Math.hypot(...v);

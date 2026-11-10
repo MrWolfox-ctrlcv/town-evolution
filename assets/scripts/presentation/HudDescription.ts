@@ -106,7 +106,7 @@ export function description(session: GameSession, ui: UiState, loading = false):
     const status = b.job ? (left ? `${left}秒` : '可收获') : '长按移动';
     return `${CONFIG.buildings[b.kind].label} · ${status}${suffix}`;
   }
-  if (session.state.terrainVersion === 6)
+  if (session.state.terrainVersion === 6 || session.state.terrainVersion === 7)
     return `${{ farm: '开田：保留旧农田工具', dig: '挖地：每次切下一层', fill: '填地：消耗真实土石' }[ui.terrainMode]} · 拖左侧挖掘工具${loading ? ' · 地形加载中' : ''}`;
   if (ui.tab === 'orders') return '交付订单';
   if (ui.tab === 'tools')

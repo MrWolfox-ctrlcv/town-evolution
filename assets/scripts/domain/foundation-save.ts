@@ -1,3 +1,4 @@
+import { getV7World } from './v7-world';
 import { getV6World } from './v6-world';
 import { validItemAmount } from './v6-material-amount';
 import type { TerrainVersion } from './world';
@@ -130,18 +131,21 @@ export function importFoundation(
           value.amount > 0,
         '天然资源记录无效',
       );
-      const point = acceptCell(value, terrainVersion === 6);
+      const point = acceptCell(value, terrainVersion >= 6);
       const resourceKey = `${point.x},${point.z}`;
       requireRule(!resourceCells.has(resourceKey), '天然资源重复');
       resourceCells.add(resourceKey);
-      if (terrainVersion === 6) {
+      if (terrainVersion >= 6) {
         const resource: NaturalResource = {
           id: value.id,
           kind: value.kind,
           amount: value.amount,
           ...point,
         };
-        requireRule(getV6World(seed).acceptsResource(resource), '天然资源与地图不一致');
+        requireRule(
+          (terrainVersion === 7 ? getV7World : getV6World)(seed).acceptsResource(resource),
+          '天然资源与地图不一致',
+        );
         result.naturalResources.push(resource);
         continue;
       }

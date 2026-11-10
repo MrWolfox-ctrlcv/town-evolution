@@ -25,9 +25,9 @@ export { farmCellAtSixths } from './farm-coordinates';
 export { dockAssemblyPlan } from './dock-assembly';
 export type { DockAssemblyPlan } from './dock-assembly';
 import { withdrawFarmBox } from './actions/farm-box';
-export { dropMovePlan, stackIntoDropPlan } from './drop-move';
+export { dropMovePlan, stackIntoDropPlan, stockIntoDropPlan } from './drop-move';
 export type { DropMovePlan } from './drop-move';
-import { pickupDrop, moveDrop, mergeStackIntoDrop } from './actions/loose-drops';
+import * as drops from './actions/loose-drops';
 export { dropPosition, cropDropAnchor, LOOSE_DROPS } from './loose-drops';
 export { LOCAL_CONTAINER } from './local-container';
 /** Public business-layer facade. Rendering and storage depend on this layer, never the reverse. */
@@ -127,13 +127,16 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
         events = withdrawCompostInput(next, command);
         break;
       case 'moveDrop':
-        events = moveDrop(next, command);
+        events = drops.moveDrop(next, command);
         break;
       case 'mergeStackIntoDrop':
-        events = mergeStackIntoDrop(next, command);
+        events = drops.mergeStackIntoDrop(next, command);
+        break;
+      case 'mergeStockIntoDrop':
+        events = drops.mergeStockIntoDrop(next, command);
         break;
       case 'pickupDrop':
-        events = pickupDrop(next, command);
+        events = drops.pickupDrop(next, command);
         break;
       case 'attachFarmBox':
         throw new Error('请明确选择田地和箱子，再用锤子装配');
@@ -176,7 +179,7 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
         break;
       case 'gatherNatural':
         events =
-          next.terrainVersion === 6
+          next.terrainVersion === 6 || next.terrainVersion === 7
             ? gatherTerrain6(next, command.resourceId)
             : gatherNatural(next, command);
         break;
@@ -283,7 +286,7 @@ export function dispatch(state: GameState, command: Command, now: number): Resul
     next.lastSeenAt = effectiveNow;
     const discovered = recordRecipe(next, command, effectiveNow, state);
     if (discovered) events.push(`图鉴新发现：${discovered}`);
-    if (next.terrainVersion === 6) assertSaveFits(next);
+    if (next.terrainVersion === 6 || next.terrainVersion === 7) assertSaveFits(next);
     return { ok: true, state: next, events };
   } catch (error) {
     return { ok: false, state, error: error instanceof Error ? error.message : '操作失败' };

@@ -47,6 +47,12 @@ class Assets {
     renderer.mesh = this.meshes.get(recipe.id);
     return node;
   }
+  createTransient(data, name) {
+    const node = new Node(name);
+    const renderer = node.addComponent(Renderer);
+    renderer.mesh = mesh(data);
+    return node;
+  }
   dispose() {
     for (const m of this.meshes.values()) m.destroy();
   }

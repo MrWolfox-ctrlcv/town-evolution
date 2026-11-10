@@ -14,11 +14,15 @@ export function diggingToolCommand(
 ): Command | null {
   const resourceId = town.pickNatural(ray);
   const resource = session.state.naturalResources.find((entry) => entry.id === resourceId);
-  if (resource && session.state.terrainVersion === 6) return null;
+  if (resource && (session.state.terrainVersion === 6 || session.state.terrainVersion === 7))
+    return null;
   if (resource) return { type: 'gatherNatural', resourceId: resource.id };
   if (town.pickBuilding(ray) || town.pickTree(ray) || town.pickStack(ray)) return null;
   const ground = map.ground(point);
-  const cell = session.state.terrainVersion === 6 ? town.pickTerrain(ray) : null;
+  const cell =
+    session.state.terrainVersion === 6 || session.state.terrainVersion === 7
+      ? town.pickTerrain(ray)
+      : null;
   return ground
     ? {
         type: 'useTool',

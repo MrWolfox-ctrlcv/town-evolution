@@ -70,6 +70,7 @@ test('only actual shoreline protection changes rebuild coast/water; inland edits
       Node,
       MeshRenderer: Renderer,
       Material,
+      EffectAsset: { get: () => null },
       Color: class {},
       utils: {
         createMesh(data) {

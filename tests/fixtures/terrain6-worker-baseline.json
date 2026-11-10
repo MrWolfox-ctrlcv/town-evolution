@@ -1,0 +1,14 @@
+{
+  "seed": 42173,
+  "sourceCommit": "5dc9a6d90e6e81b38f578321da882e2b813198de",
+  "gridHashes": [
+    "05247c17d1b1235f131ec646aecee46397236e56f20187bdffb50e70e9cc0a6a",
+    "4d9ef2a889b89b9c5adb4b67539e7796fea7ceda5e1579c9383fe2dc62506610",
+    "ac1dca38f741a36e5014d07fc3eb66e847e6103f045230cd81f3e5777dd429e6"
+  ],
+  "cellsHash": "b0d4f4480e5a0ea4d8c8cabba6a231a07fec48498cac318befe193100cfba59e",
+  "resourcesHash": "f48ef3a14f113c57bf68d0d85d4a46cae0b5f35d755af3824c4e7fcc005d7ada",
+  "levelsHash": "efe0b6f6cb9eb1597cea94cc53a033c9abc72c67e712b17d5709dc461b6ff597",
+  "treesHash": "d6dbb99da408eead17a59bc0f7789a002cbc3df4c7bc9230840bdca8f3f7c0b4",
+  "saveHash": "54434b619aa0b3d98927a8ad1ccf939d29713269aab9cbc264375386ba9e5ac0"
+}

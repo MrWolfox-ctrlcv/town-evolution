@@ -1,5 +1,7 @@
 # Meadow kit · MVP art specification
 
+Fence and bench concept-first corrective remake: [source sequence, model mapping and verification limits](bench-fence-concept-remake.md).
+
 Current building implementation and verification limits: [shared building evolution kit](building-inheritance.md). The generated concept and generated wood texture are inputs; the reusable 3D geometry is authored, not automatically extracted from an image.
 
 A small, warm low-poly kit based on the generated concept sheet: cream plaster,
@@ -10,7 +12,7 @@ reference, not a promise to reproduce every roof tile or painted shadow.
 ## Files and reproducibility
 
 - `assets/scripts/art/`: canonical editable TypeScript recipes, palette and mesh compiler.
-- `art/exports/`: 134 glTF 2.0 files with embedded buffers and a shared `textures/warm-wood.png` albedo.
+- `art/exports/`: 224 glTF 2.0 files with embedded buffers and a shared `textures/warm-wood.png` albedo.
 - `art/exports/manifest.json`: per-model bounds, footprint, parts, triangle and byte counts.
 - `npm run art:export`: compile recipes and regenerate all glTF files.
 - `npm run check`: also verifies exports exactly match their source.
@@ -53,7 +55,7 @@ Flat shaded geometry uses vertex colors and baked directional value variation.
 Reusable timber parts additionally use one image-generated UV albedo. Each asset
 has one palette batch and, where needed, one textured-wood batch, sharing materials
 and cached geometry. Transparent surfaces and realtime shadows are absent. glTF
-materials use `KHR_materials_unlit`; retain the shared texture folder when copying exports.
+materials use nonmetallic PBR with roughness 1 and vertex-color albedo; retain the shared texture folder when copying exports.
 
 Automated ceilings are 3,000 triangles for buildings, 6,000 for product piles,
 6,500 for crop-cell models, and 1,500 for remaining assets; all remain below 6,000

@@ -60,7 +60,7 @@ test('schema8 migrates in memory without writes and the first save preserves ori
 });
 test('future versions retain primary and backup verbatim instead of falling back to older progress', () => {
   const old = oldSave(),
-    future = JSON.stringify({ ...JSON.parse(old), schemaVersion: 11 });
+    future = JSON.stringify({ ...JSON.parse(old), schemaVersion: 12 });
   const store = storage([
     [SAVE_KEY, future],
     [BACKUP_KEY, old],

@@ -1,6 +1,6 @@
 import type { TerrainVersion } from './world';
 import { getV5World } from './v5-world';
-import { getV6World } from './v6-world';
+import { getEditableWorld } from './editable-world';
 import { largeIslandBiome } from './large-island';
 import { fractalNoise, latticeNoise } from './noise';
 export type TerrainBiome = 'plain' | 'mountain' | 'forest' | 'hill';
@@ -38,8 +38,8 @@ export function biomeAt(
   seed: number,
   version: TerrainVersion = 4,
 ): TerrainCell {
-  if (version === 6) {
-    const cell = getV6World(seed).at(x, z);
+  if (version === 6 || version === 7) {
+    const cell = getEditableWorld(seed, version).at(x, z);
     return cell
       ? { biome: cell.biome, elevation: cell.resource?.amount ?? 0 }
       : { biome: 'plain', elevation: 0 };

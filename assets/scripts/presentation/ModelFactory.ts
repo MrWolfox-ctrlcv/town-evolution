@@ -1,5 +1,7 @@
 import { bridgeFootings } from '../art/BridgeFootings';
-import { v6BridgeFootings } from '../art/V6BridgeFootings';
+import { v6BridgeMesh } from '../art/V6BridgeKit';
+import { v6BridgeProfile } from '../domain/v6-bridge-profile';
+import { v6BridgeFootings, v6RiverPierFootings } from '../art/V6BridgeFootings';
 import { BRIDGE_ROOT_HEIGHT } from '../art/WoodenBridgeKit';
 import { V5_PIER_FOOT_UNIT, v5PierFootings } from '../art/V5PierFootings';
 import { v6PierFootings } from '../art/V6PierFootings';
@@ -94,7 +96,11 @@ export class ModelFactory {
     const root = new Node(b.id);
     root.setPosition(
       b.x + w / 2,
-      b.kind === 'woodenBridge' ? BRIDGE_ROOT_HEIGHT : baseElevation,
+      b.kind === 'woodenBridge'
+        ? (terrainVersion === 6 || terrainVersion === 7) && b.bridge
+          ? v6BridgeProfile(mapSeed, { ...b, length: b.bridge.length }, terrainVersion).root
+          : BRIDGE_ROOT_HEIGHT
+        : baseElevation,
       b.z + d / 2,
     );
     if (b.kind === 'farm') {
@@ -142,20 +148,39 @@ export class ModelFactory {
       return root;
     }
     const id = buildingAssetId(b, now);
-    const visual = this.assets.create(id, 'BuildingMesh');
+    const visual =
+      b.kind === 'woodenBridge' && (terrainVersion === 6 || terrainVersion === 7)
+        ? this.assets.createTransient(v6BridgeMesh(b, mapSeed, terrainVersion), 'BuildingMesh')
+        : this.assets.create(id, 'BuildingMesh');
     visual.setRotationFromEuler(0, b.rotation * 90, 0);
-    if (b.kind === 'woodenBridge' && (terrainVersion === 5 || terrainVersion === 6)) {
+    if (
+      b.kind === 'woodenBridge' &&
+      (terrainVersion === 5 || terrainVersion === 6 || terrainVersion === 7)
+    ) {
       const supports = new Node('BridgeSupports');
       supports.setRotationFromEuler(0, b.rotation * 90, 0);
       root.addChild(supports);
-      for (const [index, foot] of (terrainVersion === 6
-        ? v6BridgeFootings(b, mapSeed)
+      for (const [index, foot] of (terrainVersion === 6 || terrainVersion === 7
+        ? v6BridgeFootings(b, mapSeed, terrainVersion)
         : bridgeFootings(b, mapSeed)
       ).entries()) {
         const node = this.assets.createRecipe(V5_PIER_FOOT_UNIT, `BridgeFooting${index}`);
         node.setPosition(foot.x, foot.y, foot.z);
         node.setScale(foot.width, foot.height, foot.width);
         supports.addChild(node);
+      }
+    }
+    if (b.kind === 'woodenPier' && (terrainVersion === 6 || terrainVersion === 7)) {
+      for (const [index, foot] of v6RiverPierFootings(
+        b,
+        mapSeed,
+        baseElevation,
+        terrainVersion,
+      ).entries()) {
+        const node = this.assets.createRecipe(V5_PIER_FOOT_UNIT, `RiverPierFooting${index}`);
+        node.setPosition(foot.x, foot.y, foot.z);
+        node.setScale(foot.width, foot.height, foot.width);
+        visual.addChild(node);
       }
     }
     if (
@@ -170,8 +195,8 @@ export class ModelFactory {
       if (b.dockStyle === 'simple')
         pier.addChild(this.assets.create('dock-pier-extension', 'PierExtension'));
       else this.pier(pier, cfg.depth);
-      if (terrainVersion === 5 || terrainVersion === 6)
-        for (const [index, foot] of (terrainVersion === 6
+      if (terrainVersion === 5 || terrainVersion === 6 || terrainVersion === 7)
+        for (const [index, foot] of (terrainVersion === 6 || terrainVersion === 7
           ? v6PierFootings(b.dockStyle === 'simple', cfg.depth, baseElevation)
           : v5PierFootings(b.dockStyle === 'simple', cfg.depth)
         ).entries()) {

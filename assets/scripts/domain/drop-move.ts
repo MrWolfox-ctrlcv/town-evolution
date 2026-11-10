@@ -3,6 +3,8 @@ import { assertGroundCell } from './ground-placement';
 import { preserveTradeTile } from './geometry';
 import { stackLimitFor } from './foundation';
 import { requireRule } from './guards';
+import { ITEM_KEYS } from './crops';
+import { validItemAmount } from './v6-material-amount';
 export interface DropMovePlan {
   transferAmount: number;
   remaining: number;
@@ -97,6 +99,32 @@ export function stackIntoDropPlan(
       other = requireDropSnapshot(state, target);
     const transferAmount = transfer(actual, other);
     return { transferAmount, remaining: actual.amount - transferAmount, reason: null };
+  } catch (error) {
+    return {
+      transferAmount: 0,
+      remaining: source?.amount ?? 0,
+      reason: error instanceof Error ? error.message : '物品无法合并',
+    };
+  }
+}
+/** A sidebar drag contributes at most one unit, retaining fractional material precision. */
+export function stockIntoDropPlan(
+  state: GameState,
+  command: Extract<Command, { type: 'mergeStockIntoDrop' }>,
+): DropMovePlan {
+  const { source, target } = command;
+  try {
+    requireRule(
+      source &&
+        ITEM_KEYS.includes(source.item) &&
+        validItemAmount(source.amount, source.item, state.terrainVersion) &&
+        source.amount > 0 &&
+        state.inventory[source.item] === source.amount,
+      '库存物品已变化或数量不足，请重新拖动',
+    );
+    const other = requireDropSnapshot(state, target);
+    const transferAmount = transfer({ ...source, amount: Math.min(1, source.amount) }, other);
+    return { transferAmount, remaining: source.amount - transferAmount, reason: null };
   } catch (error) {
     return {
       transferAmount: 0,

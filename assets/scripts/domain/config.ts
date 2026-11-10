@@ -29,6 +29,8 @@ export const CONFIG: {
     transportWarehouse: { label: '运输仓', width: 2, depth: 2, cost: 0, capacity: 16 },
     woodenPier: { label: '木栈桥', width: 2, depth: 2, cost: 0, capacity: 0 },
     boat: { label: '木船', width: 1, depth: 2, cost: 0, capacity: 0 },
+    fence: { label: '围栏', width: 1, depth: 1, cost: 0, capacity: 0 },
+    bench: { label: '长凳', width: 1, depth: 1, cost: 0, capacity: 0 },
     crate: { label: '箱子', width: 1, depth: 1, cost: 0, capacity: 0 },
     house: { label: '基础房屋', width: 2, depth: 2, cost: 0, capacity: 0 },
     residence: { label: '住宅', width: 2, depth: 2, cost: 0, capacity: 0 },

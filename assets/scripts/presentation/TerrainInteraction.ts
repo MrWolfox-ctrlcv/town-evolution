@@ -15,7 +15,7 @@ export function terrainContact(town: TownView, ray: geometry.Ray): Vec3 | null {
   );
 }
 export function terrainHeight(state: GameState, x: number, z: number): number {
-  if (state.terrainVersion !== 6) return 0;
+  if (state.terrainVersion !== 6 && state.terrainVersion !== 7) return 0;
   try {
     return getV6EditSurface(state).range(Math.floor(x), Math.floor(z))[1];
   } catch {
@@ -24,7 +24,7 @@ export function terrainHeight(state: GameState, x: number, z: number): number {
 }
 /** Validation may assign elevation to this temporary copy, never to an authoritative building. */
 export function buildingPreview(state: GameState, building: Building): Building {
-  if (state.terrainVersion !== 6) return building;
+  if (state.terrainVersion !== 6 && state.terrainVersion !== 7) return building;
   const result = { ...building };
   try {
     validatePlacement(state, result);

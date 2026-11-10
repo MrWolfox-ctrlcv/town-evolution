@@ -1,0 +1,308 @@
+{
+  "scope": "CPU-only current-source cache audit; real V6ChunkMeshes code with mocked Cocos worldMesh/Node, not GPU/browser/phone timings",
+  "node": "v24.22.1",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "sourceBuild": "/tmp/town-hot-cache-audit/domain-build",
+  "phases": [
+    {
+      "label": "cold_all_far",
+      "fine": [],
+      "requested": 196,
+      "advanceCalls": 1784,
+      "completedCellBuilds": 36864,
+      "transactionChunks": 196,
+      "uploadCalls": 213,
+      "simulatedUploadBytes": 16014270,
+      "worldMeshCalls": 313,
+      "reusedResidentObjects": 0,
+      "cpuBuildMs": 7373.51,
+      "peakAccountedBytes": 127310124,
+      "memoryUsage": {
+        "resident": 127000844,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 0,
+        "entries": 0,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "same_far_no_work",
+      "fine": [],
+      "requested": 196,
+      "advanceCalls": 0,
+      "completedCellBuilds": 0,
+      "transactionChunks": 0,
+      "uploadCalls": 0,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "reusedResidentObjects": 196,
+      "cpuBuildMs": 0,
+      "peakAccountedBytes": 0,
+      "memoryUsage": {
+        "resident": 127000844,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 0,
+        "entries": 0,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "first_near_A",
+      "fine": ["5,5"],
+      "requested": 196,
+      "advanceCalls": 50,
+      "completedCellBuilds": 1280,
+      "transactionChunks": 5,
+      "uploadCalls": 5,
+      "simulatedUploadBytes": 928104,
+      "worldMeshCalls": 17,
+      "reusedResidentObjects": 191,
+      "cpuBuildMs": 206.86,
+      "peakAccountedBytes": 141620652,
+      "memoryUsage": {
+        "resident": 134310748,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 5725264,
+        "entries": 5,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "same_A_no_work",
+      "fine": ["5,5"],
+      "requested": 196,
+      "advanceCalls": 0,
+      "completedCellBuilds": 0,
+      "transactionChunks": 0,
+      "uploadCalls": 0,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "reusedResidentObjects": 196,
+      "cpuBuildMs": 0,
+      "peakAccountedBytes": 0,
+      "memoryUsage": {
+        "resident": 134310748,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 5725264,
+        "entries": 5,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "first_near_B",
+      "fine": ["8,8"],
+      "requested": 196,
+      "advanceCalls": 85,
+      "completedCellBuilds": 1280,
+      "transactionChunks": 10,
+      "uploadCalls": 5,
+      "simulatedUploadBytes": 1037178,
+      "worldMeshCalls": 19,
+      "reusedResidentObjects": 186,
+      "cpuBuildMs": 454.17,
+      "peakAccountedBytes": 150014620,
+      "memoryUsage": {
+        "resident": 142846592,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 15289020,
+        "entries": 10,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "return_A",
+      "fine": ["5,5"],
+      "requested": 196,
+      "advanceCalls": 1,
+      "completedCellBuilds": 0,
+      "transactionChunks": 10,
+      "uploadCalls": 1,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "reusedResidentObjects": 186,
+      "cpuBuildMs": 0.1,
+      "peakAccountedBytes": 142846592,
+      "memoryUsage": {
+        "resident": 142846592,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 14261108,
+        "entries": 10,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "return_B",
+      "fine": ["8,8"],
+      "requested": 196,
+      "advanceCalls": 1,
+      "completedCellBuilds": 0,
+      "transactionChunks": 10,
+      "uploadCalls": 1,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "reusedResidentObjects": 186,
+      "cpuBuildMs": 0.13,
+      "peakAccountedBytes": 142846592,
+      "memoryUsage": {
+        "resident": 142846592,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 15289020,
+        "entries": 10,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "return_A_again",
+      "fine": ["5,5"],
+      "requested": 196,
+      "advanceCalls": 1,
+      "completedCellBuilds": 0,
+      "transactionChunks": 10,
+      "uploadCalls": 1,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "reusedResidentObjects": 186,
+      "cpuBuildMs": 0.07,
+      "peakAccountedBytes": 142846592,
+      "memoryUsage": {
+        "resident": 142846592,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 14261108,
+        "entries": 10,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "warm_rapid_alternation_settle_after_stop",
+      "fine": ["5,5"],
+      "requested": 196,
+      "advanceCalls": 0,
+      "completedCellBuilds": 0,
+      "transactionChunks": 0,
+      "uploadCalls": 0,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "reusedResidentObjects": 196,
+      "cpuBuildMs": 0,
+      "peakAccountedBytes": 0,
+      "memoryUsage": {
+        "resident": 142846592,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 14261108,
+        "entries": 10,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "cold_rapid_far_setup",
+      "fine": [],
+      "requested": 10,
+      "advanceCalls": 136,
+      "completedCellBuilds": 2560,
+      "transactionChunks": 10,
+      "uploadCalls": 12,
+      "simulatedUploadBytes": 1714422,
+      "worldMeshCalls": 32,
+      "reusedResidentObjects": 0,
+      "cpuBuildMs": 727.24,
+      "peakAccountedBytes": 14950192,
+      "memoryUsage": {
+        "resident": 13704380,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 0,
+        "entries": 0,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    },
+    {
+      "label": "cold_rapid_alternation_settle_after_stop",
+      "fine": ["5,5"],
+      "requested": 10,
+      "advanceCalls": 35,
+      "completedCellBuilds": 1280,
+      "transactionChunks": 10,
+      "uploadCalls": 5,
+      "simulatedUploadBytes": 928104,
+      "worldMeshCalls": 17,
+      "reusedResidentObjects": 5,
+      "cpuBuildMs": 129.1,
+      "peakAccountedBytes": 28324188,
+      "memoryUsage": {
+        "resident": 21014284,
+        "staging": 0,
+        "limit": 268435456
+      },
+      "cacheUsage": {
+        "bytes": 5725264,
+        "entries": 5,
+        "limit": 33554432,
+        "maxEntries": 32
+      }
+    }
+  ],
+  "worldPreparationMs": 8616.51,
+  "returnAMatchesFirstA": 196,
+  "returnBMatchesFirstB": 196,
+  "rapid": [
+    {
+      "label": "warm_rapid_alternation",
+      "requests": 20,
+      "completedCellPatchesDiscardedAtRequest": 0,
+      "groupsPublishedDuringMovement": 20,
+      "completedCellsDuringMovement": 0,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "illustrativeSyntheticRequestSequenceNotRecordedUserCamera": true
+    },
+    {
+      "label": "cold_rapid_alternation",
+      "requests": 20,
+      "completedCellPatchesDiscardedAtRequest": 2150,
+      "groupsPublishedDuringMovement": 0,
+      "completedCellsDuringMovement": 0,
+      "simulatedUploadBytes": 0,
+      "worldMeshCalls": 0,
+      "illustrativeSyntheticRequestSequenceNotRecordedUserCamera": true
+    }
+  ]
+}

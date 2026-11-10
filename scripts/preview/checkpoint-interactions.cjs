@@ -34,7 +34,7 @@ module.exports = async (page, evidence, name, touch) => {
   await button('存档');
   await button('立即保存');
   await button('返回游戏');
-  let state = await until(page, (s) => s.save?.schemaVersion === 10, 'saved demo');
+  let state = await until(page, (s) => [10, 11].includes(s.save?.schemaVersion), 'saved demo');
   const warehouseId = state.save.buildings.find((b) => b.kind === 'warehouse')?.id;
   assert.ok(warehouseId, 'Original unexpanded warehouse remains available');
   await showTool('WoodStock', 'ProductsRightNext');

@@ -1,3 +1,5 @@
+import { woodenBench } from './BenchKit';
+import { craftedFence } from './CraftedFenceKit';
 import { woodenBridge } from './WoodenBridgeKit';
 import { compostBarrelAssets, roastedCarrot } from './BarrelRoastKit';
 import { farmCollectionBoxAssets, farmWithBox } from './FarmBoxKit';
@@ -53,6 +55,8 @@ export const ASSETS: Record<string, AssetRecipe> = Object.fromEntries(
     stoneOven(),
     bakery(),
     handcart(),
+    woodenBench(),
+    craftedFence(),
     transportWarehouse(),
     woodenPier(),
     ...Array.from({ length: 10 }, (_, i) => woodenBridge(i + 7)),

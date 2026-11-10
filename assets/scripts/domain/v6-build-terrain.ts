@@ -1,7 +1,7 @@
-import { V5BaseHydrology } from './v5-hydrology-base';
+import { V6BaseHydrology } from './v6-hydrology-base';
 import { buildCoastFeature } from './v6-build-coast';
 import { derivePreparedCoast } from './v6-prepared-coast';
-import { buildStarter } from './v6-build-starter';
+import { buildStarter, createV6Starter } from './v6-build-starter';
 import { V6Hydrology } from './v6-hydrology';
 import { V6Landform } from './v6-landform';
 import { V6Samples } from './v6-samples';
@@ -11,6 +11,8 @@ import { key, V6_SIZE, V6_SUBDIVISIONS } from './v6-contracts';
 import type { V6Lattice } from './v6-samples';
 import type { V6Snapshot, V6Resource } from './v6-contracts';
 import type { Work } from './v6-work';
+import type { V6TerrainTransfer } from './v6-terrain-data';
+import { V6_GENERATOR_REVISION } from './v6-contracts';
 
 export interface PreparedV6World {
   readonly terrain: V6Terrain;
@@ -49,8 +51,8 @@ function* reserveBounds(hydro: V6Hydrology): Work<readonly [number, number, numb
   return [x0, z0, x1, z1];
 }
 /** Internal coroutine. Only its completed return value may escape the public builder. */
-export function* buildTerrain(seed: number): Work<PreparedV6World> {
-  const base = new V5BaseHydrology(seed);
+export function* buildTerrainData(seed: number): Work<V6TerrainTransfer> {
+  const base = new V6BaseHydrology(seed);
   yield 'hydrology';
   const feature = yield* buildCoastFeature(base);
   const hydro = new V6Hydrology(seed, base, derivePreparedCoast(base, feature));
@@ -61,6 +63,24 @@ export function* buildTerrain(seed: number): Work<PreparedV6World> {
   const lattice = yield* allocateLattice();
   const samples = new V6Samples(seed, landform, lattice);
   const complete = yield* buildCells(samples, landform);
+  return {
+    format: 1,
+    revision: V6_GENERATOR_REVISION,
+    seed,
+    feature,
+    starter: { pockets: starter.pockets, treeCandidates: starter.treeCandidates },
+    bounds,
+    lattice,
+    complete,
+  };
+}
+/** Rebuild local closures/private fields; callers must validate incoming data first. */
+export function* assembleV6Terrain(data: V6TerrainTransfer): Work<PreparedV6World> {
+  const { seed, lattice, complete } = data;
+  const base = new V6BaseHydrology(seed);
+  const hydro = new V6Hydrology(seed, base, derivePreparedCoast(base, data.feature));
+  const starter = createV6Starter(seed, data.starter.pockets, data.starter.treeCandidates);
+  const landform = new V6Landform(seed, hydro, starter, data.bounds);
   const world = new V6Terrain(seed, landform, lattice, complete);
   const resources = new Map<string, V6Resource>();
   const trees = new Set<string>();
@@ -77,4 +97,8 @@ export function* buildTerrain(seed: number): Work<PreparedV6World> {
     terrain: world,
     initialSnapshot: Object.freeze({ resources, trees }),
   });
+}
+
+export function* buildTerrain(seed: number): Work<PreparedV6World> {
+  return yield* assembleV6Terrain(yield* buildTerrainData(seed));
 }

@@ -53,7 +53,9 @@ test('showcase preserves starter practice fields, legacy dock, wood recipes and 
     farm = s.buildings.find((b) => b.id === 'b2'),
     warehouse = s.buildings.find((b) => b.id === 'b7');
   assert.equal(
-    s.buildings.filter((b) => !b.collectionBox && b.kind !== 'compostBarrel').length,
+    s.buildings.filter(
+      (b) => !b.collectionBox && !['compostBarrel', 'bench', 'fence'].includes(b.kind),
+    ).length,
     30,
   );
   assert.deepEqual(

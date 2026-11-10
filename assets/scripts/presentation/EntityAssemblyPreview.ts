@@ -13,7 +13,7 @@ export function entityAssemblyPreview(
   z: number,
   valid: boolean,
 ): void {
-  const originY = state.terrainVersion === 6 ? root.position.y : 0;
+  const originY = state.terrainVersion === 6 || state.terrainVersion === 7 ? root.position.y : 0;
   for (const s of sources) {
     const b = state.buildings.find((b) => b.id === s.id);
     if (!b) continue;
@@ -43,7 +43,8 @@ export function entityAssemblyPreview(
   preview.name = 'EntityAssemblyResult';
   preview.setPosition(
     result.x + footprint(result).width / 2 - x,
-    (state.terrainVersion === 6 ? preview.position.y - originY : 0) + 0.025,
+    (state.terrainVersion === 6 || state.terrainVersion === 7 ? preview.position.y - originY : 0) +
+      0.025,
     result.z + footprint(result).depth / 2 - z,
   );
   root.addChild(preview);

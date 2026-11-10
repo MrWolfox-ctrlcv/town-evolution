@@ -1,4 +1,5 @@
-import { V5BaseHydrology } from './v5-hydrology-base';
+import type { V6BaseHydrology } from './v6-hydrology-base';
+import { V6FifoCache } from './v6-fifo-cache';
 import { V5_NATURAL_COAST_REVISION } from './v5-natural-coast-feature';
 import type {
   NaturalCoast,
@@ -23,10 +24,20 @@ export class V6Hydrology {
   readonly naturalCoast;
   readonly feature;
   readonly featureBounds;
-  private readonly cells = new Map<string, NaturalCoastCell>();
+  private readonly cells = new V6FifoCache<string, NaturalCoastCell>(4096);
   constructor(
     readonly seed: number,
-    base: V5BaseHydrology,
+    base: Pick<
+      V6BaseHydrology,
+      | 'seed'
+      | 'size'
+      | 'metadata'
+      | 'riverPath'
+      | 'fields'
+      | 'sample'
+      | 'classifyCell'
+      | 'cacheSizes'
+    > & { readonly version: string },
     coast: NaturalCoast,
   ) {
     this.base = base;
@@ -57,7 +68,6 @@ export class V6Hydrology {
         ...cell,
         certificate: Object.freeze(cell.certificate),
       });
-    if (this.cells.size >= 4096) this.cells.delete(this.cells.keys().next().value!);
     this.cells.set(key, value);
     return value;
   }

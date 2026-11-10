@@ -2,6 +2,7 @@ import { V6TreeBatchBuilder as TreeBatchBuilder } from '../art/V6TreeGeometry';
 import type { StreamTree, TreeBatch } from '../art/V6TreeGeometry';
 import { treeGrowthProgress } from '../domain/game';
 import type { GameState } from '../domain/types';
+import { V6TreeCache } from './V6TreeCache';
 export interface WorldViewBounds {
   minX: number;
   minZ: number;
@@ -33,7 +34,7 @@ export class V6TreeStreaming {
   private pending: {
     chunk: Chunk;
     far: boolean;
-    builder: TreeBatchBuilder;
+    builder: TreeBatchBuilder | null;
     batch?: TreeBatch;
   } | null = null;
   private seed = 0;
@@ -53,6 +54,8 @@ export class V6TreeStreaming {
     private readonly remove: (key: string) => void,
     private readonly cancel: (key: string) => void,
     private readonly height: (x: number, z: number) => number,
+    private readonly cache = new V6TreeCache(),
+    private readonly groundAvailable: (x: number, z: number) => boolean = () => true,
   ) {}
   sync(state: GameState, now: number): void {
     if (this.disposed) return;
@@ -97,6 +100,7 @@ export class V6TreeStreaming {
       chunk.trees.sort((a, b) => a.id.localeCompare(b.id));
       chunk.signature = JSON.stringify(chunk.trees);
     }
+    this.cache.prune(chunks);
     for (const [key, entry] of this.live)
       if (chunks.get(key)?.signature !== entry.signature) {
         this.remove(key);
@@ -137,14 +141,20 @@ export class V6TreeStreaming {
         (c.z + 1) * 16 + 2 >= bounds.minZ,
     );
     const keys = new Set(wanted.map((c) => c.key));
+    // Terrain and tree batches share 16-cell chunks. A margin-only or dirty
+    // ground chunk must not hold the single build/upload slot indefinitely.
+    // The view still checks every actual trunk anchor before publishing.
+    const available = wanted.filter((c) => this.groundAvailable(c.x * 16 + 8, c.z * 16 + 8)),
+      availableKeys = new Set(available.map((c) => c.key));
     let changed = false;
-    for (const key of this.live.keys())
+    for (const [key, entry] of this.live)
       if (!keys.has(key)) {
+        this.cache.remember(key, entry, keys);
         this.remove(key);
         this.live.delete(key);
         changed = true;
       }
-    if (this.pending && (!keys.has(this.pending.chunk.key) || this.pending.far !== far))
+    if (this.pending && (!availableKeys.has(this.pending.chunk.key) || this.pending.far !== far))
       this.cancelPending();
     const maxTrees = Math.max(0, Math.floor(budget.maxTrees ?? 24)),
       maxMs = Math.max(0, budget.maxMilliseconds ?? 2),
@@ -152,50 +162,61 @@ export class V6TreeStreaming {
     this.credit = Math.min(8388608, this.credit + upload);
     const started = clock();
     let count = 0;
-    wanted.sort(
+    available.sort(
       (a, b) =>
         Math.hypot(a.x * 16 + 8 - cx, a.z * 16 + 8 - cz) -
           Math.hypot(b.x * 16 + 8 - cx, b.z * 16 + 8 - cz) || a.key.localeCompare(b.key),
     );
     while (count < maxTrees && clock() - started < maxMs) {
       if (!this.pending) {
-        const chunk = wanted.find(
+        const chunk = available.find(
           (c) =>
             this.live.get(c.key)?.signature !== c.signature || this.live.get(c.key)?.far !== far,
         );
         if (!chunk) break;
+        const cached = this.cache.take(chunk.key, chunk.signature, far, this.height);
         this.pending = {
           chunk,
           far,
-          builder: new TreeBatchBuilder(this.seed, chunk.trees, far, this.height),
+          builder: cached ? null : new TreeBatchBuilder(this.seed, chunk.trees, far, this.height),
+          ...(cached ? { batch: cached } : {}),
         };
       }
       const pending = this.pending;
-      if (!pending.builder.complete) {
+      if (pending.builder && !pending.builder.complete) {
         pending.builder.append();
         count++;
       }
-      if (!pending.builder.complete) continue;
-      const batch = (pending.batch ??= pending.builder.finish());
+      if (pending.builder && !pending.builder.complete) continue;
+      const batch = (pending.batch ??= pending.builder!.finish());
+      if (!pending.builder && !batch.anchors.every((p) => p.y === this.height(p.x, p.z))) {
+        this.cancelPending();
+        break; // A cached snapshot may lose its ground while waiting for upload.
+      }
       if (batch.bytes > this.credit) break;
       if (
         this.publish(pending.chunk.key, batch, upload, Math.max(0, maxMs - (clock() - started))) ===
         false
       )
         break;
+      const old = this.live.get(pending.chunk.key);
+      if (old) this.cache.remember(pending.chunk.key, old);
       this.live.set(pending.chunk.key, { signature: pending.chunk.signature, far, batch });
       this.credit -= batch.bytes;
       this.pending = null;
       changed = true;
       break; // At most one complete chunk upload/publication in a Cocos frame.
     }
-    this.loading = wanted.some(
+    this.loading = available.some(
       (c) => this.live.get(c.key)?.signature !== c.signature || this.live.get(c.key)?.far !== far,
     );
     return changed;
   }
   *surfaces() {
     for (const entry of this.live.values()) yield* entry.batch.surfaces.entries();
+  }
+  cacheUsage() {
+    return this.cache.usage();
   }
   private cancelPending(): void {
     if (this.pending) this.cancel(this.pending.chunk.key);
@@ -204,6 +225,7 @@ export class V6TreeStreaming {
   private clear(): void {
     for (const key of this.live.keys()) this.remove(key);
     this.live.clear();
+    this.cache.clear();
     this.cancelPending();
     this.credit = 0;
     this.treeInput = null;

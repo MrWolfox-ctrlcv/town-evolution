@@ -1,7 +1,7 @@
 # Recipe handbook: actual model captures
 
 Recipe item pictures no longer draw replacement houses, trees, crates, signs or farms with
-`Graphics`. `HandbookAssets.ts` maps the 20 supported model kinds to the same canonical
+`Graphics`. `HandbookAssets.ts` maps supported model kinds to the same canonical
 asset recipes used by the town. The flat-land and reclaimed-land pictures use the actual continuous coast /
 ground compiler. Soil mounds and stone columns use the live continuous-resource compiler,
 not illustrated replacements. Soil, stone, mud and the residence reuse canonical town models. Tools reuse the same PNG resources as the live tool tray.

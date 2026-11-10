@@ -13,8 +13,7 @@ import {
   input as engineInput,
 } from 'cc';
 import type { Touch } from 'cc';
-import { worldSize } from '../domain/world';
-import type { TerrainVersion } from '../domain/world';
+import { worldSize, type TerrainVersion } from '../domain/world';
 import { color } from './Palette';
 import { markTouchRay } from './TouchPicking';
 import { isTouchEvent, inputOwner, hasMultipleContacts, hasInputConflict } from './InputProvenance';
@@ -27,8 +26,7 @@ import {
   homeZoom,
   steppedMapZoom,
 } from '../application/CameraFraming';
-import { MapGesture } from '../application/MapGesture';
-import type { Point } from '../application/MapGesture';
+import { MapGesture, type Point } from '../application/MapGesture';
 export interface MapHooks {
   covered(point: Point): boolean;
   ground?(ray: geometry.Ray): { x: number; y: number; z: number } | null;
@@ -77,6 +75,7 @@ export class MapCamera {
   };
   private size: number;
   private zoom: number;
+  navigationRevision = 0;
   private aspect = 1;
   constructor(
     parent: Node,
@@ -98,8 +97,10 @@ export class MapCamera {
     parent.addChild(node);
     this.camera = node.addComponent(Camera);
     this.camera.projection = Camera.ProjectionType.ORTHO;
-    this.camera.clearColor = color('#77B8B6');
-    this.camera.clearFlags = Camera.ClearFlag.SOLID_COLOR;
+    this.camera.clearColor = color('#77B8B6'); // Safe fallback if the sky effect is unavailable.
+    this.camera.clearFlags = parent.scene?.globals?.skybox.enabled
+      ? Camera.ClearFlag.SKYBOX
+      : Camera.ClearFlag.SOLID_COLOR;
     this.camera.near = 0.1;
     this.camera.far = 100;
     this.camera.visibility = Layers.Enum.DEFAULT;
@@ -156,9 +157,7 @@ export class MapCamera {
   get interacting(): boolean {
     return this.gesture.interacting;
   }
-  tick(): void {
-    this.gesture.poll();
-  }
+  readonly tick = (): void => this.gesture.poll();
   resetInput(): void {
     this.contacts.clear();
     this.contactTouches.clear();
@@ -263,20 +262,24 @@ export class MapCamera {
     if (before && after) this.shift(before, after);
   }
   private zoomAt(ratio: number, from: Point, to: Point): void {
-    const before = this.ground(from, 0);
+    const before = this.ground(from, 0),
+      zoom = this.zoom;
     this.zoom = clampMapZoom(this.zoom * ratio, this.size);
+    if (this.zoom !== zoom) this.navigationRevision++;
     this.update();
     const after = this.ground(to, 0);
     if (before && after) this.shift(before, after);
   }
   private shift(before: Vec3, after: Vec3): void {
+    const { x, z } = this.focus;
     this.focus.x = Math.max(-4, Math.min(this.size + 4, this.focus.x + before.x - after.x));
     this.focus.z = Math.max(-4, Math.min(this.size + 4, this.focus.z + before.z - after.z));
+    if (this.focus.x !== x || this.focus.z !== z) this.navigationRevision++;
     this.update();
   }
   private update(): void {
     this.camera.orthoHeight = fittedOrthoHeight(this.aspect, this.size) * this.zoom;
-    const top = this.terrainVersion === 6 ? V6_VIEW_TOP : undefined;
+    const top = this.terrainVersion === 6 || this.terrainVersion === 7 ? V6_VIEW_TOP : undefined;
     const depth = cameraDepth(this.size, this.camera.orthoHeight, top);
     this.camera.near = depth.near;
     this.camera.far = depth.far;
@@ -289,9 +292,7 @@ export class MapCamera {
     this.eventRoot.off(Node.EventType.TOUCH_START, this.globalStart, this, true);
     this.eventRoot.off(Node.EventType.TOUCH_END, this.globalEnd, this, true);
     this.eventRoot.off(Node.EventType.TOUCH_CANCEL, this.globalEnd, this, true);
-    this.contacts.clear();
-    this.contactTouches.clear();
-    this.cancelGesture();
+    this.resetInput();
     this.input.active = false;
     this.input.destroy();
   }

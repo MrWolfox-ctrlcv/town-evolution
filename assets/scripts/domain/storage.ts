@@ -1,6 +1,8 @@
+import { peekTerrain7Save, assertTerrain7SlotIdentity } from './v7-save-header';
 import { exportSave, importSave, SaveVersionError } from './save';
 import type { GameState } from './types';
 export interface KeyValueStorage {
+  readonly terrainVersion?: 7;
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
@@ -30,13 +32,61 @@ export const GAME_SAVE_KEYS = [
   `${SAVE_KEY}.before-reset`,
   `${SAVE_KEY}.unreadable`,
 ] as const;
+export function assertCompatible7(storage: KeyValueStorage): void {
+  if (storage.terrainVersion !== 7) return;
+  for (const key of [SAVE_KEY, BACKUP_KEY]) {
+    const raw = storage.getItem(key);
+    if (raw !== null)
+      try {
+        peekTerrain7Save(raw);
+      } catch (error) {
+        if (error instanceof SaveVersionError) throw error;
+      }
+  }
+}
+/** Snapshot a replacement target, rejecting future identities without treating corruption as empty. */
+export function guardTerrain7Overwrite(
+  storage: KeyValueStorage,
+  key: string,
+  envelope = false,
+): () => void {
+  const expected = storage.getItem(key);
+  if (expected !== null) {
+    try {
+      if (envelope) {
+        const data = JSON.parse(expected);
+        assertTerrain7SlotIdentity(data);
+        peekTerrain7Save(data.save);
+      } else peekTerrain7Save(expected);
+    } catch (error) {
+      if (error instanceof SaveVersionError) throw error;
+    }
+  }
+  return () => {
+    if (storage.getItem(key) !== expected) throw new SaveConflictError();
+  };
+}
+/** Cache proof for immutable bytes, never for the caller's mutable GameState or revision.
+ * Any changed primary must pass the full parser again. One entry per storage adapter
+ * bounds memory, and exact revision checks still guard every write. */
+const validatedPrimary = new WeakMap<KeyValueStorage, { bytes: string; currentSchema?: true }>();
 /** Both web/native use this adapter via Cocos sys.localStorage. Storage errors are surfaced. */
 export function loadGame(storage: KeyValueStorage, now: number): LoadResult {
   try {
+    assertCompatible7(storage);
     const primary = storage.getItem(SAVE_KEY);
     if (primary !== null) {
       try {
-        return { status: 'loaded', state: importSave(primary, now), revision: { primary } };
+        const state = importSave(primary, now);
+        validatedPrimary.set(storage, { bytes: primary });
+        return {
+          status: 'loaded',
+          state,
+          revision: {
+            primary,
+            ...(storage.terrainVersion === 7 ? { backup: storage.getItem(BACKUP_KEY) } : {}),
+          },
+        };
       } catch (error) {
         if (error instanceof SaveVersionError)
           return {
@@ -104,25 +154,38 @@ export function saveGame(
   state: GameState,
   expected?: SaveRevision,
 ): SaveRevision {
+  assertCompatible7(storage);
   const encoded = exportSave(state);
   const previous = storage.getItem(SAVE_KEY);
   const revision = expected ?? { primary: previous };
   assertSaveRevision(storage, revision);
-  if (expected && previous === encoded) return { primary: encoded };
+  if (expected && previous === encoded) {
+    validatedPrimary.set(storage, { bytes: encoded, currentSchema: true });
+    return {
+      primary: encoded,
+      ...(storage.terrainVersion === 7 ? { backup: storage.getItem(BACKUP_KEY) } : {}),
+    };
+  }
   if (previous !== null) {
+    const known = validatedPrimary.get(storage);
     // Invalid primary remains recoverable as raw text rather than silently replaced.
     try {
-      importSave(previous, state.lastSeenAt);
+      if (known?.bytes !== previous) importSave(previous, state.lastSeenAt);
     } catch {
       throw new Error('主存档损坏，尚未覆盖。请先采用有效备份，或确认新局后再保存。');
     }
     assertSaveRevision(storage, revision);
-    preserveMigrationBytes(storage, previous, revision);
+    if (known?.bytes !== previous || !known.currentSchema)
+      preserveMigrationBytes(storage, previous, revision);
     storage.setItem(BACKUP_KEY, previous);
   }
   assertSaveRevision(storage, { primary: revision.primary });
   storage.setItem(SAVE_KEY, encoded);
-  return { primary: encoded };
+  validatedPrimary.set(storage, { bytes: encoded, currentSchema: true });
+  return {
+    primary: encoded,
+    ...(storage.terrainVersion === 7 ? { backup: storage.getItem(BACKUP_KEY) } : {}),
+  };
 }
 /** Explicit recovery action only; preserves the unreadable primary in a separate key. */
 export function acceptRecovery(
@@ -130,19 +193,33 @@ export function acceptRecovery(
   state: GameState,
   expected?: SaveRevision,
 ): SaveRevision {
+  assertCompatible7(storage);
   const encoded = exportSave(state),
     previous = storage.getItem(SAVE_KEY),
     backup = storage.getItem(BACKUP_KEY);
   const revision = expected ?? { primary: previous, backup };
+  const archiveKey = `${SAVE_KEY}.unreadable`;
+  const guardArchive =
+    state.terrainVersion === 7 && previous !== null
+      ? guardTerrain7Overwrite(storage, archiveKey)
+      : undefined;
   assertSaveRevision(storage, revision);
   if (backup !== null) {
     importSave(backup, state.lastSeenAt);
     preserveMigrationBytes(storage, backup, revision);
   }
-  if (previous !== null) storage.setItem(`${SAVE_KEY}.unreadable`, previous);
+  if (previous !== null) {
+    guardArchive?.();
+    storage.setItem(archiveKey, previous);
+  }
+  if (guardArchive && storage.getItem(archiveKey) !== previous) throw new SaveConflictError();
   assertSaveRevision(storage, revision);
   storage.setItem(SAVE_KEY, encoded);
-  return { primary: encoded };
+  validatedPrimary.set(storage, { bytes: encoded, currentSchema: true });
+  return {
+    primary: encoded,
+    ...(storage.terrainVersion === 7 ? { backup: storage.getItem(BACKUP_KEY) } : {}),
+  };
 }
 /** Caller MUST ask for a second explicit confirmation before reset. */
 export function resetSave(
@@ -150,13 +227,27 @@ export function resetSave(
   initial: GameState,
   expected?: SaveRevision,
 ): SaveRevision {
+  assertCompatible7(storage);
   const encoded = exportSave(initial),
     previous = storage.getItem(SAVE_KEY);
   const revision = expected ?? { primary: previous };
+  const archiveKey = `${SAVE_KEY}.before-reset`;
+  const guardArchive =
+    initial.terrainVersion === 7 && previous !== null
+      ? guardTerrain7Overwrite(storage, archiveKey)
+      : undefined;
   assertSaveRevision(storage, revision);
-  if (previous !== null) storage.setItem(`${SAVE_KEY}.before-reset`, previous);
+  if (previous !== null) {
+    guardArchive?.();
+    storage.setItem(archiveKey, previous);
+  }
+  if (guardArchive && storage.getItem(archiveKey) !== previous) throw new SaveConflictError();
   assertSaveRevision(storage, revision);
   storage.setItem(SAVE_KEY, encoded);
+  validatedPrimary.set(storage, { bytes: encoded, currentSchema: true });
   // Keep backup and before-reset recovery copies; a reset does not permanently erase them.
-  return { primary: encoded };
+  return {
+    primary: encoded,
+    ...(storage.terrainVersion === 7 ? { backup: storage.getItem(BACKUP_KEY) } : {}),
+  };
 }

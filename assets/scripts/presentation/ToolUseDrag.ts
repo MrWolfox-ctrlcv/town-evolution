@@ -1,14 +1,14 @@
 import { toolOutline } from './ToolOutline';
 import { terrainHeight } from './TerrainInteraction';
 import { diggingToolCommand } from './DiggingToolCommand';
-import { singleHammerResult, toolFailureMessage } from './SingleHammerPreview';
+import { singleHammerPreview, toolFailureMessage } from './SingleHammerPreview';
 import { Node } from 'cc';
 import { EntityAssemblySelection } from '../application/EntityAssemblySelection';
 import { hammerTarget } from './HammerTarget';
 import { entityAssemblyPreview } from './EntityAssemblyPreview';
 import { ModelFactory } from './ModelFactory';
 import { footprint, toolCraftPlan, mixedCraftPlan } from '../domain/game';
-import type { Tool, Command, LandCell } from '../domain/game';
+import type { Tool, Command, LandCell, Building } from '../domain/game';
 import { soilSelection, soilSelectionAmount, soilWaterCommand } from '../application/SoilWatering';
 import { MixedCraftSelection } from '../application/MixedCraftSelection';
 import { mixedCraftPreview, mixedSourceRings } from './MixedCraftPreview';
@@ -51,9 +51,10 @@ export class ToolUseDrag {
   }
   move(id: number, point: Point): void {
     if (id !== this.pointer) return;
-    const command = this.command(point);
-    const reason = command ? this.session.reason(command) : null;
-    this.mark(command, !reason, point);
+    const command = this.command(point),
+      single = singleHammerPreview(this.session, command);
+    const reason = single ? single.reason : command ? this.session.reason(command) : null;
+    this.mark(command, !reason, point, single?.building ?? null);
     this.session.message =
       this.mixed.invalid || this.entities.invalid
         ? '材料堆已变化，请重新拖动'
@@ -104,7 +105,12 @@ export class ToolUseDrag {
     this.marker = null;
     this.markerKey = '';
   }
-  private mark(command: Command | null, valid: boolean, point: Point): void {
+  private mark(
+    command: Command | null,
+    valid: boolean,
+    point: Point,
+    single: Building | null,
+  ): void {
     const resource =
       command?.type === 'gatherNatural'
         ? this.session.state.naturalResources.find((entry) => entry.id === command.resourceId)
@@ -117,8 +123,7 @@ export class ToolUseDrag {
             'x' in command
           ? toolCraftPlan(this.session.state, command.tool, command.x, command.z)
           : null;
-    const assembled = this.entities.plan(this.session.state),
-      single = valid ? singleHammerResult(this.session, command) : null;
+    const assembled = this.entities.plan(this.session.state);
     const building =
       single ??
       assembled?.building ??
@@ -143,7 +148,7 @@ export class ToolUseDrag {
         : [];
     const surface = resource
       ? this.town.naturalOrigin(resource.id)
-      : this.session.state.terrainVersion === 6 &&
+      : (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7) &&
           command?.type === 'useTool' &&
           command.tool === 'diggingTool'
         ? (this.town.pickTerrain(this.map.screenRay(point))?.point ?? null)

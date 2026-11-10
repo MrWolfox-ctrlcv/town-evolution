@@ -1,3 +1,4 @@
+import { SafeControls } from './SafeControls';
 import { TerrainNavigation } from './TerrainNavigation';
 import type { TerrainNavigationHandlers } from './TerrainNavigation';
 import { hasMultipleContacts } from './InputProvenance';
@@ -49,6 +50,7 @@ export interface HudData {
 export class TownHUD {
   readonly mapInput: Node;
   private readonly canvas: Node;
+  private readonly controls: SafeControls;
   private readonly top: Node;
   private readonly bottom: BottomActions;
   private readonly radial: RadialActions;
@@ -100,10 +102,11 @@ export class TownHUD {
     canvas.cameraComponent = camera;
     canvas.alignCanvasWithScreen = true;
     this.mapInput = uiNode('MapInput', this.canvas);
-    this.top = uiNode('Summary', this.canvas);
+    this.controls = new SafeControls(this.canvas);
+    this.top = uiNode('Summary', this.controls.root);
     consumeTouches(this.top);
     this.resources = new ResourceCounters(this.top);
-    this.settings = new ActionButton(this.canvas, explain, this.settingsArt);
+    this.settings = new ActionButton(this.controls.root, explain, this.settingsArt);
     this.settings.node.name = 'Menu-settings';
     this.settings.set(
       openSettings
@@ -117,13 +120,13 @@ export class TownHUD {
           }
         : null,
     );
-    this.tools = new ToolTray(this.canvas);
-    this.bottom = new BottomActions(this.canvas, explain, changeTab, (hidden) =>
+    this.tools = new ToolTray(this.controls.root, this.canvas);
+    this.bottom = new BottomActions(this.controls.root, explain, changeTab, (hidden) =>
       this.tools.setObscured(hidden),
     );
-    this.radial = new RadialActions(this.canvas, explain);
-    this.message = new StatusToast(this.canvas);
-    this.handbook = new RecipeHandbook(this.canvas);
+    this.radial = new RadialActions(this.controls.root, explain);
+    this.message = new StatusToast(this.controls.root);
+    this.handbook = new RecipeHandbook(this.controls.root, false, this.canvas);
     this.flights = new CollectionFlights(
       this.canvas,
       (kind) => this.tools.destination(kind),
@@ -133,7 +136,7 @@ export class TownHUD {
   }
   setTerrainNavigation(handlers: TerrainNavigationHandlers): void {
     this.terrainNavigation?.dispose();
-    this.terrainNavigation = new TerrainNavigation(this.canvas, handlers);
+    this.terrainNavigation = new TerrainNavigation(this.controls.root, handlers);
     this.terrainNavigation.root.setSiblingIndex(this.top.getSiblingIndex() + 1);
   }
   terrainStatus(text: string): void {
@@ -147,6 +150,7 @@ export class TownHUD {
   }
   coversMapPoint(point: { x: number; y: number }): boolean {
     return (
+      !this.controls.contains(point) ||
       (this.top.activeInHierarchy &&
         this.top.getComponent(UITransform)!.hitTest(new Vec2(point.x, point.y))) ||
       (this.settings.node.activeInHierarchy &&
@@ -160,7 +164,7 @@ export class TownHUD {
   }
   projectObject(points: readonly RadialPoint[], suppressed = false): void {
     this.radial.setSuppressed(suppressed);
-    const canvas = this.canvas.getComponent(UITransform)!;
+    const canvas = this.controls.root.getComponent(UITransform)!;
     const obstacles = [
       ...this.tools.regions(),
       ...this.handbook.regions(),
@@ -236,19 +240,28 @@ export class TownHUD {
     const physical = screen.windowSize;
     const dpr = Math.max(1, screen.devicePixelRatio);
     // One logical unit is approximately one CSS px / platform UI point.
-    const width = Math.max(1, physical.width / dpr);
-    const height = Math.max(1, physical.height / dpr);
+    const fullWidth = Math.max(1, physical.width / dpr);
+    const fullHeight = Math.max(1, physical.height / dpr);
+    view.setDesignResolutionSize(fullWidth, fullHeight, ResolutionPolicy.SHOW_ALL);
+    this.canvas.getComponent(UITransform)!.setContentSize(fullWidth, fullHeight);
+    const area = this.controls.layout(fullWidth, fullHeight);
+    const { width, height } = area;
     const layout = hudLayout(
       width,
       height,
       this.lastData?.actions.length ?? 0,
       Boolean(this.lastData?.message.trim()),
     );
-    view.setDesignResolutionSize(width, height, ResolutionPolicy.SHOW_ALL);
-    this.canvas.getComponent(UITransform)!.setContentSize(width, height);
-    this.mapInput.getComponent(UITransform)!.setContentSize(layout.mapWidth, layout.mapHeight);
-    this.mapInput.setPosition((layout.left - layout.right) / 2, layout.bottom / 2);
-    this.tools.layout(width, height, this.terrainNavigation ? 136 : layout.top, 88, layout.left);
+    this.mapInput.getComponent(UITransform)!.setContentSize(fullWidth, fullHeight);
+    this.mapInput.setPosition(0, 0);
+    this.tools.layout(
+      width,
+      height,
+      this.terrainNavigation ? 136 : layout.top,
+      88,
+      layout.left,
+      area,
+    );
     this.terrainNavigation?.layout(width, height);
     this.handbook.layout(width, height, layout.left, layout.bottom);
     this.top.setPosition(layout.summaryX, height / 2 - 26);
@@ -260,9 +273,15 @@ export class TownHUD {
       iconOnly: true,
     });
     this.bottom.layout(width, height);
-    this.radial.layout(width, height);
+    this.radial.layout(width, height, area);
     this.message.layout(width, height, this.bottom.noticeY);
-    return layout;
+    return {
+      ...layout,
+      width: fullWidth,
+      height: fullHeight,
+      mapWidth: fullWidth,
+      mapHeight: fullHeight,
+    };
   }
   render(data: HudData): boolean {
     this.lastData = data;

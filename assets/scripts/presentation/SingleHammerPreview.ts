@@ -1,16 +1,21 @@
-import { dispatch } from '../domain/game';
 import type { Building, Command } from '../domain/game';
 import type { GameSession } from '../application/GameSession';
 
 /** The real command decides empty-crate vs attached-mud behavior; no guessed recipe. */
-export function singleHammerResult(session: GameSession, command: Command | null): Building | null {
+export function singleHammerPreview(
+  session: GameSession,
+  command: Command | null,
+): { reason: string | null; building: Building | null } | null {
   if (command?.type !== 'useTool' || command.tool !== 'hammer' || !('buildingId' in command))
     return null;
-  const result = dispatch(session.state, command, Math.max(Date.now(), session.state.lastSeenAt));
-  if (!result.ok) return null;
+  const result = session.preview(command);
+  if (!result.ok) return { reason: result.error, building: null };
   const before = session.state.buildings.find((b) => b.id === command.buildingId);
   const after = result.state.buildings.find((b) => b.id === command.buildingId);
-  return after && after.kind !== before?.kind ? after : null;
+  return { reason: null, building: after && after.kind !== before?.kind ? after : null };
+}
+export function singleHammerResult(session: GameSession, command: Command | null): Building | null {
+  return singleHammerPreview(session, command)?.building ?? null;
 }
 
 export function toolFailureMessage(command: Command | null, reason: string): string {

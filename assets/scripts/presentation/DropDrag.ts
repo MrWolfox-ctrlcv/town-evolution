@@ -3,7 +3,14 @@ import { terrainContact, terrainHeight } from './TerrainInteraction';
 import { dropSnapshot } from '../application/DropSnapshot';
 import { Node, Vec3 } from 'cc';
 import type { geometry } from 'cc';
-import { dropPosition, dropMovePlan, isCompostItem, footprint } from '../domain/game';
+import {
+  dropPosition,
+  dropMovePlan,
+  isCompostItem,
+  isGroundTradeItem,
+  COMMERCE,
+  footprint,
+} from '../domain/game';
 import type { Command, DropSnapshot } from '../domain/game';
 import { dropShape } from '../application/DropGeometry';
 import type { ProductDropSurface } from '../application/StackDrop';
@@ -66,7 +73,9 @@ export class DropDrag {
     }
     this.ghost!.setPosition(
       point.x + this.offset.x,
-      this.session.state.terrainVersion === 6 ? point.y + 0.45 : this.height,
+      this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7
+        ? point.y + 0.45
+        : this.height,
       point.z + this.offset.z,
     );
     const command = this.command(ray, screen),
@@ -104,13 +113,17 @@ export class DropDrag {
         reason ? '#D87163' : '#EFD377',
       );
     }
-    if (command?.type === 'depositCompost') {
+    if (
+      command?.type === 'depositCompost' ||
+      command?.type === 'shopTrade' ||
+      command?.type === 'dockTransfer'
+    ) {
       const b = this.session.state.buildings.find((b) => b.id === command.buildingId);
       if (b) {
         const size = footprint(b);
         this.marker = this.factory.shape(
           this.parent,
-          'CompostDropTarget',
+          'BuildingDropTarget',
           b.x + size.width / 2,
           (b.baseElevation ?? 0) + 0.12,
           b.z + size.depth / 2,
@@ -162,6 +175,16 @@ export class DropDrag {
     if (!ray) return null;
     const buildingId = this.town.pickBuilding(ray),
       b = this.session.state.buildings.find((b) => b.id === buildingId);
+    if (b && isGroundTradeItem(this.source.item)) {
+      const cargo = {
+        buildingId: b.id,
+        item: this.source.item,
+        quantity: this.source.amount,
+        source: { type: 'drop' as const, drop: { ...this.source } },
+      };
+      if (b.kind === 'shop') return { type: 'shopTrade', ...cargo, side: 'sell' };
+      if (b.kind === 'dock') return { type: 'dockTransfer', ...cargo, direction: 'stage' };
+    }
     if (b?.kind === 'compostBarrel' && isCompostItem(this.source.item))
       return {
         type: 'depositCompost',
@@ -198,6 +221,9 @@ export class DropDrag {
     };
   }
   private hint(c: Command): string {
+    if (c.type === 'shopTrade' && isGroundTradeItem(c.item))
+      return `松手卖${c.quantity}份 · +${c.quantity * COMMERCE.prices[c.item].sell}币`;
+    if (c.type === 'dockTransfer') return `松手备货${c.quantity}份 · 不会自动发船`;
     if (c.type === 'depositCompost') return `松手投入${c.quantity}份`;
     if (c.type === 'pickupDrop') return '松手收回仓库';
     if (c.type !== 'moveDrop') return '';
@@ -209,7 +235,8 @@ export class DropDrag {
       : `松手合并${materialQuantity(amount)}份`;
   }
   private ground(ray: geometry.Ray): Vec3 | null {
-    if (this.session.state.terrainVersion === 6) return terrainContact(this.town, ray);
+    if (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7)
+      return terrainContact(this.town, ray);
     if (Math.abs(ray.d.y) < 0.00001) return null;
     const t = -ray.o.y / ray.d.y;
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);

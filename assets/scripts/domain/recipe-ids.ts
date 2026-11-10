@@ -7,6 +7,8 @@ export type RecipeId =
   | 'irrigate-farm'
   | 'gather-wood'
   | 'build-order-board'
+  | 'build-fence'
+  | 'build-bench'
   | 'build-crate'
   | 'build-house'
   | 'build-warehouse'

@@ -1,3 +1,4 @@
+import { getV7World } from './v7-world';
 import type { GameState } from './types';
 import type { Terrain6State, V6CellCheckpoint, V6FillLayer } from './v6-edit-types';
 import { getV6World } from './v6-world';
@@ -15,9 +16,9 @@ function exact(value: unknown, fields: string[]): asserts value is Record<string
   );
 }
 /** A bounded per-cell checkpoint, never an operation journal or a trusted yield ledger. */
-export function parseTerrain6(value: unknown, seed: number): Terrain6State {
+export function parseTerrain6(value: unknown, seed: number, version: 6 | 7 = 6): Terrain6State {
   exact(value, ['format', 'nextOperation', 'cells']);
-  const world = getV6World(seed);
+  const world = version === 7 ? getV7World(seed) : getV6World(seed);
   requireRule(
     value.format === 1 &&
       integer(value.nextOperation) &&
@@ -52,7 +53,10 @@ export function parseTerrain6(value: unknown, seed: number): Terrain6State {
           const c = world.at(x + dx, z + dz),
             h = world.hydrology.at(x + dx, z + dz);
           requireRule(
-            c && !c.reserved && h?.state === 'dryBuildable' && h.dryLower >= 1.8,
+            c &&
+              !c.reserved &&
+              h?.state === 'dryBuildable' &&
+              h.dryLower >= 1.8 + (version === 7 ? 1e-5 : 0),
             'v6改造越过受保护缓冲区',
           );
         }
@@ -91,7 +95,7 @@ export function parseTerrain6(value: unknown, seed: number): Terrain6State {
 }
 /** No live occupancy oracle is used for reconstruction. Validate only the completed final layout. */
 export function validateTerrain6Resources(state: GameState): void {
-  const world = getV6World(state.mapSeed),
+  const world = (state.terrainVersion === 7 ? getV7World : getV6World)(state.mapSeed),
     surface = getV6EditSurface(state);
   const resources = new Map(state.naturalResources.map((r) => [`${r.x},${r.z}`, r]));
   for (const cell of state.terrain6!.cells) {

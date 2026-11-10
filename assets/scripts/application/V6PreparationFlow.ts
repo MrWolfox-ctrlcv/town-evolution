@@ -1,4 +1,5 @@
-import { V6WorldPreparation, type BuildProgress } from '../domain/v6-preparation';
+import type { BuildProgress } from '../domain/v6-preparation';
+import { createV6Preparation, type V6PreparationJob } from './V6WorkerPreparation';
 import { peekTerrain6Save } from '../domain/v6-save-header';
 import { SAVE_KEY, BACKUP_KEY } from '../domain/storage';
 import type { KeyValueStorage } from '../domain/storage';
@@ -26,6 +27,11 @@ const STAGE_LABELS: Record<BuildProgress['stage'], string> = {
   'cell-finalize': '地形校验',
   'initial-resources': '初始资源',
   'initial-trees': '初始树木',
+  'transfer-validate': '验证与接收地形',
+  'qualification-cells': '验证土地与资源',
+  'qualification-connectivity': '验证岛屿连通',
+  'qualification-border': '验证海岸边界',
+  'qualification-water': '验证湖河海湾',
   complete: '完成准备，验证存档',
 };
 /** A cancellable UI-owned job. No session, save writes, timers or stale callbacks. */
@@ -34,7 +40,7 @@ export class V6PreparationFlow {
   private collect: (() => void) | null = null;
   private verify: (() => boolean) | null = null;
   private remaining: number[] = [];
-  private job: V6WorldPreparation | null = null;
+  private job: V6PreparationJob | null = null;
   private paintedFrames = 0;
   private finish: (() => void) | null = null;
   private reject: ((message: string) => void) | null = null;
@@ -106,10 +112,11 @@ export class V6PreparationFlow {
             done?.();
             return true;
           }
-          this.job = new V6WorldPreparation(seed);
+          this.job = createV6Preparation(seed);
         }
         const progress = this.job.step(64);
-        this.message = `准备自然地形 · ${STAGE_LABELS[progress.stage] ?? '地形准备'}\n可取消；完整验证后才保存。设备性能尚未验证。`;
+        this.message = `${this.job.mode === 'fallback' ? '后台准备不可用，分帧准备' : '准备自然地形'} · ${STAGE_LABELS[progress.stage] ?? '地形准备'}\n可取消；完整验证后才保存。设备性能尚未验证。`;
+        if (this.job.waiting) break;
         if (progress.status === 'failed' || progress.status === 'cancelled')
           throw Error('地形准备未完成');
         if (progress.status === 'ready') {

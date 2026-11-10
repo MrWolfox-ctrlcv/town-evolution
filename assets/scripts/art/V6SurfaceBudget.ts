@@ -1,3 +1,4 @@
+import { v6RenderBatchCost } from './V6RenderBatches';
 import type { MeshData } from './AssetTypes';
 import type { V6CellSpan } from './V6CellSpans';
 export const V6_RESIDENT_ACCOUNTED_BYTES = 256 * 1024 * 1024;
@@ -22,16 +23,19 @@ export function v6SurfaceCost(data: MeshData | V6CellSpan): number {
   const upload = vertices * 48 + triangles * 6;
   // Two logical upload allowances for engine host storage and GPU data. Driver,
   // allocator, trees and other actors are outside this deterministic admission ledger.
-  return cpu + upload * 2;
+  return cpu + upload * 2 + ('mesh' in data ? 0 : v6RenderBatchCost(data));
 }
 export class V6SurfaceBudget {
   private live = new Map<string, number>();
   private liveBytes = 0;
   private staging = 0;
+  reclaim: ((bytes: number) => void) | null = null;
   constructor(readonly limit = V6_RESIDENT_ACCOUNTED_BYTES) {
     if (!Number.isFinite(limit) || limit <= 0) throw Error('Invalid terrain6 resident budget');
   }
   reserve(bytes: number): void {
+    const excess = this.liveBytes + this.staging + bytes - this.limit;
+    if (excess > 0) this.reclaim?.(excess);
     const requested = this.liveBytes + this.staging + bytes;
     if (requested > this.limit) throw new V6SurfaceBudgetError(requested, this.limit);
     this.staging += bytes;

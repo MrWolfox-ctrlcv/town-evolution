@@ -91,7 +91,10 @@ export function planTerrain6Edit(state: GameState, command: EditTerrain6Command)
       const c = world.at(x + dx, z + dz),
         h = world.hydrology.at(x + dx, z + dz);
       requireRule(
-        c && !c.reserved && h?.state === 'dryBuildable' && h.dryLower >= 1.8,
+        c &&
+          !c.reserved &&
+          h?.state === 'dryBuildable' &&
+          h.dryLower >= 1.8 + (state.terrainVersion === 7 ? 1e-5 : 0),
         '水域、岸边和保留地缓冲区不可改造',
       );
     }

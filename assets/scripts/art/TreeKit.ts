@@ -1,6 +1,6 @@
 import { terrainHash } from './NaturalBlockKit';
 import { ART as C, part } from './AssetTypes';
-import { compileAsset } from './MeshCompiler';
+import { assetBounds } from './MeshCompiler';
 import type { AssetRecipe, Part, V3 } from './AssetTypes';
 /** Broad overlapping crown lobes and a forked tapered trunk, within the original tree footprint. */
 export function treeParts(): Part[] {
@@ -55,7 +55,7 @@ function leafColor(hex: string, warmth: number, light: number): string {
 export function treeVariants(): AssetRecipe[] {
   return (['tree', 'tree-pine'] as const).flatMap((kind) => {
     const original = kind === 'tree' ? treeParts() : pineParts();
-    const maxHeight = compileAsset({ id: kind, footprint: [1.2, 1.2], parts: original }).max[1]!;
+    const maxHeight = assetBounds({ id: kind, footprint: [1.2, 1.2], parts: original }).max[1]!;
     return Array.from({ length: TREE_VARIANTS[kind] }, (_, variant) => {
       const random = (index: number, channel: number) =>
         terrainHash(kind === 'tree' ? 41017 : 62039, variant, index, channel);
@@ -95,11 +95,8 @@ export function treeVariants(): AssetRecipe[] {
       };
       // Keep every yaw inside the historic 1.02-wide picking envelope. Uniform
       // fitting preserves lobe rotations and never changes the ground contact.
-      const mesh = compileAsset(recipe);
-      let radius = 0;
-      for (let i = 0; i < mesh.positions.length; i += 3)
-        radius = Math.max(radius, Math.hypot(mesh.positions[i]!, mesh.positions[i + 2]!));
-      const fit = Math.min(1, 0.595 / radius, maxHeight / mesh.max[1]!);
+      const bounds = assetBounds(recipe, true);
+      const fit = Math.min(1, 0.595 / bounds.radius, maxHeight / bounds.max[1]!);
       recipe.parts = parts.map((p) => ({
         ...p,
         position: p.position.map((v) => v * fit) as unknown as V3,

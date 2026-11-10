@@ -19,7 +19,7 @@ export function validItemAmount(
   version: number,
   limit = MAX_VALUE,
 ): value is number {
-  return version === 6 && isV6Material(item)
+  return (version === 6 || version === 7) && isV6Material(item)
     ? materialAmount(value, limit)
     : typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 && value <= limit;
 }

@@ -4,7 +4,7 @@ import { wood } from './BuildingCore';
 import { woodenCrate } from './BuildingAccessories';
 import { cropProductUnit } from './CropPileKit';
 import { stoneOven } from './BakeryKit';
-import { compileAsset } from './MeshCompiler';
+import { assetBounds } from './MeshCompiler';
 
 export type CompostBarrelStage = 'empty' | 'working' | 'ready';
 export const BARREL_CRATE_SCALE = 1.3;
@@ -126,7 +126,7 @@ export function roastedCarrotProductUnit(): Part[] {
     name: p.name === 'carrot-root' ? 'roasted-carrot-root' : 'roasted-carrot-leaves',
     color: p.name === 'carrot-root' ? '#CF702B' : '#698336',
   }));
-  const bounds = compileAsset({ id: 'cooked-carrot', footprint: [1, 1], parts: cooked });
+  const bounds = assetBounds({ id: 'cooked-carrot', footprint: [1, 1], parts: cooked });
   const scale = 0.85,
     lift = 0.055 - bounds.min[1]! * scale;
   for (const x of [-0.125, 0.125]) {

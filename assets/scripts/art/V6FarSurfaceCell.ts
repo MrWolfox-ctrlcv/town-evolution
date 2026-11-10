@@ -18,7 +18,7 @@ const offsets = [
 export { offsets as v6FarNeighborOffsets };
 /** Immutable snapshots own bounded qualification arrays; old revisions are collectable. */
 const cache = new WeakMap<V6SurfaceSource, { flags: Uint8Array; errors: Float64Array }>();
-function untouched(source: V6SurfaceSource, x: number, z: number): boolean {
+export function v6FarCellUntouched(source: V6SurfaceSource, x: number, z: number): boolean {
   if (source.editAt(x, z)) return false;
   const original = source.world.resourceAt(x, z),
     live = source.resourceAt(x, z),
@@ -76,14 +76,14 @@ export function v6FarCellMaterial(
   if (previous === 2 || previous === 3) return previous === 2 ? 'grass' : 'stone';
   flags[index] = 1;
   const cell = world.at(x, z);
-  if (!cell || cell.reserved || !untouched(source, x, z)) return null;
+  if (!cell || cell.reserved || !v6FarCellUntouched(source, x, z)) return null;
   // An untouched high cell may still own a wall against an excavated neighbor.
   // Keep that entire cell exact, including its cap intersections and strata.
   for (const [dx, dz] of offsets) {
     const nx = x + dx,
       nz = z + dz,
       neighbor = world.at(nx, nz);
-    if (neighbor && !neighbor.reserved && !untouched(source, nx, nz)) return null;
+    if (neighbor && !neighbor.reserved && !v6FarCellUntouched(source, nx, nz)) return null;
   }
   const heights: number[] = [],
     exposed: boolean[] = [];

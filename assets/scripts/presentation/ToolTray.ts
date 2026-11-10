@@ -31,7 +31,11 @@ export class ToolTray {
   private ghostAppearance: TrayAppearance | null = null;
   private width = 1;
   private height = 1;
-  constructor(private readonly parent: Node) {
+  private origin = { x: 0, y: 0 };
+  constructor(
+    parent: Node,
+    private readonly inputRoot = parent,
+  ) {
     this.left = new TrayColumn(parent, 'ToolsLeft', () => this.cancel());
     this.right = new TrayColumn(parent, 'ProductsRight', () => this.cancel());
     for (const kind of [
@@ -70,7 +74,7 @@ export class ToolTray {
     this.ghost = uiNode('ToolGhost', parent);
     this.ghost.getComponent(UITransform)!.setContentSize(48, 48);
     this.ghost.active = false;
-    parent.on(Node.EventType.TOUCH_START, this.otherTouch, this, true);
+    inputRoot.on(Node.EventType.TOUCH_START, this.otherTouch, this, true);
   }
   canShow(kind: ToolKind): boolean {
     return this.left.canShow(kind) || this.right.canShow(kind);
@@ -118,7 +122,15 @@ export class ToolTray {
   setHandlers(handlers: ToolHandlers): void {
     this.handlers = handlers;
   }
-  layout(width: number, height: number, top: number, bottom = 80, left = 0): void {
+  layout(
+    width: number,
+    height: number,
+    top: number,
+    bottom = 80,
+    left = 0,
+    origin = { x: 0, y: 0 },
+  ): void {
+    this.origin = { ...origin };
     this.width = width;
     this.height = height;
     const y = height / 2 - top - 30;
@@ -150,7 +162,7 @@ export class ToolTray {
   }
   dispose(): void {
     this.cancel();
-    this.parent.off(Node.EventType.TOUCH_START, this.otherTouch, this, true);
+    this.inputRoot.off(Node.EventType.TOUCH_START, this.otherTouch, this, true);
     this.icons.dispose();
     this.left.root.destroy();
     this.right.root.destroy();
@@ -165,11 +177,12 @@ export class ToolTray {
       this.cancel();
   }
   private tile(column: TrayColumn, kind: ToolKind, name: string): void {
-    const { node: tile } = column.add(kind, name);
+    const entry = column.add(kind, name);
+    const tile = entry.node;
     const icon = uiNode(`${name}Icon`, tile);
     icon.setPosition(0, 7);
     // The static category shows both tools; the held tool still follows the target material.
-    this.icons.draw(icon, kind === 'diggingTool' ? 'diggingCategory' : kind);
+    entry.prepare = () => this.icons.draw(icon, kind === 'diggingTool' ? 'diggingCategory' : kind);
     tile.on(Node.EventType.TOUCH_START, (event: EventTouch) => {
       event.propagationStopped = true;
       if (this.active !== null || hasMultipleContacts(event, input)) {
@@ -228,7 +241,9 @@ export class ToolTray {
     if (id === null) return;
     const ui = event.getUILocation();
     // Do not synthesize a final farming stroke from an off-screen release.
-    if (ui.x < 0 || ui.y < 0 || ui.x > this.width || ui.y > this.height) {
+    const x = ui.x - this.origin.x,
+      y = ui.y - this.origin.y;
+    if (x < 0 || y < 0 || x > this.width || y > this.height) {
       this.cancel();
       return;
     }
@@ -252,7 +267,10 @@ export class ToolTray {
       }
     }
     const point = event.getUILocation();
-    this.ghost.setPosition(point.x - this.width / 2, point.y - this.height / 2 + 22);
+    this.ghost.setPosition(
+      point.x - this.origin.x - this.width / 2,
+      point.y - this.origin.y - this.height / 2 + 22,
+    );
     this.ghost.active = true;
   }
 }

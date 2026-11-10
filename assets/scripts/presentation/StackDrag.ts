@@ -58,7 +58,9 @@ export class StackDrag {
     }
     this.ghost!.setPosition(
       point.x + this.offset.x,
-      (this.session.state.terrainVersion === 6 ? point.y : 0) + 0.12,
+      (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7
+        ? point.y
+        : 0) + 0.12,
       point.z + this.offset.z,
     );
     const changed = this.changedSource();
@@ -207,7 +209,8 @@ export class StackDrag {
       : null;
   }
   private ground(ray: geometry.Ray): Vec3 | null {
-    if (this.session.state.terrainVersion === 6) return terrainContact(this.town, ray);
+    if (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7)
+      return terrainContact(this.town, ray);
     if (Math.abs(ray.d.y) < 0.00001) return null;
     const t = -ray.o.y / ray.d.y;
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, 0, ray.o.z + ray.d.z * t);

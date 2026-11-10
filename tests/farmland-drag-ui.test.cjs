@@ -285,12 +285,15 @@ function uiModule(name, dependencies, browser) {
   new Function('require', 'module', 'exports', 'window', 'navigator', source)(
     (id) => {
       if (id in dependencies) return dependencies[id];
+      if (id === './TerrainInteraction')
+        return require('./helpers/selection-ui.cjs').load('TerrainInteraction');
       if (
         [
           './CameraVisibility',
           './V6TownNavigation',
           './TownStreamingFrame',
           './TownUiActions',
+          './SafeViewport',
         ].includes(id)
       )
         return uiModule(id.slice(2), dependencies, browser);
@@ -417,22 +420,32 @@ function focusFixture(...browserArgs) {
     off: (event) => hooks.delete(event),
   };
   const guard = uiModule('BrowserInputGuard', {}, browser);
+  const environment = uiModule(
+    'EnvironmentEffect',
+    {
+      cc: { EffectAsset: { get: () => ({}) } },
+    },
+    browser,
+  );
   const { TownBootstrap } = uiModule(
     'TownBootstrap',
     {
       cc: {
         _decorator: { ccclass: () => (value) => value },
-        Component: class {},
+        Component: class {
+          isValid = true;
+        },
         screen: events,
         game: events,
         Game: { EVENT_HIDE: 'hide', EVENT_SHOW: 'show' },
-        sys: { localStorage: {} },
+        sys: { localStorage: {}, isBrowser: typeof browser?.addEventListener === 'function' },
         input: engineInput,
       },
       './TownController': { TownController },
       './BrowserInputGuard': guard,
       './InputProvenance': provenance,
       './SceneLighting': { configureTownLighting() {} },
+      './EnvironmentEffect': environment,
       '../application/GameStart': require('../.domain-build/application/GameStart'),
       '../application/ExclusiveGameStorage': {
         ExclusiveGameStorage: class {
@@ -453,7 +466,7 @@ function focusFixture(...browserArgs) {
     browser,
   );
   const bootstrap = new TownBootstrap();
-  bootstrap.node = { scene: {} };
+  bootstrap.node = { scene: {}, isValid: true };
   bootstrap.render = () => {};
   bootstrap.onLoad();
   bootstrap.controller = controller;
@@ -562,13 +575,22 @@ for (const button of [1, 2])
 
 test('destroy releases every browser listener and native lifecycle hook without stale callbacks', () => {
   const f = focusFixture();
-  assert.equal(f.browser.listeners.size, 4);
+  assert.deepEqual([...f.browser.listeners.keys()].sort(), [
+    'blur',
+    'mousedown',
+    'mousemove',
+    'mouseup',
+    'orientationchange',
+    'resize',
+    'scroll',
+  ]);
   f.bootstrap.onDestroy();
   assert.ok([...f.browser.listeners.values()].every((handlers) => handlers.size === 0));
   assert.equal(f.hooks.size, 0);
   f.browser.emit('blur');
   f.browser.emit('mousedown', { button: 0 });
   f.browser.emit('mousemove', { buttons: 0 });
+  for (const event of ['resize', 'scroll', 'orientationchange']) f.browser.emit(event);
   assert.equal(f.cancellations.tool, 0);
   assert.equal(f.cancellations.disposed, 1);
 });

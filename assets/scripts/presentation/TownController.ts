@@ -1,4 +1,5 @@
 import { V6TownNavigation } from './V6TownNavigation';
+import { terrainContact } from './TerrainInteraction';
 import { streamTownFrame } from './TownStreamingFrame';
 import { townUiActions } from './TownUiActions';
 import { materialQuantity } from '../application/MaterialQuantity';
@@ -66,8 +67,8 @@ export class TownController {
         drag: (id, point, ray, screen) => this.drag.move(id, point, ray, screen),
         drop: (id, ray, screen) => this.drag.drop(id, ray, screen),
         cancel: () => this.drag.clear(),
-        ...(session.state.terrainVersion === 6
-          ? { ground: (ray: geometry.Ray) => this.town.pickTerrain(ray)?.point ?? null }
+        ...(session.state.terrainVersion === 6 || session.state.terrainVersion === 7
+          ? { ground: (ray: geometry.Ray) => terrainContact(this.town, ray) }
           : {}),
       },
       this.session.state.terrainVersion,
@@ -77,7 +78,7 @@ export class TownController {
     );
     this.hud.setToolHandlers(this.tools);
     this.v6Navigation =
-      session.state.terrainVersion === 6
+      session.state.terrainVersion === 6 || session.state.terrainVersion === 7
         ? new V6TownNavigation(
             this.hud,
             this.map,
@@ -130,7 +131,10 @@ export class TownController {
     this.hud.tick(dt);
     this.map.tick();
     streamTownFrame(this.session.state.terrainVersion, this.map, this.town);
-    if (this.session.state.terrainVersion === 6 && !this.tools.checkTerrainGesture())
+    if (
+      (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7) &&
+      !this.tools.checkTerrainGesture()
+    )
       this.cancelInput();
     this.v6Navigation?.tick();
     this.projectSelection();

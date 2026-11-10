@@ -44,6 +44,59 @@ function transform(v: V3, p: Part): number[] {
   [x, y] = [x * Math.cos(rz!) - y * Math.sin(rz!), x * Math.sin(rz!) + y * Math.cos(rz!)];
   return [x + p.position[0], y + p.position[1], z + p.position[2]];
 }
+function partGeometry(p: Part) {
+  const organic =
+    PLANT_SHAPES[p.shape] ??
+    (p.shape === 'crown'
+      ? CROWN
+      : p.shape === 'timber'
+        ? TIMBER
+        : p.shape === 'blade'
+          ? BLADE
+          : undefined);
+  const vertices =
+    organic?.vertices ?? (p.shape === 'box' ? BOX : p.shape === 'gable' ? GABLE : GEM);
+  const faces =
+    organic?.faces ??
+    (p.shape === 'box'
+      ? BOX_FACES
+      : p.shape === 'gable'
+        ? [
+            [0, 2, 1],
+            [3, 4, 5],
+            [0, 3, 5, 2],
+            [1, 2, 5, 4],
+            [0, 1, 4, 3],
+          ]
+        : [
+            [0, 2, 1],
+            [0, 3, 2],
+            [0, 4, 3],
+            [0, 1, 4],
+            [5, 1, 2],
+            [5, 2, 3],
+            [5, 3, 4],
+            [5, 4, 1],
+          ]);
+  return { vertices, faces, smooth: PLANT_SHAPES[p.shape]?.smooth };
+}
+function faceCross(points: number[][], face: number[]): number[] {
+  const a = points[face[0]!]!,
+    b = points[face[1]!]!,
+    c = points[face[2]!]!;
+  const u = b.map((n, i) => n - a[i]!),
+    v = c.map((n, i) => n - a[i]!);
+  return [
+    u[1]! * v[2]! - u[2]! * v[1]!,
+    u[2]! * v[0]! - u[0]! * v[2]!,
+    u[0]! * v[1]! - u[1]! * v[0]!,
+  ];
+}
+function faceLength(n: number[], recipe: AssetRecipe, p: Part): number {
+  const length = Math.hypot(...n);
+  if (length < 1e-10) throw new Error(`Degenerate ${recipe.id}/${p.name}`);
+  return length;
+}
 export function compileAsset(recipe: AssetRecipe): MeshData {
   if (recipe.mesh)
     return {
@@ -66,54 +119,12 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
     max: [-Infinity, -Infinity, -Infinity],
   };
   for (const p of recipe.parts) {
-    const organic =
-      PLANT_SHAPES[p.shape] ??
-      (p.shape === 'crown'
-        ? CROWN
-        : p.shape === 'timber'
-          ? TIMBER
-          : p.shape === 'blade'
-            ? BLADE
-            : undefined);
-    const vertices =
-      organic?.vertices ?? (p.shape === 'box' ? BOX : p.shape === 'gable' ? GABLE : GEM);
-    const faces =
-      organic?.faces ??
-      (p.shape === 'box'
-        ? BOX_FACES
-        : p.shape === 'gable'
-          ? [
-              [0, 2, 1],
-              [3, 4, 5],
-              [0, 3, 5, 2],
-              [1, 2, 5, 4],
-              [0, 1, 4, 3],
-            ]
-          : [
-              [0, 2, 1],
-              [0, 3, 2],
-              [0, 4, 3],
-              [0, 1, 4],
-              [5, 1, 2],
-              [5, 2, 3],
-              [5, 3, 4],
-              [5, 4, 1],
-            ]);
+    const { vertices, faces, smooth } = partGeometry(p);
     const points = vertices.map((v) => transform(v, p));
-    const smooth = PLANT_SHAPES[p.shape]?.smooth;
     const normals = points.map(() => [0, 0, 0]);
     if (smooth)
       for (const face of faces) {
-        const a = points[face[0]!]!,
-          b = points[face[1]!]!,
-          c = points[face[2]!]!;
-        const u = b.map((v, i) => v - a[i]!),
-          v = c.map((v, i) => v - a[i]!);
-        const n = [
-          u[1]! * v[2]! - u[2]! * v[1]!,
-          u[2]! * v[0]! - u[0]! * v[2]!,
-          u[0]! * v[1]! - u[1]! * v[0]!,
-        ];
+        const n = faceCross(points, face);
         for (const index of face) n.forEach((v, i) => (normals[index]![i]! += v));
       }
     const rgb = [1, 3, 5].map((i) => parseInt(p.color.slice(i, i + 2), 16) / 255);
@@ -136,21 +147,24 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
       continue;
     }
     for (const face of faces) {
-      const a = points[face[0]!]!,
-        b = points[face[1]!]!,
-        c = points[face[2]!]!;
-      const u = b.map((n, i) => n - a[i]!),
-        v = c.map((n, i) => n - a[i]!);
-      const n = [
-        u[1]! * v[2]! - u[2]! * v[1]!,
-        u[2]! * v[0]! - u[0]! * v[2]!,
-        u[0]! * v[1]! - u[1]! * v[0]!,
-      ];
-      const length = Math.hypot(...n);
-      if (length < 1e-10) throw new Error(`Degenerate ${recipe.id}/${p.name}`);
+      const n = faceCross(points, face);
+      const length = faceLength(n, recipe, p);
       const normal = n.map((k) => k / length);
       // Pure albedo lets geometry rotate under the actual world-space sun.
       const base = mesh.positions.length / 3;
+      // Project local face coordinates; the longest face axis follows the wood grain.
+      const faceLocal = face.map((i) => vertices[i]!);
+      const span = [0, 1, 2].map(
+        (a) => Math.max(...faceLocal.map((v) => v[a]!)) - Math.min(...faceLocal.map((v) => v[a]!)),
+      );
+      const axes = [0, 1, 2]
+        .filter((a) => span[a]! > 0.001)
+        .sort((a, b) => p.size[b]! - p.size[a]!);
+      const u = axes[0] ?? 0,
+        v = axes[1] ?? 1;
+      const grainWidth = Math.min(0.8, p.size[v]! / p.size[u]!);
+      const patch =
+        Math.abs(p.position[0] * 0.37 + p.position[1] * 0.29 + p.position[2] * 0.43) % 0.19;
       for (const index of face) {
         const pos = points[index]!;
         const vertexNormal = smooth
@@ -158,21 +172,7 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
           : normal;
         mesh.positions.push(...pos);
         mesh.normals.push(...vertexNormal);
-        // Project local face coordinates; the longest face axis follows the wood grain.
         const local = vertices[index]!;
-        const faceLocal = face.map((i) => vertices[i]!);
-        const span = [0, 1, 2].map(
-          (a) =>
-            Math.max(...faceLocal.map((v) => v[a]!)) - Math.min(...faceLocal.map((v) => v[a]!)),
-        );
-        const axes = [0, 1, 2]
-          .filter((a) => span[a]! > 0.001)
-          .sort((a, b) => p.size[b]! - p.size[a]!);
-        const u = axes[0] ?? 0,
-          v = axes[1] ?? 1;
-        const grainWidth = Math.min(0.8, p.size[v]! / p.size[u]!);
-        const patch =
-          Math.abs(p.position[0] * 0.37 + p.position[1] * 0.29 + p.position[2] * 0.43) % 0.19;
         mesh.uvs!.push((local[u]! + 0.5) * 0.8 + patch, (local[v]! + 0.5) * grainWidth + patch);
         mesh.colors.push(...rgb, 1);
         pos.forEach((value, i) => {
@@ -187,4 +187,48 @@ export function compileAsset(recipe: AssetRecipe): MeshData {
     }
   }
   return mesh;
+}
+
+/** Exact emitted-vertex bounds, without building render attributes or triangle indices. */
+export function assetBounds(recipe: AssetRecipe): Pick<MeshData, 'min' | 'max'>;
+export function assetBounds(
+  recipe: AssetRecipe,
+  withRadius: true,
+): Pick<MeshData, 'min' | 'max'> & { radius: number };
+export function assetBounds(recipe: AssetRecipe, withRadius = false) {
+  const min = recipe.mesh ? [...recipe.mesh.min] : [Infinity, Infinity, Infinity];
+  const max = recipe.mesh ? [...recipe.mesh.max] : [-Infinity, -Infinity, -Infinity];
+  let radius = 0;
+  const include = (point: number[]) => {
+    point.forEach((value, axis) => {
+      min[axis] = Math.min(min[axis]!, value);
+      max[axis] = Math.max(max[axis]!, value);
+    });
+    if (withRadius) radius = Math.max(radius, Math.hypot(point[0]!, point[2]!));
+  };
+  if (recipe.mesh) {
+    // Stored bounds are authoritative, even if they differ from the positions.
+    if (withRadius)
+      for (let i = 0; i < recipe.mesh.positions.length; i += 3)
+        radius = Math.max(
+          radius,
+          Math.hypot(recipe.mesh.positions[i]!, recipe.mesh.positions[i + 2]!),
+        );
+  } else {
+    for (const p of recipe.parts) {
+      const { vertices, faces, smooth } = partGeometry(p);
+      const points = vertices.map((v) => transform(v, p));
+      if (smooth) points.forEach(include);
+      else {
+        const emitted = new Set<number>();
+        for (const face of faces) {
+          // Preserve compileAsset's flat-face rejection, without normalizing a normal.
+          faceLength(faceCross(points, face), recipe, p);
+          for (const index of face) emitted.add(index);
+        }
+        for (const index of emitted) include(points[index]!);
+      }
+    }
+  }
+  return withRadius ? { min, max, radius } : { min, max };
 }

@@ -1,4 +1,4 @@
-import { resetSave, SaveConflictError } from '../domain/storage';
+import { resetSave, SaveConflictError, assertSaveRevision } from '../domain/storage';
 import type { KeyValueStorage } from '../domain/storage';
 import type { GameSession } from './GameSession';
 import type { TownProfile } from './TownProfiles';
@@ -75,23 +75,23 @@ export function loadStartSlot(
       host.message = host.session.statusMessage;
       return;
     }
+    let restoredPrimary = false;
     try {
-      resetSave(
-        profileStorage(storage, host.profile),
-        slot.state,
-        host.session?.saveRevision ?? expected,
-      );
-      const restored = townSession(storage, host.profile, now);
-      if (restored.mode !== 'normal') {
-        host.message = restored.statusMessage;
-        return;
-      }
+      const scoped = profileStorage(storage, host.profile);
+      const revision = resetSave(scoped, slot.state, host.session?.saveRevision ?? expected);
+      restoredPrimary = true;
+      const restored = townSession(storage, host.profile, now, { initializeMetadata: false });
+      // Empty storage creates a normal fresh session too: activate only our restored bytes.
+      if (restored.mode !== 'normal' || restored.saveRevision.primary !== revision.primary)
+        throw new SaveConflictError();
+      assertSaveRevision(scoped, revision);
       activate(restored);
     } catch (error) {
-      host.message =
-        error instanceof SaveConflictError
-          ? '另一页面已更新自动存档，尚未替换。当前游戏仍保留。'
-          : '读取失败，当前游戏仍保留。请检查本机存储后重试。';
+      host.message = restoredPrimary
+        ? `读取后校验失败，尚未切换小镇。${host.session ? '当前游戏仍保留；' : ''}手动栏位未更改，请重新检查自动存档。`
+        : error instanceof SaveConflictError
+          ? '另一页面已更新自动存档，尚未替换。请重新检查存档。'
+          : `读取失败，${host.session ? '当前游戏仍保留。' : '尚未进入小镇。'}请检查本机存储后重试。`;
     }
   });
 }

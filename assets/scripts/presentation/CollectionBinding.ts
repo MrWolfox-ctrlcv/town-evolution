@@ -13,6 +13,7 @@ export function bindCollections(
     | {
         naturalOrigin(id: string): SurfacePoint | null;
         dropOrigin(id: string): SurfacePoint | null;
+        stackOrigin?(x: number, z: number): SurfacePoint | null;
       },
 ): void {
   session.setCollectionListener((event) => {
@@ -20,6 +21,7 @@ export function bindCollections(
       event,
       typeof origins === 'function' ? origins : (id) => origins.naturalOrigin(id),
       typeof origins === 'function' ? undefined : (id) => origins.dropOrigin(id),
+      typeof origins === 'function' ? undefined : (x, z) => origins.stackOrigin?.(x, z) ?? null,
     );
     const source = world ? map.project(world) : hud.collectionClick;
     refresh();

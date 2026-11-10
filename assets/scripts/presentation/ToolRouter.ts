@@ -57,7 +57,7 @@ export class ToolRouter implements ToolHandlers {
       if (tool === 'sickle') this.farm.begin('harvest', id, point);
       else if (
         tool === 'diggingTool' &&
-        this.session.state.terrainVersion === 6 &&
+        (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7) &&
         this.ui.terrainMode !== 'farm'
       )
         this.terrain.begin(id, this.ui.terrainMode, this.ui.terrainMaterial);
@@ -67,7 +67,10 @@ export class ToolRouter implements ToolHandlers {
       if (
         this.session.state.inventory[item] <= 0 ||
         (this.session.state.inventory[item] < 1 &&
-          !(this.session.state.terrainVersion === 6 && (item === 'soil' || item === 'stone')))
+          !(
+            (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7) &&
+            (item === 'soil' || item === 'stone')
+          ))
       ) {
         if (isCrop(item)) this.ui.cropShopOpen = true;
         this.session.message = isCrop(item) ? '选择作物购买' : '暂无此产品';
@@ -84,11 +87,12 @@ export class ToolRouter implements ToolHandlers {
   }
   move(id: number, point: Vec2, returning: boolean): void {
     if (id !== this.pointer) return;
-    this.farm.move(id, point);
+    this.stock.move(id, point);
+    // Skip this sample over drops or stale stock without ending a valid planting stroke.
+    this.farm.move(id, point, this.stock.blocksPlanting);
     this.tool.move(id, point);
     this.terrain.move(id, point);
     if (this.farm.hasActed) this.stock.cancel(true);
-    else this.stock.move(id, point);
     if (returning) {
       this.session.message = this.isTool() ? '松手收回工具' : '松手收回仓库';
       this.refresh();
@@ -116,7 +120,8 @@ export class ToolRouter implements ToolHandlers {
       this.finish();
       return;
     }
-    const planted = this.farm.end(id, point);
+    this.stock.move(id, point);
+    const planted = this.farm.end(id, point, this.stock.blocksPlanting);
     if (planted) this.stock.cancel(true);
     else this.stock.end(id, point);
     this.tool.end(id, point);

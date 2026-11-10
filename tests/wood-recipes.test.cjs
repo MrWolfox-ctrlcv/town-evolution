@@ -53,6 +53,8 @@ test('specified wood counts and tools make distinct products and discover only t
   for (const [tool, amount, kind, recipe] of [
     ['hammer', 1, 'orderBoard', 'build-order-board'],
     ['hammer', 2, 'crate', 'build-crate'],
+    ['saw', 1, 'fence', 'build-fence'],
+    ['saw', 2, 'bench', 'build-bench'],
     ['saw', 3, 'handcart', 'build-handcart'],
     ['saw', 4, 'boat', 'build-boat'],
     ['hammer', 3, 'woodenPier', 'build-wooden-pier'],
@@ -89,7 +91,16 @@ test('schema8 board and crate identities and discoveries survive the change from
     assert.equal(RECIPE_DEFINITIONS.find((recipe) => recipe.id === recipeId).tool, 'hammer');
     state.inventory.wood = amount;
     state = run(state, { type: 'dropProduct', item: 'wood', quantity: amount, x: 11, z: 5 });
-    rejects(state, { type: 'useTool', tool: 'saw', x: 11, z: 5 });
+    const sawResult = run(state, { type: 'useTool', tool: 'saw', x: 11, z: 5 });
+    const decoration = amount === 1 ? 'fence' : 'bench';
+    assert.equal(sawResult.buildings.at(-1).kind, decoration);
+    assert.deepEqual(
+      sawResult.buildings.find((b) => b.id === original.id),
+      original,
+    );
+    assert.deepEqual(sawResult.fusion.discoveries[recipeId], { count: 3, firstDiscoveredAt: 25 });
+    assert.equal(sawResult.fusion.discoveries[`build-${decoration}`].count, 1);
+    // Hammer retains its original recipe from the exact same immutable pile snapshot.
     state = run(state, { type: 'useTool', tool: 'hammer', x: 11, z: 5 });
     assert.equal(state.buildings.at(-1).kind, kind);
     assert.deepEqual(

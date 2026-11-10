@@ -29,7 +29,7 @@ export interface V6Foundation {
   /** Absolute world Y. NOT a soil layer count. Null when rejected. */
   readonly baseElevation: number | null;
   readonly heightSpread: number;
-  readonly terrainRevision: typeof V6_GENERATOR_REVISION;
+  readonly terrainRevision: typeof V6_GENERATOR_REVISION | import('./v7-contracts').V7Revision;
 }
 export interface V6Snapshot {
   /** Explicit complete live list. A missing ID is exhausted; never regenerated. */

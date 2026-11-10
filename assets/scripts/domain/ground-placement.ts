@@ -19,7 +19,7 @@ export function assertGroundCell(s: GameState, x: number, z: number, ignoredDrop
   );
   requireRule(!s.trees.some((p) => p.x === x && p.z === z), '此地块有树木');
   requireRule(
-    s.terrainVersion === 6
+    s.terrainVersion === 6 || s.terrainVersion === 7
       ? !v6ExposedResource(s, x, z)
       : !s.naturalResources.some((p) => p.x === x && p.z === z),
     '请先采集此处的天然资源',

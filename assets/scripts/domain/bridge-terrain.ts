@@ -1,5 +1,7 @@
 import type { GameState, LandCell } from './types';
 import type { BridgePlacement } from './bridge-types';
+import { getEditableWorld } from './editable-world';
+import { v6BridgeProfile } from './v6-bridge-profile';
 import { getV5Hydrology } from './v5-hydrology';
 import { integer, requireRule } from './guards';
 /** Provisional safety limits, not a promise that every river reach can support a bridge. */
@@ -8,6 +10,7 @@ export interface BridgeTerrainPlan {
   endpointCells: LandCell[];
   riverCells: LandCell[];
   occupiedCells: LandCell[];
+  baseElevation?: number;
 }
 export function bridgeSpanCells(p: BridgePlacement): LandCell[] {
   requireRule(integer(p.x, 191) && integer(p.z, 191), '木桥起点无效');
@@ -25,16 +28,19 @@ export function bridgeSpanCells(p: BridgePlacement): LandCell[] {
 }
 /** Same hydrology certificate for preview, assembly, relocation and saved bridges. */
 export function validateBridgeTerrain(
-  state: Pick<GameState, 'mapSeed' | 'terrainVersion' | 'landExtensions'>,
+  state: Pick<GameState, 'mapSeed' | 'terrainVersion' | 'landExtensions'> &
+    Partial<Pick<GameState, 'terrain6'>>,
   p: BridgePlacement,
 ): BridgeTerrainPlan {
   requireRule(
-    state.terrainVersion !== 6,
-    '自然挖填实验的木桥桩基与桥面高度尚未完成，请使用木桥演示岛。',
+    state.terrainVersion === 5 || state.terrainVersion === 6 || state.terrainVersion === 7,
+    '木桥需要真实河道，两端必须接岸',
   );
-  requireRule(state.terrainVersion === 5, '木桥需要真实河道，两端必须接岸');
   const occupiedCells = bridgeSpanCells(p),
-    hydro = getV5Hydrology(state.mapSeed),
+    hydro =
+      state.terrainVersion === 6 || state.terrainVersion === 7
+        ? getEditableWorld(state.mapSeed, state.terrainVersion).hydrology
+        : getV5Hydrology(state.mapSeed),
     endpointCells: LandCell[] = [],
     riverCells: LandCell[] = [];
   for (let side = 0; side < 2; side++) {
@@ -53,7 +59,8 @@ export function validateBridgeTerrain(
       );
       const f = hydro.fields(point.x + 0.5, point.z + 0.5);
       requireRule(
-        f.ocean + Math.SQRT1_2 < 0 && f.lake + Math.SQRT1_2 < 0,
+        f.ocean + Math.SQRT1_2 < -(state.terrainVersion === 7 ? 1e-5 : 0) &&
+          f.lake + Math.SQRT1_2 < -(state.terrainVersion === 7 ? 1e-5 : 0),
         '此处不是可跨越的独立河段',
       );
       if (i < 2 || i >= p.length - 2) {
@@ -65,7 +72,11 @@ export function validateBridgeTerrain(
           cell.waterKind === null || cell.waterKind === 'river',
           '木桥只能跨越河流，不能连接湖面或海面',
         );
-        if (cell.state === 'clearWater' && cell.waterKind === 'river' && cell.freshLower >= 0) {
+        if (
+          cell.state === 'clearWater' &&
+          cell.waterKind === 'river' &&
+          cell.freshLower >= (state.terrainVersion === 7 ? 1e-5 : 0)
+        ) {
           riverIndices.push(i);
           riverCells.push(point);
         }
@@ -82,5 +93,17 @@ export function validateBridgeTerrain(
     !state.landExtensions.some((cell) => occupied.has(`${cell.x},${cell.z}`)),
     '木桥不可覆盖已填土地块',
   );
+  if (state.terrainVersion === 6 || state.terrainVersion === 7) {
+    requireRule(
+      !state.terrain6?.cells.some((c) => occupied.has(`${c.x},${c.z}`)),
+      '木桥不可覆盖已挖填地块',
+    );
+    return {
+      endpointCells,
+      riverCells,
+      occupiedCells,
+      baseElevation: v6BridgeProfile(state.mapSeed, p, state.terrainVersion).root,
+    };
+  }
   return { endpointCells, riverCells, occupiedCells };
 }

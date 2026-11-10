@@ -444,4 +444,9 @@ function fixture(width = 390, height = 667, tab = 'manage', selection = 'buildin
   };
 }
 
-module.exports = { fixture, game, GameSession };
+module.exports = {
+  fixture,
+  game,
+  GameSession,
+  scene: { Node, UITransform, screen, dependencies, load },
+};

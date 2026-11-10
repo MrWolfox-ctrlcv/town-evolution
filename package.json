@@ -9,13 +9,18 @@
     "typecheck": "tsc -p tsconfig.domain.json --noEmit",
     "build:domain": "tsc -p tsconfig.domain.json",
     "test": "npm run build:domain && node --test tests/*.test.cjs",
-    "check": "npm run format:check && npm run typecheck && npm run typecheck:cocos && npm test && node scripts/check-project.cjs && node scripts/check-architecture.cjs && npm run art:check",
+    "check": "npm run title:snapshot:check && npm run preview:effects:check -- --local && npm run format:check && npm run typecheck && npm run typecheck:cocos && npm test && node scripts/check-project.cjs && node scripts/check-architecture.cjs && npm run art:check",
     "demo:domain": "npm run build:domain && node scripts/demo-domain.cjs",
     "typecheck:cocos": "tsc -p tsconfig.cocos-check.json",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "art:export": "npm run build:domain && node scripts/art/export.cjs",
-    "art:check": "node scripts/art/export.cjs --check"
+    "art:check": "node scripts/art/export.cjs --check",
+    "title:snapshot": "node scripts/title-snapshot.cjs",
+    "title:snapshot:check": "node scripts/title-snapshot.cjs --check",
+    "preview:effects:generate": "node scripts/preview/effect-generate.cjs",
+    "preview:effects:check": "node scripts/preview/effect-cache.cjs",
+    "preview:verify": "node scripts/preview/verify-package.cjs"
   },
   "devDependencies": {
     "@cocos/creator-types": "3.8.8",

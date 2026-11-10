@@ -65,7 +65,7 @@ export function expandLand(s: GameState, c: Extract<Command, { type: 'expandLand
   requireRule(!isLandCell(c.x, c.z, s.mapSeed, s.terrainVersion, s.landExtensions), '位置不可用');
   requireRule(touchesLand(c, s.mapSeed, s.terrainVersion, s.landExtensions), '位置不可用');
   requireRule(!blocksDockWater(c, s.buildings), '请保留船坞出口');
-  if (s.terrainVersion === 5 || s.terrainVersion === 6) {
+  if (s.terrainVersion === 5 || s.terrainVersion === 6 || s.terrainVersion === 7) {
     requireRule(
       !s.buildings.some((b) => buildingOccupiesCell(b, c.x, c.z)) &&
         ![...s.trees, ...s.naturalResources, ...s.groundStacks].some(
@@ -75,7 +75,8 @@ export function expandLand(s: GameState, c: Extract<Command, { type: 'expandLand
       '位置已被占用',
     );
     const proposed = [...s.landExtensions, { x: c.x, z: c.z }];
-    if (s.terrainVersion === 6) validateV6Extensions(s.mapSeed, proposed);
+    if (s.terrainVersion === 6 || s.terrainVersion === 7)
+      validateV6Extensions(s.mapSeed, proposed, s.terrainVersion);
     else validateV5Extensions(s.mapSeed, proposed);
     requireRule(
       s.buildings.every(

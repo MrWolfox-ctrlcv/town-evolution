@@ -35,7 +35,12 @@ export class V6IslandView {
     private support: DropSupport,
   ) {}
   sync(state: GameState): void {
-    if (this.state?.mapSeed !== state.mapSeed || !this.chunks) {
+    if (
+      this.state?.mapSeed !== state.mapSeed ||
+      this.state?.terrainVersion !== state.terrainVersion ||
+      this.state?.terrainRevision !== state.terrainRevision ||
+      !this.chunks
+    ) {
       this.dispose();
       this.source = getV6EditSurface(state);
       this.coast = createV6CoastSource(this.source.world, state.landExtensions);
@@ -82,6 +87,7 @@ export class V6IslandView {
           );
         this.chunks.update(this.source, [...changed.values()], topology ? this.coast! : undefined);
         this.meshes!.cancel();
+        this.meshes!.retain(this.chunks.cachedMeshes());
         this.pending = null;
         this.failure = null;
       }
@@ -110,8 +116,8 @@ export class V6IslandView {
     const initial = !this.surfaceStatus().overviewVisible;
     if (initial && overviewError <= 0) return false;
     const farError = Math.max(0, Math.min(0.25, overviewError));
-    const cx = initial ? 96 : (bounds.minX + bounds.maxX) / 2;
-    const cz = initial ? 96 : (bounds.minZ + bounds.maxZ) / 2;
+    const cx = (bounds.minX + bounds.maxX) / 2;
+    const cz = (bounds.minZ + bounds.maxZ) / 2;
     const keys = this.coast.keys.filter((key) => {
       if (!this.constrained) return true;
       const [x, z, xx, zz] = v5CoastChunkBounds(key);
@@ -137,7 +143,10 @@ export class V6IslandView {
     keys.sort((a, b) => {
       const [x, z] = v5CoastChunkBounds(a),
         [xx, zz] = v5CoastChunkBounds(b);
-      return Math.hypot(x + 8 - cx, z + 8 - cz) - Math.hypot(xx + 8 - cx, zz + 8 - cz);
+      return (
+        Number(this.requestedFine.has(b)) - Number(this.requestedFine.has(a)) ||
+        Math.hypot(x + 8 - cx, z + 8 - cz) - Math.hypot(xx + 8 - cx, zz + 8 - cz)
+      );
     });
     const view = JSON.stringify([bounds, fine]);
     if (this.failure && view === this.failureView) return false;
@@ -147,36 +156,53 @@ export class V6IslandView {
       this.meshes.cancel();
       this.pending = null;
     }
+    let changed = false;
+    let steps = budget.maxPatchBuilds ?? 512,
+      bytes = budget.maxUploadBytes ?? 262144,
+      buildMs = budget.maxMilliseconds ?? 3,
+      uploadMs = buildMs;
+    const start = performance.now(),
+      totalMs = buildMs + uploadMs;
     try {
-      const tx = this.chunks.advance(budget.maxPatchBuilds ?? 512, budget.maxMilliseconds ?? 3);
-      if (!tx) return false;
-      if (tx !== this.pending) {
-        this.meshes.stage(tx.chunks);
-        this.pending = tx;
+      // Spend the remaining frame budget, not one mandatory frame per tiny chunk.
+      // Each edit/seam group still stages and publishes atomically, at most 4 groups.
+      for (let group = 0; group < 4 && performance.now() - start < totalMs; group++) {
+        const beforeBuild = performance.now();
+        const tx = this.chunks.advance(Math.max(0, steps), Math.max(0, buildMs));
+        this.meshes.retain(this.chunks.cachedMeshes());
+        buildMs -= performance.now() - beforeBuild;
+        steps -= this.chunks.lastAdvanceSteps ?? 0;
+        if (!tx) return changed;
+        if (tx !== this.pending) {
+          this.meshes.stage(tx.chunks);
+          this.pending = tx;
+        }
+        const beforeUpload = performance.now();
+        const uploaded = this.meshes.advance(Math.max(0, bytes), Math.max(0, uploadMs));
+        uploadMs -= performance.now() - beforeUpload;
+        bytes -= this.meshes.lastAdvanceBytes ?? 0;
+        if (!uploaded) return changed;
+        // Prepare support before committing. Hidden or cancelled uploads stay unpickable.
+        this.support.setNaturalChunks(tx.chunks);
+        this.naturalSurface = tx.commit();
+        this.meshes.retain(this.chunks.cachedMeshes());
+        this.picker.sync(this.chunks.resident().values());
+        this.meshes.publish();
+        this.pending = null;
+        changed = true;
+        if (this.chunks.isSettled()) break;
       }
-      if (
-        !this.meshes.advance(
-          Math.max(0, budget.maxUploadBytes ?? 262144),
-          budget.maxMilliseconds ?? 3,
-        )
-      )
-        return false;
-      // Prepare support before committing. Exceptions leave the previous complete view intact.
-      this.support.setNaturalChunks(tx.chunks);
-      this.naturalSurface = tx.commit();
-      this.picker.sync(this.chunks.resident().values());
-      this.meshes.publish();
-      this.pending = null;
-      return true;
+      return changed;
     } catch (error) {
       this.meshes.cancel();
       this.pending = null;
       this.chunks.abort();
+      this.meshes.retain(this.chunks.cachedMeshes());
       this.failure = error;
       this.constrained = true;
       this.failureView = view;
       console.warn('Terrain6 surface staging stopped; previous complete snapshot retained', error);
-      return false;
+      return changed;
     }
   }
   pickTerrain(ray: SurfaceRay) {

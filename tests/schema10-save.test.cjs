@@ -146,7 +146,7 @@ test('schema8 keeps both exact pre9 and pre10 archives, future versions and stal
   assert.equal(storage.getItem(MIGRATION_BACKUP_KEY), raw);
   assert.equal(storage.getItem(SCHEMA10_BACKUP_KEY), raw);
   assert.throws(() => saveGame(storage, loaded.state, loaded.revision), SaveConflictError);
-  const future = JSON.stringify({ ...old, schemaVersion: 11 }),
+  const future = JSON.stringify({ ...old, schemaVersion: 12 }),
     incompatible = store([
       [SAVE_KEY, future],
       [BACKUP_KEY, raw],

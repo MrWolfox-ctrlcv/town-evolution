@@ -1,3 +1,5 @@
+import { V6SurfaceCache } from './V6SurfaceCache';
+import { createV6SurfaceJob, canRetainV6SurfaceJobs, v6SurfaceNeighbors } from './V6SurfaceJobs';
 import { V6SurfaceBudget, v6SurfaceCost } from './V6SurfaceBudget';
 import type { NaturalSurfaceData } from './NaturalSurfaceData';
 import type { V5CoastSource } from './V6Coast';
@@ -6,13 +8,6 @@ import type { V6CellPatch, V6CellSpan } from './V6CellSpans';
 import { buildV6SurfaceMeshSteps } from './V6SurfaceMesh';
 import { mergeV6SurfaceJob, type V6SurfaceJob } from './V6SurfaceChunkWork';
 import { buildV6FarSurfaceSteps } from './V6FarSurfaceMesh';
-const neighbors = [
-  [0, 0],
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-] as const;
 export const v6ChunkKey = (x: number, z: number) => `${Math.floor(x / 16)},${Math.floor(z / 16)}`;
 export interface V6SurfaceTransaction {
   chunks: readonly V6SurfaceChunk[];
@@ -20,6 +15,7 @@ export interface V6SurfaceTransaction {
   commit(): NaturalSurfaceData;
 }
 export class V6SurfaceChunks {
+  lastAdvanceSteps = 0;
   private wanted = new Set<string>();
   private detailed = new Set<string>();
   private lodDirty = new Set<string>();
@@ -35,14 +31,19 @@ export class V6SurfaceChunks {
   private epoch = 0;
   private rebuilt = 0;
   private farError = 0.25;
+  private cache: V6SurfaceCache;
   constructor(
     private source: V6SurfaceSource,
     private coast: V5CoastSource,
     private readonly budget = new V6SurfaceBudget(),
     private visualCells: ReadonlySet<string> = new Set(),
-  ) {}
+  ) {
+    this.cache = new V6SurfaceCache(this.budget);
+  }
   setVisualCells(cells: ReadonlySet<string>): void {
+    const changed = this.cache.visualChanges(this.visualCells, cells);
     this.visualCells = cells;
+    this.update(this.source, changed);
   }
   update(
     source: V6SurfaceSource,
@@ -52,17 +53,20 @@ export class V6SurfaceChunks {
     this.source = source;
     if (coast) this.coast = coast;
     if (!changes.length) return;
+    const affected = new Set<string>();
     for (const p of changes)
       for (let dz = -2; dz <= 2; dz++)
         for (let dx = -2; dx <= 2; dx++) {
           const radius = Math.abs(dx) + Math.abs(dz),
             x = p.x + dx,
             z = p.z + dz;
-          // Far edge segments depend on the neighboring cell's qualification.
-          if (radius > 2 || (radius === 2 && this.detailed.has(v6ChunkKey(x, z)))) continue;
+          if (radius > 2) continue;
+          affected.add(v6ChunkKey(x, z));
+          if (radius === 2 && this.detailed.has(v6ChunkKey(x, z))) continue;
           this.dirty.add(`${x},${z}`);
           if (coast) this.coastDirty.add(v6ChunkKey(x, z));
         }
+    this.cache.invalidate(affected);
     this.cancel();
   }
   request(
@@ -83,26 +87,34 @@ export class V6SurfaceChunks {
       [...next].every((k) => this.wanted.has(k)) &&
       fine.size === this.detailed.size &&
       [...fine].every((k) => this.detailed.has(k))
-    )
+    ) {
+      this.wanted = next;
       return;
+    }
     for (const key of new Set([...this.detailed, ...fine]))
       if (this.detailed.has(key) !== fine.has(key)) {
         const [x, z] = key.split(',').map(Number);
-        for (const [dx, dz] of neighbors) {
+        for (const [dx, dz] of v6SurfaceNeighbors) {
           const neighbor = `${x! + dx!},${z! + dz!}`;
           if (this.live.has(neighbor) && next.has(neighbor)) this.lodDirty.add(neighbor);
         }
       }
     this.wanted = next;
     this.detailed = fine;
-    this.cancel();
+    if (
+      !canRetainV6SurfaceJobs([...this.done, ...(this.jobs ?? [])], next, (key) =>
+        this.cache.signature(key, fine, farError),
+      )
+    )
+      this.cancel();
   }
-  abort(): void {
-    this.cancel();
-  }
+  abort = (): void => this.cancel();
   memoryUsage = () => this.budget.usage();
+  cacheUsage = () => this.cache.usage();
+  cachedMeshes = () => this.cache.meshes();
   private cancel(): void {
     this.budget.cancel();
+    this.cache.finish();
     this.epoch++;
     this.jobs = null;
     this.done = [];
@@ -111,6 +123,7 @@ export class V6SurfaceChunks {
     this.rebuilt = 0;
   }
   advance(maxSteps = 512, maxMilliseconds = 3): V6SurfaceTransaction | null {
+    this.lastAdvanceSteps = 0;
     if (this.pending) return this.pending;
     if (!this.jobs) {
       const dirtyKeys = new Set(
@@ -126,45 +139,27 @@ export class V6SurfaceChunks {
       const evicted = [...this.live.keys()].filter((key) => !this.wanted.has(key));
       const keys = evicted.length ? evicted : changed.length ? changed : fresh ? [fresh] : [];
       if (!keys.length) return null;
-      this.jobs = keys.map((key) => {
-        const wanted = this.wanted.has(key),
-          [cx, cz] = key.split(',').map(Number),
-          cells: Array<[number, number]> = [];
-        if (wanted)
-          for (let z = cz! * 16; z < (cz! + 1) * 16; z++)
-            for (let x = cx! * 16; x < (cx! + 1) * 16; x++)
-              if (
-                x >= 0 &&
-                z >= 0 &&
-                x < this.source.world.size &&
-                z < this.source.world.size &&
-                (!this.live.has(key) || this.lodDirty.has(key) || this.dirty.has(`${x},${z}`))
-              )
-                cells.push([x, z]);
-        return {
-          key,
-          detail: this.detailed.has(key),
-          cells,
-          index: 0,
-          cellJob: null,
-          cellCost: 0,
-          patches: wanted ? new Map(this.patches.get(key)) : new Map(),
-          spans: new Map(),
-          coastJob:
-            wanted &&
-            (!this.coasts.has(key) ||
-              this.coastDirty.has(key) ||
-              this.live.get(key)?.detail !== this.detailed.has(key))
-              ? this.coast.begin(key, !this.detailed.has(key))
-              : null,
-          coast: wanted ? (this.coasts.get(key) ?? null) : null,
-          merge: null,
-        };
-      });
+      this.jobs = keys.map((key) =>
+        createV6SurfaceJob(key, {
+          wanted: this.wanted,
+          detailed: this.detailed,
+          live: this.live,
+          patches: this.patches,
+          coasts: this.coasts,
+          dirty: this.dirty,
+          lodDirty: this.lodDirty,
+          coastDirty: this.coastDirty,
+          source: this.source,
+          coast: this.coast,
+          cache: this.cache,
+          farError: this.farError,
+        }),
+      );
     }
     const start = performance.now();
     let steps = 0;
-    while (this.jobs.length && steps++ < maxSteps && performance.now() - start < maxMilliseconds) {
+    while (this.jobs.length && steps < maxSteps && performance.now() - start < maxMilliseconds) {
+      steps++;
       const job = this.jobs[0]!;
       if (job.coastJob) {
         if (job.coastJob.advance(1)) {
@@ -211,6 +206,7 @@ export class V6SurfaceChunks {
         this.jobs.shift();
       }
     }
+    this.lastAdvanceSteps = steps;
     if (this.jobs.length) return null;
     const epoch = this.epoch,
       chunks = this.built.slice(),
@@ -233,6 +229,12 @@ export class V6SurfaceChunks {
             this.patches.delete(job.key);
             this.coasts.delete(job.key);
           }
+          this.cache.activate(
+            job.key,
+            this.wanted.has(job.key)
+              ? this.cache.snapshot(job.signature, chunk, job.spans, job.coast)
+              : null,
+          );
           for (const [x, z] of job.cells) this.dirty.delete(`${x},${z}`);
           this.coastDirty.delete(job.key);
           this.lodDirty.delete(job.key);
@@ -251,9 +253,7 @@ export class V6SurfaceChunks {
   isCurrent(t: V6SurfaceTransaction): boolean {
     return this.pending === t;
   }
-  resident(): ReadonlyMap<string, V6SurfaceChunk> {
-    return this.live;
-  }
+  resident = (): ReadonlyMap<string, V6SurfaceChunk> => this.live;
   ready(x: number, z: number): boolean {
     return (
       this.live.get(v6ChunkKey(x, z))?.detail !== false &&
@@ -287,13 +287,11 @@ export class V6SurfaceChunks {
   dispose(): void {
     this.cancel();
     this.live.clear();
+    this.cache.clear();
     this.budget.clear();
     this.patches.clear();
     this.coasts.clear();
-    this.wanted.clear();
-    this.dirty.clear();
-    this.coastDirty.clear();
-    this.lodDirty.clear();
-    this.detailed.clear();
+    for (const s of [this.wanted, this.dirty, this.coastDirty, this.lodDirty, this.detailed])
+      s.clear();
   }
 }

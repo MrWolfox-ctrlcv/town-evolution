@@ -1,3 +1,4 @@
+import { V6FifoCache } from './v6-fifo-cache';
 import { v6SlabVolume } from './v6-volume-integral';
 import { V6_MATERIAL_QUANTA as Q } from './v6-edit-types';
 import type { V6MaterialWorld, V6CellCheckpoint } from './v6-edit-types';
@@ -54,7 +55,7 @@ export function initialResourceCap(
  */
 const volumeCache = new WeakMap<
   V6MaterialWorld,
-  Map<string, Map<number, Readonly<{ soil: number; stone: number }>>>
+  V6FifoCache<string, Map<number, Readonly<{ soil: number; stone: number }>>>
 >();
 export function naturalLayerQuanta(
   world: V6MaterialWorld,
@@ -63,13 +64,12 @@ export function naturalLayerQuanta(
 ): Readonly<{ soil: number; stone: number }> {
   let cells = volumeCache.get(world);
   if (!cells) {
-    cells = new Map();
+    cells = new V6FifoCache(512);
     volumeCache.set(world, cells);
   }
   const key = `${cell.x},${cell.z},${cell.initialResourceAmount}`;
   let layers = cells.get(key);
   if (!layers) {
-    if (cells.size >= 512) cells.delete(cells.keys().next().value!);
     layers = new Map();
     cells.set(key, layers);
   }

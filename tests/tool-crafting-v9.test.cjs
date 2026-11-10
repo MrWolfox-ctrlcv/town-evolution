@@ -13,6 +13,8 @@ function town(item, amount) {
 for (const [tool, item, amount, kind, recipeId] of [
   ['hammer', 'wood', 1, 'orderBoard', 'build-order-board'],
   ['hammer', 'wood', 2, 'crate', 'build-crate'],
+  ['saw', 'wood', 1, 'fence', 'build-fence'],
+  ['saw', 'wood', 2, 'bench', 'build-bench'],
   ['saw', 'wood', 3, 'handcart', 'build-handcart'],
   ['saw', 'wood', 4, 'boat', 'build-boat'],
   ['hammer', 'wood', 3, 'woodenPier', 'build-wooden-pier'],
@@ -38,7 +40,7 @@ test('unknown materials, wrong amounts and occupied candidate footprints reject 
   for (const [tool, item, amount] of [
     ['saw', 'stone', 2],
     ['saw', 'wood', 5],
-    ['saw', 'wood', 1],
+    ['saw', 'wood', 0],
     ['hammer', 'stone', 3],
     ['hammer', 'stone', 4],
   ]) {

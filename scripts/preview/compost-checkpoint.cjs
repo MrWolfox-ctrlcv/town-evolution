@@ -81,7 +81,11 @@ module.exports = async (page, evidence, name, touch, { showTool }) => {
   await page.reload();
   await ready(page);
   await button('游览演示岛');
-  view = await until(page, (s) => s.save?.schemaVersion === 10, 'schema10 restart');
+  view = await until(
+    page,
+    (s) => [10, 11].includes(s.save?.schemaVersion),
+    'supported save restart',
+  );
   for (const key of ['inventory', 'tools', 'buildings', 'groundStacks', 'looseDrops'])
     assert.deepEqual(view.save[key], saved[key], `Compost/roast restart preserves ${key}`);
   return {

@@ -52,6 +52,33 @@ export class AssetRenderer {
     }
     return node;
   }
+  /** Instance meshes are released with the model, not retained by the shared asset cache. */
+  createTransient(data: import('../art/AssetTypes').MeshData, name: string): Node {
+    if (this.disposed) throw new Error('Cannot create an asset after renderer disposal');
+    const node = new Node(name),
+      textured = new Set(data.texturedIndices ?? []);
+    const palette = data.indices.filter(
+      (_index, offset) => !textured.has(data.indices[offset - (offset % 3)]!),
+    );
+    for (const [wood, indices] of [
+      [false, palette],
+      [true, data.texturedIndices ?? []],
+    ] as const) {
+      if (!indices.length) continue;
+      const mesh = worldMesh({ ...data, indices: [...indices] });
+      const target = wood ? new Node('GeneratedWoodMaterial') : node;
+      if (wood) node.addChild(target);
+      const renderer = target.addComponent(MeshRenderer);
+      renderer.mesh = mesh;
+      renderer.setMaterial(
+        wood ? (this.wood ??= acquireBuildingTexture()).value.material : this.material,
+        0,
+      );
+      worldShadows(renderer);
+      node.on(Node.EventType.NODE_DESTROYED, () => mesh.destroy());
+    }
+    return node;
+  }
   whenReady(): Promise<void> {
     return this.wood?.value.ready ?? Promise.resolve();
   }

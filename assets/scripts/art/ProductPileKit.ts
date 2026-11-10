@@ -7,7 +7,7 @@ import { cropProductUnit, cropProductPile } from './CropPileKit';
 import { stackLimitFor } from '../domain/foundation';
 import { part } from './AssetTypes';
 import type { AssetRecipe, Part, V3 } from './AssetTypes';
-import { compileAsset } from './MeshCompiler';
+import { assetBounds } from './MeshCompiler';
 export const PRODUCTS = [
   'wood',
   'stone',
@@ -125,7 +125,7 @@ export function productPile(item: Product, amount: number): AssetRecipe {
       ] as V3,
       rotation: [p.rotation?.[0] ?? 0, (p.rotation?.[1] ?? 0) + yaw, p.rotation?.[2] ?? 0] as V3,
     }));
-    const bounds = compileAsset({ id: 'unit', footprint: [1, 1], parts: source });
+    const bounds = assetBounds({ id: 'unit', footprint: [1, 1], parts: source });
     const rise =
       item === 'wood'
         ? row * 0.199
@@ -160,7 +160,7 @@ export function productPile(item: Product, amount: number): AssetRecipe {
     }
   }
   if (item === 'wood' && amount > 1) {
-    const bounds = compileAsset({ id: 'logs', footprint: [1, 1], parts });
+    const bounds = assetBounds({ id: 'logs', footprint: [1, 1], parts });
     parts.push(
       part(
         'unit-1-bundle-twine',

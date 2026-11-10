@@ -46,6 +46,7 @@ const left = { x: 36, y: 200 },
   right = { x: 1244, y: 200 };
 function tray() {
   const target = Object.create(ToolTray.prototype);
+  target.origin = { x: 0, y: 0 };
   target.width = 1280;
   target.height = 800;
   const region = (point) => ({

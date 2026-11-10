@@ -39,6 +39,7 @@ class Factory {
 function load(name) {
   const deps = {
     '../application/DropSnapshot': require('../.domain-build/application/DropSnapshot'),
+    '../application/MaterialQuantity': require('../.domain-build/application/MaterialQuantity'),
     './DiggingToolCommand': require('./helpers/selection-ui.cjs').load('DiggingToolCommand'),
     './ToolOutline': require('./helpers/selection-ui.cjs').load('ToolOutline'),
     './TerrainInteraction': require('./helpers/selection-ui.cjs').load('TerrainInteraction'),

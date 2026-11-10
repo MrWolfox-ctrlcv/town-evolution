@@ -1,5 +1,8 @@
 import type { Node } from 'cc';
-import type { Item } from '../domain/game';
+import { terrainHeight } from './TerrainInteraction';
+import type { Item, Command } from '../domain/game';
+import { dropSnapshot } from '../application/DropSnapshot';
+import { materialQuantity } from '../application/MaterialQuantity';
 import { stockDropCommand } from '../application/CommerceSelection';
 import {
   COMMERCE,
@@ -8,18 +11,25 @@ import {
   isTradableItem,
   isGroundTradeItem,
   isCompostItem,
+  stockIntoDropPlan,
+  dropPosition,
 } from '../domain/game';
 import type { GameSession } from '../application/GameSession';
 import type { Point } from '../application/MapGesture';
 import type { MapCamera } from './MapCamera';
 import type { TownView } from './TownView';
 import { ModelFactory } from './ModelFactory';
-/** A stock chip transfers exactly one unit, only on a valid drop. */
+/** A stock chip transfers at most one unit, only on a valid drop. */
 export class StockDrag {
+  overDrop = false;
   private pointer: number | null = null;
   private item: Item = 'vegetable';
   private sourceAmount = 0;
   private sourceInvalid = false;
+  private readonly dropTargets = new Map<string, string>();
+  get blocksPlanting(): boolean {
+    return this.pointer !== null && (this.overDrop || this.sourceInvalid);
+  }
   private readonly factory = new ModelFactory();
   private rings: Node[] = [];
   private preview: Node | null = null;
@@ -82,11 +92,12 @@ export class StockDrag {
   }
   move(id: number, point: Point): void {
     if (id !== this.pointer) return;
-    this.sourceInvalid ||= this.session.state.inventory[this.item] !== this.sourceAmount;
+    this.changed();
+    this.overDrop = this.map.contains(point) && !!this.town.pickDrop?.(this.map.screenRay(point));
     const b = this.target(point);
     this.previewDrop(point, b?.id ?? null);
     // FarmTools owns crop-on-field feedback, including rejected planting.
-    if (b?.kind === 'farm' && isCrop(this.item)) return;
+    if (b?.kind === 'farm' && isCrop(this.item) && !this.blocksPlanting) return;
     this.session.message =
       b?.kind === 'compostBarrel'
         ? this.sourceInvalid
@@ -108,6 +119,8 @@ export class StockDrag {
                   ? '空田播种 / 空地堆放'
                   : '拖到空地堆放';
     const command = this.dropCommand(point, b?.id ?? null);
+    if (command?.type === 'mergeStockIntoDrop')
+      this.session.message = `松手叠放${materialQuantity(stockIntoDropPlan(this.session.state, command).transferAmount)}份`;
     if (command)
       this.session.message =
         this.item === 'mud'
@@ -115,60 +128,88 @@ export class StockDrag {
             ? '暂不可用'
             : ''
           : (this.session.reason(command) ?? this.session.message);
+    if (this.sourceInvalid) this.session.message = '物品已变化，请重新拖动';
     this.refresh();
   }
   end(id: number, point: Point): void {
     if (id !== this.pointer) return;
-    this.sourceInvalid ||= this.session.state.inventory[this.item] !== this.sourceAmount;
+    this.changed();
     const b = this.target(point);
     const command = this.dropCommand(point, b?.id ?? null);
     if (command) {
       if (!this.session.run(command) && this.item === 'mud') this.session.message = '暂不可用';
-    } else if (b?.kind !== 'farm' || !isCrop(this.item)) this.session.message = '已取消';
+    } else if (this.sourceInvalid) this.session.message = '物品已变化，请重新拖动';
+    else if (b?.kind !== 'farm' || !isCrop(this.item) || this.overDrop)
+      this.session.message = '已取消';
     this.cancel(true);
     this.refresh();
   }
   private previewDrop(point: Point, buildingId: string | null): void {
-    const command = !buildingId ? this.dropCommand(point, null) : null;
+    const command = !buildingId || this.overDrop ? this.dropCommand(point, buildingId) : null;
+    const drop = command?.type === 'mergeStockIntoDrop' ? command.target : null;
     const target =
       command?.type === 'dropProduct' || command?.type === 'plantSapling' ? command : null;
-    const valid = target && !this.session.reason(target);
-    const key = target ? `${target.x}:${target.z}:${Boolean(valid)}` : '';
+    const valid = command && !this.session.reason(command);
+    const at = drop ? dropPosition(drop) : target ? { x: target.x + 0.5, z: target.z + 0.5 } : null;
+    const key = at ? `${drop?.id ?? ''}:${at.x}:${at.z}:${Boolean(valid)}` : '';
     if (key === this.previewKey) return;
     this.preview?.destroy();
     this.preview = null;
     this.previewKey = key;
-    if (!target) return;
+    if (!at) return;
     this.preview = this.factory.shape(
       this.parent,
       'ProductDropPreview',
-      target.x + 0.5,
-      (this.session.state.terrainVersion === 6
-        ? (this.town.pickTerrain(this.map.screenRay(point))?.point.y ?? 0)
-        : 0) + 0.09,
-      target.z + 0.5,
-      0.92,
+      at.x,
+      (drop
+        ? (this.town.dropOrigin(drop.id)?.y ?? 0)
+        : (this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7) &&
+            target
+          ? terrainHeight(this.session.state, target.x, target.z)
+          : 0) + 0.09,
+      at.z,
+      drop ? 0.3 : 0.92,
       0.025,
-      0.92,
+      drop ? 0.3 : 0.92,
       valid ? '#BDCF79' : '#CC7767',
     );
   }
-  private dropCommand(point: Point, buildingId: string | null) {
-    if (!this.map.contains(point)) return null;
+  private dropCommand(point: Point, buildingId: string | null): Command | null {
+    if (!this.map.contains(point) || this.changed()) return null;
     const ray = this.map.screenRay(point);
-    if (this.town.pickTree(ray) || this.town.pickNatural(ray) || this.town.pickDrop?.(ray))
-      return null;
+    const dropId = this.town.pickDrop?.(ray);
+    if (dropId) {
+      const drop = this.session.state.looseDrops.find((d) => d.id === dropId);
+      if (!drop) return null;
+      const target = dropSnapshot(drop),
+        encoded = JSON.stringify(target),
+        old = this.dropTargets.get(dropId);
+      if (old !== undefined && old !== encoded) this.sourceInvalid = true;
+      this.dropTargets.set(dropId, encoded);
+      return this.sourceInvalid
+        ? null
+        : {
+            type: 'mergeStockIntoDrop',
+            source: { item: this.item, amount: this.sourceAmount },
+            target,
+          };
+    }
+    if (this.town.pickTree(ray) || this.town.pickNatural(ray)) return null;
     if (buildingId) return this.buildingCommand(buildingId);
     const pile = this.town.pickStack(this.map.screenRay(point));
     const ground = this.map.ground(point);
-    const terrain = this.session.state.terrainVersion === 6 ? this.town.pickTerrain(ray) : null;
+    const terrain =
+      this.session.state.terrainVersion === 6 || this.session.state.terrainVersion === 7
+        ? this.town.pickTerrain(ray)
+        : null;
     if (ground && this.item === 'sapling' && !pile)
       return { type: 'plantSapling' as const, x: Math.floor(ground.x), z: Math.floor(ground.z) };
     return ground
       ? {
           type: 'dropProduct' as const,
           item: this.item,
-          ...(this.session.state.terrainVersion === 6 &&
+          ...((this.session.state.terrainVersion === 6 ||
+            this.session.state.terrainVersion === 7) &&
           (this.item === 'soil' || this.item === 'stone')
             ? { quantity: Math.min(1, this.session.state.inventory[this.item]) }
             : {}),
@@ -176,6 +217,14 @@ export class StockDrag {
           z: pile?.z ?? terrain?.z ?? Math.floor(ground.z),
         }
       : null;
+  }
+  private changed(): boolean {
+    this.sourceInvalid ||= this.session.state.inventory[this.item] !== this.sourceAmount;
+    for (const [id, encoded] of this.dropTargets) {
+      const drop = this.session.state.looseDrops.find((d) => d.id === id);
+      this.sourceInvalid ||= !drop || JSON.stringify(dropSnapshot(drop)) !== encoded;
+    }
+    return this.sourceInvalid;
   }
   private buildingCommand(buildingId: string) {
     const building = this.session.state.buildings.find((b) => b.id === buildingId);
@@ -208,6 +257,8 @@ export class StockDrag {
   cancel(silent = false): void {
     const wasActive = this.pointer !== null;
     this.pointer = null;
+    this.overDrop = false;
+    this.dropTargets.clear();
     this.preview?.destroy();
     this.preview = null;
     this.previewKey = '';

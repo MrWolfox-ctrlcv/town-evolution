@@ -633,3 +633,23 @@ test('v6 sample fast paths never assume optional vertex capability proves a real
   assert.equal(v6WorldHeight(overridden, 8, 8, true), 7);
   assert.deepEqual(v6WorldNormal(overridden, 8, 8, false), [1, 0, 0]);
 });
+
+test('v6 same-membership requests reprioritize future chunks without cancelling staged geometry', () => {
+  const chunks = new V6SurfaceChunks(source(), coast);
+  const first = ['0,0', '1,0', '2,0'];
+  chunks.request(first, []);
+  chunks.advance(100, 0);
+  assert.equal(chunks.lastAdvanceSteps, 0, 'zero time spends no steps');
+  const pending = ready(chunks);
+  assert.equal(pending.chunks[0].key, '0,0');
+  chunks.request(['2,0', '1,0', '0,0'], []);
+  assert.equal(chunks.isCurrent(pending), true);
+  pending.commit();
+  const next = ready(chunks);
+  assert.equal(next.chunks[0].key, '2,0');
+  next.commit();
+  ready(chunks).commit();
+  assert.equal(chunks.isSettled(), true);
+  chunks.advance(0, 0);
+  assert.equal(chunks.lastAdvanceSteps, 0);
+});

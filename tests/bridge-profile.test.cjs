@@ -125,9 +125,9 @@ test('framing derives from real source/result positions, works after reload and 
       }
   }
 });
-test('eight title choices retain 44px targets, no overlap, readable headings at small and wide sizes', () => {
+test('nine title choices retain reachable 44px targets and readable headings when scrolled', () => {
   const menu = startMenu(new GameStart(memory(), () => 0), () => {});
-  assert.equal(menu.actions.length, 8);
+  assert.equal(menu.actions.length, 9);
   for (const [w, h] of [
     [320, 568],
     [360, 640],
@@ -136,17 +136,27 @@ test('eight title choices retain 44px targets, no overlap, readable headings at 
     [568, 320],
     [1024, 768],
   ]) {
-    const l = startLayout(w, h, menu.actions.length, true);
-    assert.equal(l.buttonHeight, 44);
-    l.buttons.forEach((p, i) => {
-      assert.ok(Math.abs(p.x) + l.buttonWidth / 2 <= w / 2);
-      assert.ok(Math.abs(p.y) + 22 < h / 2);
-      assert.ok(
-        p.y + 22 < l.detailY - l.detailHeight / 2 - 4,
-        `${w}x${h} button ${i} overlaps details`,
-      );
-      for (const q of l.buttons.slice(i + 1))
-        assert.ok(Math.abs(p.x - q.x) >= l.buttonWidth + 8 || Math.abs(p.y - q.y) >= 53);
-    });
+    const l = startLayout(w, h, menu.actions.length, true),
+      reached = new Set();
+    assert.ok(l.buttonHeight >= 44);
+    for (const offset of [0, l.scrollMax])
+      l.buttons.forEach((p, i) => {
+        const y = p.y + offset;
+        if (
+          l.scrollMax > 0 &&
+          (y - l.buttonHeight / 2 < l.viewportBottom - 1e-7 ||
+            y + l.buttonHeight / 2 > l.viewportTop + 1e-7)
+        )
+          return;
+        reached.add(i);
+        assert.ok(Math.abs(p.x) + l.buttonWidth / 2 <= w / 2);
+        assert.ok(Math.abs(y) + l.buttonHeight / 2 < h / 2);
+        assert.ok(y + l.buttonHeight / 2 <= l.detailY - l.detailHeight / 2 + 1e-7);
+        for (const q of l.buttons.slice(i + 1))
+          assert.ok(
+            Math.abs(p.x - q.x) >= l.buttonWidth + 8 || Math.abs(p.y - q.y) >= l.buttonHeight + 8,
+          );
+      });
+    assert.equal(reached.size, 9);
   }
 });

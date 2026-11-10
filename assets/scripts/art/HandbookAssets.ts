@@ -31,6 +31,8 @@ export const HANDBOOK_MODELS: Readonly<Record<string, string>> = {
   boat: 'boat',
   house: 'house',
   crate: 'crate',
+  fence: 'crafted-fence',
+  bench: 'bench',
   orderBoard: 'order-board',
   warehouse: 'warehouse-base',
   shop: 'shop',

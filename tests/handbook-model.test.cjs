@@ -77,6 +77,8 @@ const activeIds = [
   'water-soil',
   'expand-land',
   'build-residence',
+  'build-fence',
+  'build-bench',
   'build-wooden-bridge',
   'build-compost-barrel',
   'make-fertilizer',
@@ -122,13 +124,13 @@ test('active handbook keeps every open recipe and excludes only the legacy cold 
       view.entries.map((entry) => entry.recipe.id),
       activeIds,
     );
-    assert.equal(view.entries.length, 36);
+    assert.equal(view.entries.length, 38);
     assert.equal(view.progress, 0, 'starting resources and buildings do not discover recipes');
     assert.equal(exportSave(state), before);
   }
 });
 
-test('directory and detail navigation wrap within the same active catalog, including the full last page', () => {
+test('directory and detail navigation wrap within the same active catalog, including the partially filled last page', () => {
   const state = createGame(100);
   const before = exportSave(state);
   assert.equal(HANDBOOK_PAGE_SIZE, 4);
@@ -141,12 +143,13 @@ test('directory and detail navigation wrap within the same active catalog, inclu
     activeIds.slice(20, 24),
     activeIds.slice(24, 28),
     activeIds.slice(28, 32),
-    activeIds.slice(32),
+    activeIds.slice(32, 36),
+    activeIds.slice(36),
   ];
-  for (let page = -9; page <= 9; page++) {
+  for (let page = -10; page <= 10; page++) {
     const view = handbookView(state, 0, page);
-    const expectedPage = ((page % 9) + 9) % 9;
-    assert.equal(view.directoryPageCount, 9);
+    const expectedPage = ((page % 10) + 10) % 10;
+    assert.equal(view.directoryPageCount, 10);
     assert.equal(view.directoryPage, expectedPage);
     assert.deepEqual(
       view.directoryEntries.map((entry) => entry.recipe.id),
@@ -163,7 +166,7 @@ test('directory and detail navigation wrap within the same active catalog, inclu
   }
   for (let selection = -64; selection <= 64; selection++) {
     const view = handbookView(state, selection);
-    assert.equal(view.selected, ((selection % 36) + 36) % 36);
+    assert.equal(view.selected, ((selection % 38) + 38) % 38);
     assert.equal(view.detail.recipe.id, activeIds[view.selected]);
     assert.notEqual(view.detail.recipe.id, 'merge-cold');
   }
@@ -190,9 +193,9 @@ test('legacy discoveries survive import and export but never add handbook rows o
   assert.equal(
     view.progress,
     view.entries.length,
-    'all current recipes reach 36 / 36, excluding the retained legacy record',
+    'all current recipes reach 38 / 38, excluding the retained legacy record',
   );
-  assert.equal(view.progress, 36);
+  assert.equal(view.progress, 38);
   assert.ok(view.entries.every((entry) => entry.discovered && entry.count === 2));
   assert.deepEqual(restored.fusion.discoveries['merge-cold'], { count: 7, firstDiscoveredAt: 25 });
   assert.equal(exportSave(restored), before);

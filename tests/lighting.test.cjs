@@ -87,7 +87,20 @@ test('one camera-fitted shadow map has explicit caster/receiver and material set
   assert.match(source('IslandMeshUpload'), /splitMesh16\(data\)\.map/);
   assert.match(source('IslandMeshUpload'), /const mesh = worldMesh\(chunk\)/);
   assert.match(source('TownBootstrap'), /configureTownLighting\(this\.node\.scene!\)/);
-  assert.match(fs.readFileSync('scripts/preview/effects.cjs', 'utf8'), /builtin-standard\.effect/);
+  assert.match(
+    fs.readFileSync('scripts/preview/effect-compiler.cjs', 'utf8'),
+    /builtin-standard\.effect/,
+  );
+  const { unpack } = require('../scripts/preview/effect-codec.cjs');
+  const cached = unpack(require('../scripts/preview/generated/effects.cache.json').packed);
+  const standard = cached.effects.find((effect) => effect.name === 'builtin-standard');
+  assert.ok(standard, 'The actual runtime cache retains the standard lighting effect');
+  assert.ok(standard.shaders.some((shader) => shader.name.includes('shadow-caster')));
+  assert.ok(
+    standard.shaders.some((shader) =>
+      shader.defines.some((define) => define.name === 'CC_RECEIVE_SHADOW'),
+    ),
+  );
 });
 
 test('every static world mesh carries its own explicit local bounds', () => {
@@ -151,6 +164,7 @@ test('shadow depth tracks only the visible world camera and has no large-island 
   const module = { exports: {} };
   new Function('require', 'module', 'exports', output)(
     (id) => {
+      if (id === './TownSky') return { configureTownSky() {} };
       assert.equal(id, 'cc');
       return cc;
     },

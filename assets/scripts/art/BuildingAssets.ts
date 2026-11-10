@@ -5,6 +5,8 @@ import { compostStage } from '../domain/compost';
 export const BUILDING_ASSETS: Record<BuildingKind, string> = {
   farm: 'farm-cell-bed',
   crate: 'crate',
+  fence: 'crafted-fence',
+  bench: 'bench',
   compostBarrel: 'compost-barrel',
   house: 'house',
   residence: 'residence',

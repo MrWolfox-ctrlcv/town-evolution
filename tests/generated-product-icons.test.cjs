@@ -281,6 +281,7 @@ test('reused drag/flight nodes reject stale image completions and disposal is ba
   );
   assert.equal(node.getComponent(f.Graphics).enabled, false);
   assert.equal(node.getComponent(f.Graphics).fallback, 'soil');
+  icons.draw(f.uiNode('pending'), 'wood', 40);
   icons.dispose();
   icons.dispose();
   assert.equal(mud.refs, 0);
@@ -316,11 +317,14 @@ test('real tray tiles, dragging ghost and collection flight bind the generated p
   Object.assign(surface, {
     icons,
     ghost: f.uiNode('ToolGhost'),
+    origin: { x: 0, y: 0 },
     width: 390,
     height: 844,
     acceptsProductDrop: () => false,
   });
-  const tiles = [];
+  const tiles = [],
+    prepared = [],
+    images = new Map();
   for (const [kind, path] of [
     ['soil', 'soil'],
     ['mud', 'mud'],
@@ -330,20 +334,24 @@ test('real tray tiles, dragging ghost and collection flight bind the generated p
       add: () => {
         const node = f.uiNode(kind);
         tiles.push(node);
-        return { node };
+        const entry = { node };
+        prepared.push(entry);
+        return entry;
       },
     };
     surface.tile(column, kind, `${kind}Stock`);
+    prepared.at(-1).prepare();
     surface.held = kind;
     surface.ghostAppearance = null;
     surface.moveGhost({
       getLocation: () => ({ x: 100, y: 100 }),
       getUILocation: () => ({ x: 100, y: 100 }),
     });
-    f.finish(path);
+    const image = f.finish(path);
+    images.set(kind, image);
     assert.equal(
       surface.ghost.getChildByName('CropImage').getComponent(f.Sprite).spriteFrame.source.image,
-      icons.art.get(kind).image,
+      image,
     );
     assert.equal(tiles.at(-1).children[0].getChildByName('CropImage').active, true);
   }
@@ -360,7 +368,7 @@ test('real tray tiles, dragging ghost and collection flight bind the generated p
     ['treeSeed', 'tree-seed'],
   ]) {
     flights.collect(kind, 2, { x: 200, y: 200 });
-    const image = f.finish(path);
+    const image = images.get(kind);
     const flight = flights.pool.at(-1).node;
     assert.equal(flight.getChildByName('CropImage').active, true);
     assert.equal(
@@ -482,6 +490,7 @@ test('static digging category shows shovel plus pickaxe while real pointer gestu
   Object.assign(surface, {
     icons,
     ghost: f.uiNode('ToolGhost'),
+    origin: { x: 0, y: 0 },
     width: 390,
     height: 844,
     active: null,
@@ -494,10 +503,10 @@ test('static digging category shows shovel plus pickaxe while real pointer gestu
       appearance: (_kind, point) => (point.material === 'stone' ? 'diggingPickaxe' : 'diggingTool'),
     },
   });
-  surface.tile({ add: () => ({ node: tile }) }, 'diggingTool', 'diggingToolTool');
-  const category = f.finish('digging-tools'),
-    shovel = f.finish('digging-tool'),
-    pickaxe = f.finish('digging-pickaxe');
+  const entry = { node: tile };
+  surface.tile({ add: () => entry }, 'diggingTool', 'diggingToolTool');
+  entry.prepare();
+  const category = f.finish('digging-tools');
   const tileSprite = tile.children[0].getChildByName('CropImage').getComponent(f.Sprite);
   assert.equal(tileSprite.spriteFrame.source.image, category);
   assert.deepEqual(tileSprite.spriteFrame.rect, new f.Rect(242, 42, 1045, 968));
@@ -508,10 +517,12 @@ test('static digging category shows shovel plus pickaxe while real pointer gestu
     getUILocation: () => ({ x: 100, y: 100 }),
   });
   tile.events.get(f.Node.EventType.TOUCH_START)(event('soil'));
+  const shovel = f.finish('digging-tool');
   assert.deepEqual(began, ['diggingTool'], 'Only the existing digging command is started');
   const ghostSprite = surface.ghost.getChildByName('CropImage').getComponent(f.Sprite);
   assert.equal(ghostSprite.spriteFrame.source.image, shovel);
   tile.events.get(f.Node.EventType.TOUCH_MOVE)(event('stone'));
+  const pickaxe = f.finish('digging-pickaxe');
   assert.equal(ghostSprite.spriteFrame.source.image, pickaxe);
   tile.events.get(f.Node.EventType.TOUCH_MOVE)(event('soil'));
   assert.equal(ghostSprite.spriteFrame.source.image, shovel);

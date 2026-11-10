@@ -4809,6 +4809,58 @@
       "bytes": 111107
     },
     {
+      "id": "bench",
+      "category": "buildings",
+      "file": "bench.gltf",
+      "parts": 19,
+      "triangles": 804,
+      "vertices": 1680,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.47,
+          0,
+          -0.245
+        ],
+        "max": [
+          0.47,
+          0.8,
+          0.255
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 135038
+    },
+    {
+      "id": "crafted-fence",
+      "category": "buildings",
+      "file": "crafted-fence.gltf",
+      "parts": 8,
+      "triangles": 320,
+      "vertices": 624,
+      "drawCalls": 1,
+      "bounds": {
+        "min": [
+          -0.48000000000000004,
+          0,
+          -0.08
+        ],
+        "max": [
+          0.48000000000000004,
+          0.8,
+          0.09000000000000001
+        ]
+      },
+      "footprint": [
+        1,
+        1
+      ],
+      "bytes": 52014
+    },
+    {
       "id": "warehouse-transport",
       "category": "buildings",
       "file": "warehouse-transport.gltf",

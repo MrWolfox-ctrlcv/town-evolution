@@ -30,6 +30,10 @@ function memory() {
 for (const record of oracle.profiles)
   test(`terrain6 leaves old ${record.profile} state, revision and storage namespace unchanged`, () => {
     const store = memory();
+    // The demo template now adds confirmed props. Load the frozen historical saved demo
+    // instead of incorrectly requiring a brand-new demo to reproduce that old template.
+    if (record.profile === 'demo')
+      for (const [key, value] of record.keys) store.data.set(key, value);
     const session = townSession(store, record.profile, () => oracle.now);
     assert.equal(session.mode, 'normal');
     assert.equal(g.exportSave(session.state), record.save);

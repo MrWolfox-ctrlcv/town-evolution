@@ -1,5 +1,6 @@
-import { buildTerrain } from './v6-build-terrain';
+import { assembleV6Terrain, buildTerrain } from './v6-build-terrain';
 import type { PreparedV6World } from './v6-build-terrain';
+import { validateV6Transfer } from './v6-transfer-validation';
 import type { Work, WorkStage } from './v6-work';
 export type { PreparedV6World } from './v6-build-terrain';
 const completed = new WeakSet<object>();
@@ -25,6 +26,14 @@ export class V6TerrainBuilder {
     if (!Number.isSafeInteger(seed) || seed < 1 || seed > 1_000_000_000)
       throw Error('Invalid v6 seed');
     this.#iterator = buildTerrain(seed);
+  }
+  /** Only a fully validated, locally rebuilt result earns this realm's completion brand. */
+  static fromTransfer(seed: number, data: unknown): V6TerrainBuilder {
+    const builder = new V6TerrainBuilder(seed);
+    builder.#iterator = (function* (): Work<PreparedV6World> {
+      return yield* assembleV6Terrain(yield* validateV6Transfer(data, seed));
+    })();
+    return builder;
   }
   get progress(): BuildProgress {
     return this.describe(0);

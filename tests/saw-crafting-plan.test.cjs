@@ -35,6 +35,8 @@ test('all recipes preserve an already legal origin, and repeated planning consum
   for (const [tool, amount, kind, width, depth] of [
     ['hammer', 1, 'orderBoard', 1, 1],
     ['hammer', 2, 'crate', 1, 1],
+    ['saw', 1, 'fence', 1, 1],
+    ['saw', 2, 'bench', 1, 1],
     ['saw', 3, 'handcart', 1, 1],
     ['saw', 4, 'boat', 1, 2],
     ['hammer', 3, 'woodenPier', 2, 2],

@@ -27,7 +27,7 @@ function source(
   requireRule(record(value), '掉落来源无效');
   if (value.type === 'terrain6') {
     requireRule(
-      terrainVersion === 6 &&
+      (terrainVersion === 6 || terrainVersion === 7) &&
         exact(value, ['type', 'x', 'z', 'operation', 'kind']) &&
         integer(value.x, size - 1) &&
         integer(value.z, size - 1) &&
@@ -48,7 +48,7 @@ function source(
     };
   }
   if (value.type === 'natural') {
-    requireRule(terrainVersion !== 6, 'v6采掘来源必须引用真实地形操作');
+    requireRule(terrainVersion !== 6 && terrainVersion !== 7, 'v6采掘来源必须引用真实地形操作');
     requireRule(
       exact(value, ['type', 'resourceId', 'kind']) &&
         typeof value.resourceId === 'string' &&

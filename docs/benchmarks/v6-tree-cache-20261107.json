@@ -1,0 +1,349 @@
+{
+  "scope": "Node CPU work counts and production V6ChunkMeshes with Cocos call doubles. No GPU, browser, phone or frame-rate measurement.",
+  "baseline": "Delivered b8a8f7f snapshot restored from libfile_7cb7eeedfdc481919d97045029e719cc",
+  "seed": 42173,
+  "savedTrees": 1685,
+  "node": "v24.22.1",
+  "budget": {
+    "maxTrees": 24,
+    "maxMilliseconds": "Infinity",
+    "maxUploadBytes": 262144
+  },
+  "camera": "Synthetic 8x8 view centered inside each stated 16x16 chunk; the existing two-unit margin selects its saved trees. No map-size change.",
+  "scenarios": [
+    {
+      "label": "near_A_B_A",
+      "before": {
+        "phases": [
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 489672,
+            "meshCreates": 8,
+            "callsToSettle": 3,
+            "visibleTrees": 15,
+            "geometrySha256": "c909253e92f00f578c091ce6a856e708f6eeb03e7ac73a1b45f8436bc0e75765",
+            "pickingSha256": "9a4283438f3f405aa77e9d9f3c0183d8bab9258825a988a4116ff1782789c805",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          },
+          {
+            "key": "10:6",
+            "builtTrees": 14,
+            "heightSamples": 14,
+            "uploadBytes": 678000,
+            "meshCreates": 11,
+            "callsToSettle": 4,
+            "visibleTrees": 14,
+            "geometrySha256": "5a38e44e15a29d72c861661931c62261e3274dfd9edcd9f4d07a93053feada76",
+            "pickingSha256": "733d9afa65d193d00bf96f06ca0ee571fb4c2d6708790d5a5af227cebbf37cc2",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          },
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 489672,
+            "meshCreates": 8,
+            "callsToSettle": 2,
+            "visibleTrees": 15,
+            "geometrySha256": "c909253e92f00f578c091ce6a856e708f6eeb03e7ac73a1b45f8436bc0e75765",
+            "pickingSha256": "9a4283438f3f405aa77e9d9f3c0183d8bab9258825a988a4116ff1782789c805",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          }
+        ],
+        "peakInactiveCpuAccountedBytes": 0,
+        "allSimulatedMeshesDestroyedOnce": true
+      },
+      "after": {
+        "phases": [
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 489672,
+            "meshCreates": 8,
+            "callsToSettle": 3,
+            "visibleTrees": 15,
+            "geometrySha256": "c909253e92f00f578c091ce6a856e708f6eeb03e7ac73a1b45f8436bc0e75765",
+            "pickingSha256": "9a4283438f3f405aa77e9d9f3c0183d8bab9258825a988a4116ff1782789c805",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 8388608
+            }
+          },
+          {
+            "key": "10:6",
+            "builtTrees": 14,
+            "heightSamples": 14,
+            "uploadBytes": 678000,
+            "meshCreates": 11,
+            "callsToSettle": 4,
+            "visibleTrees": 14,
+            "geometrySha256": "5a38e44e15a29d72c861661931c62261e3274dfd9edcd9f4d07a93053feada76",
+            "pickingSha256": "733d9afa65d193d00bf96f06ca0ee571fb4c2d6708790d5a5af227cebbf37cc2",
+            "cache": {
+              "entries": 1,
+              "bytes": 2382228,
+              "limit": 8388608
+            }
+          },
+          {
+            "key": "8:3",
+            "builtTrees": 0,
+            "heightSamples": 45,
+            "uploadBytes": 489672,
+            "meshCreates": 8,
+            "callsToSettle": 2,
+            "visibleTrees": 15,
+            "geometrySha256": "c909253e92f00f578c091ce6a856e708f6eeb03e7ac73a1b45f8436bc0e75765",
+            "pickingSha256": "9a4283438f3f405aa77e9d9f3c0183d8bab9258825a988a4116ff1782789c805",
+            "cache": {
+              "entries": 1,
+              "bytes": 3291490,
+              "limit": 8388608
+            }
+          }
+        ],
+        "peakInactiveCpuAccountedBytes": 3291490,
+        "allSimulatedMeshesDestroyedOnce": true
+      }
+    },
+    {
+      "label": "far_A_B_A",
+      "before": {
+        "phases": [
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 63720,
+            "meshCreates": 1,
+            "callsToSettle": 1,
+            "visibleTrees": 15,
+            "geometrySha256": "155c5cc4cbc14bced9bf139a85e713e53cbaee8c10557f9051865fab2ccd819c",
+            "pickingSha256": "e7c2a5d48fad10f12106521dac34f445a705da97dd19740cb6ed26d1d065d879",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          },
+          {
+            "key": "10:6",
+            "builtTrees": 14,
+            "heightSamples": 14,
+            "uploadBytes": 59472,
+            "meshCreates": 1,
+            "callsToSettle": 1,
+            "visibleTrees": 14,
+            "geometrySha256": "f19c50a43f1471695e40c4d0441f0e47dd677d3c07b101219af3fd4aee251b47",
+            "pickingSha256": "63b6364b80f5275faa5aa0030a8e565bfed9831efc22ac4b281402dd3ae5cb2c",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          },
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 63720,
+            "meshCreates": 1,
+            "callsToSettle": 1,
+            "visibleTrees": 15,
+            "geometrySha256": "155c5cc4cbc14bced9bf139a85e713e53cbaee8c10557f9051865fab2ccd819c",
+            "pickingSha256": "e7c2a5d48fad10f12106521dac34f445a705da97dd19740cb6ed26d1d065d879",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          }
+        ],
+        "peakInactiveCpuAccountedBytes": 0,
+        "allSimulatedMeshesDestroyedOnce": true
+      },
+      "after": {
+        "phases": [
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 63720,
+            "meshCreates": 1,
+            "callsToSettle": 1,
+            "visibleTrees": 15,
+            "geometrySha256": "155c5cc4cbc14bced9bf139a85e713e53cbaee8c10557f9051865fab2ccd819c",
+            "pickingSha256": "e7c2a5d48fad10f12106521dac34f445a705da97dd19740cb6ed26d1d065d879",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 8388608
+            }
+          },
+          {
+            "key": "10:6",
+            "builtTrees": 14,
+            "heightSamples": 14,
+            "uploadBytes": 59472,
+            "meshCreates": 1,
+            "callsToSettle": 1,
+            "visibleTrees": 14,
+            "geometrySha256": "f19c50a43f1471695e40c4d0441f0e47dd677d3c07b101219af3fd4aee251b47",
+            "pickingSha256": "63b6364b80f5275faa5aa0030a8e565bfed9831efc22ac4b281402dd3ae5cb2c",
+            "cache": {
+              "entries": 1,
+              "bytes": 324756,
+              "limit": 8388608
+            }
+          },
+          {
+            "key": "8:3",
+            "builtTrees": 0,
+            "heightSamples": 30,
+            "uploadBytes": 63720,
+            "meshCreates": 1,
+            "callsToSettle": 1,
+            "visibleTrees": 15,
+            "geometrySha256": "155c5cc4cbc14bced9bf139a85e713e53cbaee8c10557f9051865fab2ccd819c",
+            "pickingSha256": "e7c2a5d48fad10f12106521dac34f445a705da97dd19740cb6ed26d1d065d879",
+            "cache": {
+              "entries": 1,
+              "bytes": 303202,
+              "limit": 8388608
+            }
+          }
+        ],
+        "peakInactiveCpuAccountedBytes": 324756,
+        "allSimulatedMeshesDestroyedOnce": true
+      }
+    },
+    {
+      "label": "oversized_near_chunk_control",
+      "before": {
+        "phases": [
+          {
+            "key": "7:3",
+            "builtTrees": 67,
+            "heightSamples": 67,
+            "uploadBytes": 3029232,
+            "meshCreates": 47,
+            "callsToSettle": 23,
+            "visibleTrees": 67,
+            "geometrySha256": "6299ff741d6bf9f7c2f9549ddeabc27ee61a72a306f23f5f3232256fd87c2fc8",
+            "pickingSha256": "da11166405efd6a2d32732693b40a27727c4ace74471bec26b6f1150d316b0f7",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          },
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 489672,
+            "meshCreates": 8,
+            "callsToSettle": 2,
+            "visibleTrees": 15,
+            "geometrySha256": "c909253e92f00f578c091ce6a856e708f6eeb03e7ac73a1b45f8436bc0e75765",
+            "pickingSha256": "9a4283438f3f405aa77e9d9f3c0183d8bab9258825a988a4116ff1782789c805",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          },
+          {
+            "key": "7:3",
+            "builtTrees": 67,
+            "heightSamples": 67,
+            "uploadBytes": 3029232,
+            "meshCreates": 47,
+            "callsToSettle": 14,
+            "visibleTrees": 67,
+            "geometrySha256": "6299ff741d6bf9f7c2f9549ddeabc27ee61a72a306f23f5f3232256fd87c2fc8",
+            "pickingSha256": "da11166405efd6a2d32732693b40a27727c4ace74471bec26b6f1150d316b0f7",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 0
+            }
+          }
+        ],
+        "peakInactiveCpuAccountedBytes": 0,
+        "allSimulatedMeshesDestroyedOnce": true
+      },
+      "after": {
+        "phases": [
+          {
+            "key": "7:3",
+            "builtTrees": 67,
+            "heightSamples": 67,
+            "uploadBytes": 3029232,
+            "meshCreates": 47,
+            "callsToSettle": 23,
+            "visibleTrees": 67,
+            "geometrySha256": "6299ff741d6bf9f7c2f9549ddeabc27ee61a72a306f23f5f3232256fd87c2fc8",
+            "pickingSha256": "da11166405efd6a2d32732693b40a27727c4ace74471bec26b6f1150d316b0f7",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 8388608
+            }
+          },
+          {
+            "key": "8:3",
+            "builtTrees": 15,
+            "heightSamples": 15,
+            "uploadBytes": 489672,
+            "meshCreates": 8,
+            "callsToSettle": 2,
+            "visibleTrees": 15,
+            "geometrySha256": "c909253e92f00f578c091ce6a856e708f6eeb03e7ac73a1b45f8436bc0e75765",
+            "pickingSha256": "9a4283438f3f405aa77e9d9f3c0183d8bab9258825a988a4116ff1782789c805",
+            "cache": {
+              "entries": 0,
+              "bytes": 0,
+              "limit": 8388608
+            }
+          },
+          {
+            "key": "7:3",
+            "builtTrees": 67,
+            "heightSamples": 67,
+            "uploadBytes": 3029232,
+            "meshCreates": 47,
+            "callsToSettle": 14,
+            "visibleTrees": 67,
+            "geometrySha256": "6299ff741d6bf9f7c2f9549ddeabc27ee61a72a306f23f5f3232256fd87c2fc8",
+            "pickingSha256": "da11166405efd6a2d32732693b40a27727c4ace74471bec26b6f1150d316b0f7",
+            "cache": {
+              "entries": 1,
+              "bytes": 2382228,
+              "limit": 8388608
+            }
+          }
+        ],
+        "peakInactiveCpuAccountedBytes": 2382228,
+        "allSimulatedMeshesDestroyedOnce": true
+      }
+    }
+  ],
+  "savedStateUnchanged": true
+}

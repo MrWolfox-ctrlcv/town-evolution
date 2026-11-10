@@ -35,7 +35,7 @@ export function toolCraftPlan(
   if (!recipe)
     return invalid(
       tool === 'saw'
-        ? '锯子需要恰好3或4份木材，制作手推车或木船'
+        ? '锯子需要1木造围栏、2木造长凳、3木造手推车、4木造木船'
         : '锤子需要1木造公告牌、2木造箱子、3木造栈桥、4木造房屋、2石造石磨',
     );
   const original: Building = { id: `b${state.nextId}`, kind: recipe.kind, x, z, rotation: 0 };

@@ -2,7 +2,7 @@ import type { GameState } from '../types';
 import type { EditTerrain6Command } from '../v6-edit-types';
 import { planTerrain6Edit } from '../v6-edit-plan';
 import { getV6EditSurface, resourceAfterV6Cut } from '../v6-edit-surface';
-import { v6EditPlane as plane, V6_EDIT_MAX_LEVEL } from '../v6-material-volume';
+import { terrain6EditLevel } from '../v6-edit-level';
 import { useDurability } from '../foundation';
 import { requireRule } from '../guards';
 /** Called only in the dispatch clone. Any plan/drop/durability failure returns the original state. */
@@ -44,10 +44,8 @@ export function gatherTerrain6(state: GameState, resourceId: string): string[] {
     surface.exposedResourceAt(resource.x, resource.z),
     '该天然资源已埋在填筑平台下，请按地块开挖',
   );
-  const [lo] = surface.range(resource.x, resource.z);
-  let level = V6_EDIT_MAX_LEVEL;
-  while (level >= 0 && plane(level) >= lo) level--;
-  requireRule(level >= 0, '此处已到保护底面');
+  const level = terrain6EditLevel(state, resource.x, resource.z, 'dig');
+  requireRule(level !== null, '此处已到保护底面');
   return editTerrain6(state, {
     type: 'editTerrain6',
     kind: 'dig',

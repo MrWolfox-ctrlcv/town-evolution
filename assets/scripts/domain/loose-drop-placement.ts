@@ -5,7 +5,8 @@ import { requireRule } from './guards';
 export function validateDropPlacements(state: GameState): void {
   const trees = new Set(state.trees.map((p) => `${p.x},${p.z}`));
   const piles = new Set(state.groundStacks.map((p) => `${p.x},${p.z}`));
-  const surface = state.terrainVersion === 6 ? getV6EditSurface(state) : null;
+  const surface =
+    state.terrainVersion === 6 || state.terrainVersion === 7 ? getV6EditSurface(state) : null;
   const resources = new Map(
     state.naturalResources
       .filter((p) => !surface || surface.exposedResourceAt(p.x, p.z))
@@ -15,7 +16,7 @@ export function validateDropPlacements(state: GameState): void {
     if (drop.source.type === 'terrain6') {
       const source = drop.source;
       requireRule(
-        state.terrainVersion === 6 &&
+        (state.terrainVersion === 6 || state.terrainVersion === 7) &&
           state.terrain6?.cells.some((c) => c.x === source.x && c.z === source.z),
         'v6掉落缺少来源地形检查点',
       );

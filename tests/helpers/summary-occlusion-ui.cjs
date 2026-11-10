@@ -166,6 +166,12 @@ function fixture(width = 1200, height = 800, dpr = 1, hooks = {}) {
   });
   const hud = Object.assign(Object.create(TownHUD.prototype), {
     canvas,
+    // This summary-only fixture retains the zero-inset desktop frame.
+    controls: {
+      root: canvas,
+      layout: (width, height) => ({ x: 0, y: 0, width, height }),
+      contains: (point) => input.getComponent(UITransform).hitTest(point),
+    },
     top,
     mapInput: input,
     resources,

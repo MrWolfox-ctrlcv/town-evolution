@@ -28,6 +28,8 @@ export class V6TreeView {
       (key) => this.remove(key),
       (key) => this.cancel(key),
       height,
+      undefined,
+      this.groundVisible,
     );
   }
   sync(state: GameState, now: number): void {

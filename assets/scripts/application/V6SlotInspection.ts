@@ -2,7 +2,7 @@ import { hasPreparedV6World } from '../domain/v6-world';
 import { peekTerrain6Save } from '../domain/v6-save-header';
 import type { KeyValueStorage } from '../domain/storage';
 import { SAVE_KEY } from '../domain/storage';
-import { inspectSlot, MAX_MANUAL_SAVE_CHARACTERS } from './ManualSaves';
+import { inspectSlotRaw, manualSlotKey, MAX_MANUAL_SAVE_CHARACTERS } from './ManualSaves';
 import type { ManualSlot, SlotInfo } from './ManualSaves';
 export type StartSlotInfo =
   | SlotInfo
@@ -39,12 +39,12 @@ export function inspectV6Slot(
 ): StartSlotInfo {
   let raw: string | null | undefined;
   try {
-    raw = storage.getItem(`${SAVE_KEY}.manual.${slot}`);
+    raw = storage.getItem(manualSlotKey(slot));
     if (raw === null) return { status: 'empty', state: null, savedAt: null, revision: raw };
     const header = v6SlotHeader(raw);
     if (!hasPreparedV6World(header.seed))
       return { status: 'pending', state: null, savedAt: header.savedAt, revision: raw };
-    return inspectSlot(storage, slot, now);
+    return inspectSlotRaw(raw, now);
   } catch {
     return {
       status: 'corrupt',

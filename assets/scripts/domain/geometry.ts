@@ -1,3 +1,4 @@
+import { v6RiverPierHeight } from './v6-bridge-profile';
 import { getV6EditSurface, v6FoundationHeight } from './v6-edit-surface';
 import { validateBridgeTerrain } from './bridge-terrain';
 import { farmCellAtSixths } from './farm-coordinates';
@@ -46,8 +47,7 @@ function checkedCells(state: GameState, b: Building) {
     });
     return {
       cells,
-      baseElevation:
-        state.terrainVersion === 6 ? v6FoundationHeight(state, plan.endpointCells) : undefined,
+      baseElevation: plan.baseElevation,
     };
   }
   for (const p of cells) {
@@ -57,7 +57,15 @@ function checkedCells(state: GameState, b: Building) {
       '此处是水域，不能建造',
     );
   }
-  if (state.terrainVersion === 6) {
+  if (state.terrainVersion === 6 || state.terrainVersion === 7) {
+    if (
+      b.kind === 'woodenPier' &&
+      !state.landExtensions.some((p) => cells.some((q) => q.x === p.x && q.z === p.z)) &&
+      !state.terrain6?.cells.some((p) => cells.some((q) => q.x === p.x && q.z === p.z))
+    ) {
+      const bankHeight = v6RiverPierHeight(state.mapSeed, cells, state.terrainVersion);
+      if (bankHeight !== null) return { cells, baseElevation: bankHeight };
+    }
     const marineUse =
       b.kind === 'dock' ||
       (b.kind === 'woodenPier' &&
@@ -65,7 +73,7 @@ function checkedCells(state: GameState, b: Building) {
           isDockShore(
             { ...b, kind: 'dock', rotation: rotation as Building['rotation'] },
             state.mapSeed,
-            6,
+            state.terrainVersion,
             state.landExtensions,
           ),
         ));
@@ -81,7 +89,8 @@ export function validatePlacement(state: GameState, b: Building): void {
   );
   const inside = (p: { x: number; z: number }) => buildingOccupiesCell(b, p.x, p.z);
   requireRule(!state.trees.some(inside), '此处有树木');
-  const surface = state.terrainVersion === 6 ? getV6EditSurface(state) : null;
+  const surface =
+    state.terrainVersion === 6 || state.terrainVersion === 7 ? getV6EditSurface(state) : null;
   requireRule(
     !state.naturalResources.some(
       (p) => inside(p) && (!surface || surface.exposedResourceAt(p.x, p.z)),
@@ -105,7 +114,7 @@ export function preserveTradeTile(s: GameState): void {
     for (const p of buildingOccupiedCells(b))
       if (isLandCell(p.x, p.z, s.mapSeed, s.terrainVersion, s.landExtensions))
         cells.add(`${p.x},${p.z}`);
-  const surface = s.terrainVersion === 6 ? getV6EditSurface(s) : null;
+  const surface = s.terrainVersion === 6 || s.terrainVersion === 7 ? getV6EditSurface(s) : null;
   for (const p of [
     ...s.trees,
     ...s.naturalResources.filter((r) => !surface || surface.exposedResourceAt(r.x, r.z)),
@@ -120,7 +129,8 @@ export function preserveTradeTile(s: GameState): void {
 }
 /** Save imports validate every body and attached outside box tile without resetting assets. */
 export function validateTownPlacements(state: GameState): void {
-  const surface = state.terrainVersion === 6 ? getV6EditSurface(state) : null;
+  const surface =
+    state.terrainVersion === 6 || state.terrainVersion === 7 ? getV6EditSurface(state) : null;
   const occupied = new Set<string>(),
     trees = new Set(state.trees.map((p) => `${p.x},${p.z}`)),
     resources = new Set(

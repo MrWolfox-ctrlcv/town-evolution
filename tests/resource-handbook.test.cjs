@@ -174,7 +174,7 @@ test('all five real operations compose and preserve legacy and earlier discoveri
   assert.equal(handbookView(state).progress, 6);
   assert.deepEqual(state.fusion.discoveries['gather-wood'], { count: 2, firstDiscoveredAt: 100 });
   assert.deepEqual(state.fusion.discoveries['merge-cold'], { count: 7, firstDiscoveredAt: 90 });
-  assert.equal(handbookView(state).entries.length, 36);
+  assert.equal(handbookView(state).entries.length, 38);
 });
 test('stone discovery includes the final removed cube and only announces once', () => {
   let state = structuredClone(baseline);

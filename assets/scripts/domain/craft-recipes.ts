@@ -10,6 +10,8 @@ export interface ToolCraftRecipe {
 export const TOOL_CRAFT_RECIPES: readonly ToolCraftRecipe[] = [
   { tool: 'hammer', item: 'wood', amount: 1, kind: 'orderBoard', recipeId: 'build-order-board' },
   { tool: 'hammer', item: 'wood', amount: 2, kind: 'crate', recipeId: 'build-crate' },
+  { tool: 'saw', item: 'wood', amount: 1, kind: 'fence', recipeId: 'build-fence' },
+  { tool: 'saw', item: 'wood', amount: 2, kind: 'bench', recipeId: 'build-bench' },
   { tool: 'saw', item: 'wood', amount: 3, kind: 'handcart', recipeId: 'build-handcart' },
   { tool: 'saw', item: 'wood', amount: 4, kind: 'boat', recipeId: 'build-boat' },
   { tool: 'hammer', item: 'wood', amount: 3, kind: 'woodenPier', recipeId: 'build-wooden-pier' },

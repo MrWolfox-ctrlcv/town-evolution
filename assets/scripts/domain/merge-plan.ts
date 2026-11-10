@@ -44,7 +44,8 @@ export function hasDockExit(
         isLandCell(x, z, state.mapSeed, state.terrainVersion, state.landExtensions) ||
         (state.terrainVersion === 5 &&
           !isV5MarineCell(state.mapSeed, x, z, state.landExtensions)) ||
-        (state.terrainVersion === 6 && !isV6MarineCell(state.mapSeed, x, z, state.landExtensions))
+        ((state.terrainVersion === 6 || state.terrainVersion === 7) &&
+          !isV6MarineCell(state.mapSeed, x, z, state.landExtensions, state.terrainVersion))
       )
         return false;
     }

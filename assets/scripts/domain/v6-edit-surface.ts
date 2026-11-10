@@ -1,6 +1,6 @@
 import type { GameState, NaturalResource, LandCell } from './types';
 import type { V6CellCheckpoint, V6Material } from './v6-edit-types';
-import { getV6World } from './v6-world';
+import { getEditableWorld } from './editable-world';
 import { initialResourceCap, v6EditPlane as plane } from './v6-material-volume';
 import { requireRule, integer } from './guards';
 /** One immutable state snapshot drives rendering, picking, edits and placement. */
@@ -11,6 +11,8 @@ type SurfaceState = Pick<
 const surfaces = new WeakMap<
   object,
   {
+    seed: number;
+    version: GameState['terrainVersion'];
     cells: GameState['terrain6'];
     list: V6CellCheckpoint[] | undefined;
     resources: GameState['naturalResources'];
@@ -22,6 +24,8 @@ export function getV6EditSurface(state: SurfaceState): ReturnType<typeof createS
   const found = surfaces.get(state);
   if (
     found &&
+    found.seed === state.mapSeed &&
+    found.version === state.terrainVersion &&
     found.cells === state.terrain6 &&
     found.list === state.terrain6?.cells &&
     found.resources === state.naturalResources &&
@@ -30,6 +34,8 @@ export function getV6EditSurface(state: SurfaceState): ReturnType<typeof createS
     return found.surface;
   const surface = createSurface(state);
   surfaces.set(state, {
+    seed: state.mapSeed,
+    version: state.terrainVersion,
     cells: state.terrain6,
     list: state.terrain6?.cells,
     resources: state.naturalResources,
@@ -40,10 +46,10 @@ export function getV6EditSurface(state: SurfaceState): ReturnType<typeof createS
 }
 function createSurface(state: SurfaceState) {
   requireRule(
-    state.terrainVersion === 6 && state.terrain6?.format === 1,
+    (state.terrainVersion === 6 || state.terrainVersion === 7) && state.terrain6?.format === 1,
     '此地图没有规则地形编辑状态',
   );
-  const world = getV6World(state.mapSeed);
+  const world = getEditableWorld(state.mapSeed, state.terrainVersion);
   const edits = new Map(state.terrain6.cells.map((c) => [`${c.x},${c.z}`, c]));
   const resources = new Map(state.naturalResources.map((r) => [`${r.x},${r.z}`, r]));
   const extensions = state.landExtensions;
@@ -173,7 +179,7 @@ export function v6FoundationHeight(
   return height!;
 }
 export function resourceAfterV6Cut(
-  world: ReturnType<typeof getV6World>,
+  world: ReturnType<typeof getEditableWorld>,
   cell: V6CellCheckpoint,
 ): NaturalResource | null {
   const r = world.resourceAt(cell.x, cell.z);

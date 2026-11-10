@@ -17,7 +17,7 @@ export function terrainAt(
     return { biome: 'plain' as const, elevation: 0 };
   if (version === 1) return { biome: 'plain' as const, elevation: 0 };
   const cell = biomeAt(x, z, seed, version);
-  if (version === 5 || version === 6) return cell;
+  if (version === 5 || version === 6 || version === 7) return cell;
   // An accessible coastal apron leaves real dock footprints on all sides of every island.
   if (cell.elevation > 0)
     for (let dz = -2; dz <= 2; dz++)

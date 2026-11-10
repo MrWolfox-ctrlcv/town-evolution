@@ -165,7 +165,9 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
   }
   if (ui.tab === 'tools')
     return [
-      ...(session.state.terrainVersion === 6 ? terrainModeActions(ui, handlers) : []),
+      ...(session.state.terrainVersion === 6 || session.state.terrainVersion === 7
+        ? terrainModeActions(ui, handlers)
+        : []),
       ...(!UNLIMITED_TOOL_DURABILITY ? [{ text: '工具补给', run: handlers.openToolShop }] : []),
       { text: '种树苗 · 5币', run: handlers.plantTree },
       { text: '存档', run: handlers.openSaves ?? handlers.save },
@@ -193,7 +195,12 @@ export function actions(session: GameSession, ui: UiState, handlers: UiHandlers)
   const commerce = commerceActions(session, ui, handlers);
   const building = session.state.buildings.find((b) => b.id === ui.selected);
   if (!building)
-    return commerce ?? (session.state.terrainVersion === 6 ? terrainModeActions(ui, handlers) : []);
+    return (
+      commerce ??
+      (session.state.terrainVersion === 6 || session.state.terrainVersion === 7
+        ? terrainModeActions(ui, handlers)
+        : [])
+    );
   const routeActions =
     productionActions(session, building, handlers, ui) ??
     transportActions(session, building, ui, handlers);

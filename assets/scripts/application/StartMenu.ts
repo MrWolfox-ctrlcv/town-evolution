@@ -40,7 +40,7 @@ export function startMenu(flow: GameStart, openGuide: () => void): StartMenuData
   };
   if (flow.page === 'preparing')
     return {
-      title: '自然挖填实验',
+      title: flow.preparingSeededCoast ? '随机海岸实验' : '自然挖填实验',
       subtitle: '实验 · 独立存档',
       detail: flow.preparation.message,
       actions: [{ id: 'cancel', text: '取消准备', run: () => flow.back() }],
@@ -173,6 +173,7 @@ export function startMenu(flow: GameStart, openGuide: () => void): StartMenuData
       { id: 'v5-preview', text: 'v5 新岛预览', run: () => flow.start('v5-preview') },
       { id: 'v5-bridge-demo', text: '木桥演示', run: () => flow.start('v5-bridge-demo') },
       { id: 'v6-preview', text: '自然挖填实验', run: () => flow.start('v6-preview') },
+      { id: 'v7-preview', text: '随机海岸实验', run: () => flow.start('v7-preview') },
       { id: 'saves', text: '存档', run: () => flow.saves() },
       { id: 'guide', text: '图鉴', run: openGuide },
       { id: 'exit', text: '退出', run: () => flow.exit() },

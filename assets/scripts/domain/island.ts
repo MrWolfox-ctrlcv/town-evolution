@@ -6,9 +6,38 @@ import { fractalNoise } from './noise';
 import { biomeAt } from './biomes';
 import { getV5Hydrology } from './v5-hydrology';
 import { getV5World } from './v5-world';
-import { getV6World } from './v6-world';
+import { getEditableWorld } from './editable-world';
+import { isV6DockShore } from './v6-maritime';
 import { isV5DockShore } from './v5-marine';
 export const DEFAULT_MAP_SEED = 1;
+/** Cache only the immutable world's original hydrology predicate, never save data or
+ * transferred cell records. The fixed byte grid avoids thrashing the detailed water
+ * certificates' smaller FIFO during full-save validation. World replacement gets a
+ * fresh grid, including a replacement with the same seed. */
+const v6Land = new WeakMap<ReturnType<typeof getEditableWorld>, Uint8Array>();
+function isV6LandCell(x: number, z: number, seed: number, version: TerrainVersion): boolean {
+  const world = getEditableWorld(seed, version);
+  if (
+    !Number.isInteger(x) ||
+    !Number.isInteger(z) ||
+    x < 1 ||
+    z < 1 ||
+    x >= world.size - 1 ||
+    z >= world.size - 1
+  )
+    return false;
+  let cells = v6Land.get(world);
+  if (!cells) {
+    cells = new Uint8Array(world.size ** 2);
+    v6Land.set(world, cells);
+  }
+  const index = z * world.size + x,
+    known = cells[index];
+  if (known) return known === 1;
+  const land = world.hydrology.at(x, z)?.state === 'dryBuildable';
+  cells[index] = land ? 1 : 2;
+  return land;
+}
 /** Historical v8 land remains legal after expansion, including every saved building footprint. */
 export function legacyLandCell(x: number, z: number, seed = DEFAULT_MAP_SEED): boolean {
   if (!Number.isInteger(x) || !Number.isInteger(z) || x < 1 || z < 1 || x >= 23 || z >= 23)
@@ -43,10 +72,10 @@ export function isLandCell(
     z < worldSize(version) - 1
   )
     return true;
-  if (version === 5 || version === 6)
+  if (version === 6 || version === 7) return isV6LandCell(x, z, seed, version);
+  if (version === 5)
     return (
-      (version === 6 ? getV6World(seed).hydrology : getV5Hydrology(seed)).at(x, z)?.state ===
-        'dryBuildable' &&
+      getV5Hydrology(seed).at(x, z)?.state === 'dryBuildable' &&
       x >= 1 &&
       z >= 1 &&
       x < worldSize(version) - 1 &&
@@ -128,9 +157,9 @@ export function isDockShore(
   version: TerrainVersion = 4,
   extensions: readonly LandCell[] = [],
 ): boolean {
-  if (version === 6) getV6World(seed);
-  if (version === 5 || version === 6)
-    return b.kind === 'dock' && isV5DockShore(seed, b, extensions);
+  if (version === 6 || version === 7)
+    return b.kind === 'dock' && isV6DockShore(seed, b, extensions, version);
+  if (version === 5) return b.kind === 'dock' && isV5DockShore(seed, b, extensions);
   const d = CONFIG.buildings[b.kind],
     width = b.rotation % 2 ? d.depth : d.width,
     depth = b.rotation % 2 ? d.width : d.depth;

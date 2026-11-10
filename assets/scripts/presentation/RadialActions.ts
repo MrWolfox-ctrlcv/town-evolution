@@ -25,6 +25,7 @@ export class RadialActions {
   private suppressed = false;
   private selection = '';
   private page = 0;
+  private origin = { x: 0, y: 0 };
   private width = 390;
   private height = 844;
   private anchor: RadialRect | null = null;
@@ -74,7 +75,8 @@ export class RadialActions {
         button.node.getComponent(UITransform)!.hitTest(new Vec2(point.x, point.y)),
     );
   }
-  layout(width: number, height: number): void {
+  layout(width: number, height: number, origin = { x: 0, y: 0 }): void {
+    this.origin = { ...origin };
     this.width = width;
     this.height = height;
     this.signature = '';
@@ -98,14 +100,15 @@ export class RadialActions {
   project(points: readonly RadialPoint[], obstacles: readonly RadialRect[]): void {
     const viewport = view.getViewportRect();
     this.anchor = screenBounds(
-      points.map((point) =>
-        collectionSource(
+      points.map((point) => {
+        const local = collectionSource(
           point,
           viewport,
           { x: view.getScaleX(), y: view.getScaleY() },
           { x: this.width, y: this.height },
-        ),
-      ),
+        );
+        return { x: local.x - this.origin.x, y: local.y - this.origin.y };
+      }),
     );
     this.obstacles = obstacles;
     this.place();

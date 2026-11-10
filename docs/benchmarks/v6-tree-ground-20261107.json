@@ -1,0 +1,95 @@
+{
+  "scope": "Actual V6TreeView, V6TreeStreaming, V6SurfaceChunks visibility and V6ChunkMeshes with Cocos call doubles; no browser/GPU/device evidence.",
+  "baseline": "5519fd1 tree-cold-and-cache checkpoint",
+  "seed": 42173,
+  "bounds": {
+    "minX": 130,
+    "minZ": 32,
+    "maxX": 142,
+    "maxZ": 128
+  },
+  "fixture": "Two actual identities sampled from the generated saved state. The constrained ground residency models the chunks intersecting this viewport; the 2-unit tree margin also includes unavailable 7:3.",
+  "blockedTree": {
+    "id": "t422",
+    "x": 114,
+    "z": 48
+  },
+  "readyTree": {
+    "id": "t992",
+    "x": 141,
+    "z": 120
+  },
+  "before": {
+    "blockedPhase": {
+      "frameCalls": 1000,
+      "visibleTreeIds": [],
+      "pendingChunk": "7:3",
+      "loading": true,
+      "meshCreates": 0
+    },
+    "completedIds": ["t422", "t992"],
+    "completedGeometry": [
+      {
+        "key": "7:3",
+        "meshSha256": "afc6eb5b4366232145a28e47e19dc5b23ebbfc1178031fd58c82db0e07ef1caa",
+        "picksSha256": "feda592b316f0a10a294110ca9b22685d8e1b921e59fe7a44c4403c0b47d3c57",
+        "uploadSha256": "afc6eb5b4366232145a28e47e19dc5b23ebbfc1178031fd58c82db0e07ef1caa",
+        "vertices": 1104,
+        "triangles": 400,
+        "canonicalBytes": 55392,
+        "uploadParts": 1,
+        "uploadBytes": 55392
+      },
+      {
+        "key": "8:7",
+        "meshSha256": "0e41beb8edbdc400cbb03646c262cb32a97f0b0cc007eec90b88f1f032d41a0a",
+        "picksSha256": "7902dd6b311723535fba428bdaf5ddd5faaeceab5c5b20ac27690f6af0600b0d",
+        "uploadSha256": "0e41beb8edbdc400cbb03646c262cb32a97f0b0cc007eec90b88f1f032d41a0a",
+        "vertices": 1104,
+        "triangles": 400,
+        "canonicalBytes": 55392,
+        "uploadParts": 1,
+        "uploadBytes": 55392
+      }
+    ],
+    "allSimulatedMeshesDestroyedOnce": true,
+    "disposedCacheBytes": 0
+  },
+  "after": {
+    "blockedPhase": {
+      "frameCalls": 1000,
+      "visibleTreeIds": ["t992"],
+      "pendingChunk": null,
+      "loading": false,
+      "meshCreates": 1
+    },
+    "completedIds": ["t422", "t992"],
+    "completedGeometry": [
+      {
+        "key": "7:3",
+        "meshSha256": "afc6eb5b4366232145a28e47e19dc5b23ebbfc1178031fd58c82db0e07ef1caa",
+        "picksSha256": "feda592b316f0a10a294110ca9b22685d8e1b921e59fe7a44c4403c0b47d3c57",
+        "uploadSha256": "afc6eb5b4366232145a28e47e19dc5b23ebbfc1178031fd58c82db0e07ef1caa",
+        "vertices": 1104,
+        "triangles": 400,
+        "canonicalBytes": 55392,
+        "uploadParts": 1,
+        "uploadBytes": 55392
+      },
+      {
+        "key": "8:7",
+        "meshSha256": "0e41beb8edbdc400cbb03646c262cb32a97f0b0cc007eec90b88f1f032d41a0a",
+        "picksSha256": "7902dd6b311723535fba428bdaf5ddd5faaeceab5c5b20ac27690f6af0600b0d",
+        "uploadSha256": "0e41beb8edbdc400cbb03646c262cb32a97f0b0cc007eec90b88f1f032d41a0a",
+        "vertices": 1104,
+        "triangles": 400,
+        "canonicalBytes": 55392,
+        "uploadParts": 1,
+        "uploadBytes": 55392
+      }
+    ],
+    "allSimulatedMeshesDestroyedOnce": true,
+    "disposedCacheBytes": 0
+  },
+  "savedStateUnchanged": true
+}

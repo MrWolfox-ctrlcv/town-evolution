@@ -1,0 +1,277 @@
+{
+  "baseline": "f7d2e47 plus cold-work uncommitted changes",
+  "before": {
+    "scope": "Seed 42173, actual domain dig/fill commands and actual upload splitter/uploader with Cocos call doubles. No browser, GPU or phone timing. Inventory seeded only in an isolated fixture.",
+    "seed": 42173,
+    "node": "v24.22.1",
+    "scenarios": [
+      {
+        "name": "interior",
+        "x": 83,
+        "z": 82,
+        "cold": {
+          "bytes": 356352,
+          "rebuilt": 256,
+          "uploadCalls": 6,
+          "liveNodes": 6,
+          "accountedResidentBytes": 2916352,
+          "geometry": "5c7ce314329b9ac3540016c010f5831ff442cf2b5ed438100fc301ce41f94765"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 29,
+            "bytes": 360708,
+            "rebuilt": 5,
+            "uploadCalls": 6,
+            "liveNodes": 6,
+            "accountedResidentBytes": 2939112,
+            "geometry": "7d4af69fa6fcb4abb69e279322f226a50602d9ec1963ab20648059677169408a"
+          }
+        ]
+      },
+      {
+        "name": "batch-boundary",
+        "x": 88,
+        "z": 88,
+        "cold": {
+          "bytes": 356352,
+          "rebuilt": 256,
+          "uploadCalls": 6,
+          "liveNodes": 6,
+          "accountedResidentBytes": 2916352,
+          "geometry": "5c7ce314329b9ac3540016c010f5831ff442cf2b5ed438100fc301ce41f94765"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 29,
+            "bytes": 361620,
+            "rebuilt": 5,
+            "uploadCalls": 6,
+            "liveNodes": 6,
+            "accountedResidentBytes": 2951752,
+            "geometry": "4183de246deac45d97a2a4a69dac42427509c7187248d4e4b9409aa1541b2b47"
+          }
+        ]
+      },
+      {
+        "name": "chunk-boundary",
+        "x": 95,
+        "z": 88,
+        "cold": {
+          "bytes": 712704,
+          "rebuilt": 512,
+          "uploadCalls": 12,
+          "liveNodes": 12,
+          "accountedResidentBytes": 5832704,
+          "geometry": "a221d5dd8ebd2ffbfc1c7915320cca7772b2c8d1ab9f3331b1efec9c6368d818"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 42,
+            "bytes": 717348,
+            "rebuilt": 5,
+            "uploadCalls": 12,
+            "liveNodes": 12,
+            "accountedResidentBytes": 5860008,
+            "geometry": "f5678dc435ada7476ce2b0973ce22dd522b8ae03b77d5b22a2b21e74d9cd968e"
+          }
+        ]
+      },
+      {
+        "name": "repeat-dig-fill",
+        "x": 88,
+        "z": 88,
+        "cold": {
+          "bytes": 356352,
+          "rebuilt": 256,
+          "uploadCalls": 6,
+          "liveNodes": 6,
+          "accountedResidentBytes": 2916352,
+          "geometry": "5c7ce314329b9ac3540016c010f5831ff442cf2b5ed438100fc301ce41f94765"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 29,
+            "bytes": 361620,
+            "rebuilt": 5,
+            "uploadCalls": 6,
+            "liveNodes": 6,
+            "accountedResidentBytes": 2951752,
+            "geometry": "4183de246deac45d97a2a4a69dac42427509c7187248d4e4b9409aa1541b2b47"
+          },
+          {
+            "kind": "dig",
+            "level": 28,
+            "bytes": 361956,
+            "rebuilt": 5,
+            "uploadCalls": 6,
+            "liveNodes": 6,
+            "accountedResidentBytes": 2961864,
+            "geometry": "9e8de121a24a5da999c38167bfdad501485fe890691cc43d60cd47bf2e27a470"
+          },
+          {
+            "kind": "fill",
+            "level": 29,
+            "bytes": 361620,
+            "rebuilt": 5,
+            "uploadCalls": 6,
+            "liveNodes": 6,
+            "accountedResidentBytes": 2951752,
+            "geometry": "8ca470da5ce11be1ff9a4348f071e979b4bd48572f3780a3bc6dde81a74aa99f"
+          },
+          {
+            "kind": "fill",
+            "level": 30,
+            "bytes": 360540,
+            "rebuilt": 5,
+            "uploadCalls": 6,
+            "liveNodes": 6,
+            "accountedResidentBytes": 2943800,
+            "geometry": "aa51d32a221e53ffa5270c5bb6b921396536dbafee540b47bd525765926f8379"
+          }
+        ]
+      }
+    ]
+  },
+  "after": {
+    "scope": "Seed 42173, actual domain dig/fill commands and actual upload splitter/uploader with Cocos call doubles. No browser, GPU or phone timing. Inventory seeded only in an isolated fixture.",
+    "seed": 42173,
+    "node": "v24.22.1",
+    "scenarios": [
+      {
+        "name": "interior",
+        "x": 83,
+        "z": 82,
+        "cold": {
+          "bytes": 356352,
+          "rebuilt": 256,
+          "uploadCalls": 8,
+          "liveNodes": 8,
+          "accountedResidentBytes": 2940928,
+          "geometry": "5c7ce314329b9ac3540016c010f5831ff442cf2b5ed438100fc301ce41f94765"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 29,
+            "bytes": 47556,
+            "rebuilt": 5,
+            "uploadCalls": 1,
+            "liveNodes": 8,
+            "accountedResidentBytes": 2963688,
+            "geometry": "7d4af69fa6fcb4abb69e279322f226a50602d9ec1963ab20648059677169408a"
+          }
+        ]
+      },
+      {
+        "name": "batch-boundary",
+        "x": 88,
+        "z": 88,
+        "cold": {
+          "bytes": 356352,
+          "rebuilt": 256,
+          "uploadCalls": 8,
+          "liveNodes": 8,
+          "accountedResidentBytes": 2940928,
+          "geometry": "5c7ce314329b9ac3540016c010f5831ff442cf2b5ed438100fc301ce41f94765"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 29,
+            "bytes": 138084,
+            "rebuilt": 5,
+            "uploadCalls": 3,
+            "liveNodes": 8,
+            "accountedResidentBytes": 2976328,
+            "geometry": "4183de246deac45d97a2a4a69dac42427509c7187248d4e4b9409aa1541b2b47"
+          }
+        ]
+      },
+      {
+        "name": "chunk-boundary",
+        "x": 95,
+        "z": 88,
+        "cold": {
+          "bytes": 712704,
+          "rebuilt": 512,
+          "uploadCalls": 16,
+          "liveNodes": 16,
+          "accountedResidentBytes": 5881856,
+          "geometry": "a221d5dd8ebd2ffbfc1c7915320cca7772b2c8d1ab9f3331b1efec9c6368d818"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 42,
+            "bytes": 137124,
+            "rebuilt": 5,
+            "uploadCalls": 3,
+            "liveNodes": 16,
+            "accountedResidentBytes": 5909160,
+            "geometry": "f5678dc435ada7476ce2b0973ce22dd522b8ae03b77d5b22a2b21e74d9cd968e"
+          }
+        ]
+      },
+      {
+        "name": "repeat-dig-fill",
+        "x": 88,
+        "z": 88,
+        "cold": {
+          "bytes": 356352,
+          "rebuilt": 256,
+          "uploadCalls": 8,
+          "liveNodes": 8,
+          "accountedResidentBytes": 2940928,
+          "geometry": "5c7ce314329b9ac3540016c010f5831ff442cf2b5ed438100fc301ce41f94765"
+        },
+        "edits": [
+          {
+            "kind": "dig",
+            "level": 29,
+            "bytes": 138084,
+            "rebuilt": 5,
+            "uploadCalls": 3,
+            "liveNodes": 8,
+            "accountedResidentBytes": 2976328,
+            "geometry": "4183de246deac45d97a2a4a69dac42427509c7187248d4e4b9409aa1541b2b47"
+          },
+          {
+            "kind": "dig",
+            "level": 28,
+            "bytes": 139236,
+            "rebuilt": 5,
+            "uploadCalls": 3,
+            "liveNodes": 8,
+            "accountedResidentBytes": 2986440,
+            "geometry": "9e8de121a24a5da999c38167bfdad501485fe890691cc43d60cd47bf2e27a470"
+          },
+          {
+            "kind": "fill",
+            "level": 29,
+            "bytes": 138084,
+            "rebuilt": 5,
+            "uploadCalls": 3,
+            "liveNodes": 8,
+            "accountedResidentBytes": 2976328,
+            "geometry": "8ca470da5ce11be1ff9a4348f071e979b4bd48572f3780a3bc6dde81a74aa99f"
+          },
+          {
+            "kind": "fill",
+            "level": 30,
+            "bytes": 137244,
+            "rebuilt": 5,
+            "uploadCalls": 3,
+            "liveNodes": 8,
+            "accountedResidentBytes": 2968376,
+            "geometry": "aa51d32a221e53ffa5270c5bb6b921396536dbafee540b47bd525765926f8379"
+          }
+        ]
+      }
+    ]
+  }
+}

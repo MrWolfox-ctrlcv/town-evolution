@@ -9,3 +9,9 @@ assets/scenes
 *.meta
 package-lock.json
 art/exports
+
+# Generated, lossless compiler cache is a compact deterministic data artifact.
+scripts/preview/generated/effects.cache.json
+
+# Preserve the upstream legal notices byte-for-byte.
+scripts/preview/licenses/

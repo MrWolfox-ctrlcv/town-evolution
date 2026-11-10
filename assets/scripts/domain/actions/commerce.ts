@@ -1,4 +1,5 @@
-import type { GameState, Command, Item, LandCell } from '../types';
+import type { GameState, Command, Item, LandCell, DropSnapshot } from '../types';
+import { requireDropSnapshot } from '../drop-move';
 import { ITEM_KEYS, isCrop, MAX_CROP_DURATION } from '../crops';
 import { isDockShore } from '../island';
 import { hasDockExit } from '../merge-plan';
@@ -36,6 +37,28 @@ function groundCargo(s: GameState, source: LandCell, item: Item, amount: number)
   requireRule(pile && pile.item === item && pile.amount === amount, '地面作物堆已变化，请重新拖动');
   return pile;
 }
+/** Validate the entire explicit source before crediting or reserving cargo space. */
+function consumeGroundCargo(
+  s: GameState,
+  source: LandCell | { type: 'drop'; drop: DropSnapshot },
+  item: Item,
+  amount: number,
+): () => void {
+  requireRule(source && typeof source === 'object', '地面货物来源无效');
+  if ('type' in source) {
+    requireRule(source.type === 'drop', '地面货物来源无效');
+    requireRule(isGroundTradeItem(item), '仅支持拖入地面农产品堆');
+    const drop = requireDropSnapshot(s, source.drop);
+    requireRule(drop.item === item && drop.amount === amount, '掉落物已变化，请重新拖动');
+    return () => {
+      s.looseDrops = s.looseDrops.filter((d) => d !== drop);
+    };
+  }
+  const pile = groundCargo(s, source, item, amount);
+  return () => {
+    s.groundStacks = s.groundStacks.filter((p) => p !== pile);
+  };
+}
 export function shopTrade(s: GameState, c: Extract<Command, { type: 'shopTrade' }>): string[] {
   requireRule(find(s, c.buildingId).kind === 'shop', '请选择商店');
   quantity(c.item, c.quantity);
@@ -45,21 +68,27 @@ export function shopTrade(s: GameState, c: Extract<Command, { type: 'shopTrade' 
   );
   requireRule(c.side === 'buy' || c.side === 'sell', '买卖方向无效');
   requireRule(c.source === undefined || c.side === 'sell', '地面作物仅可出售');
-  const pile = c.source !== undefined ? groundCargo(s, c.source, c.item, c.quantity) : null;
+  const consume =
+    c.source !== undefined ? consumeGroundCargo(s, c.source, c.item, c.quantity) : null;
   const stock = s.commerce.shopStock[c.buildingId];
   requireRule(stock, '商店库存不存在');
   const price = COMMERCE.prices[c.item][c.side] * c.quantity;
   if (c.side === 'buy') {
-    requireRule(isCrop(c.item), '冷藏货物仅用于清理旧库存，不再出售新货');
+    requireRule(
+      isCrop(c.item),
+      c.item === 'chilledVegetable'
+        ? '冷藏货物仅用于清理旧库存，不再出售新货'
+        : '此货物仅可售出，商店不出售新货',
+    );
     requireRule(stock[c.item] >= c.quantity, '商店存货不足');
     requireRule(getUsedStorage(s) + c.quantity <= getCapacity(s), '仓库空间不足');
     spend(s, price);
     stock[c.item] -= c.quantity;
     s.inventory[c.item] += c.quantity;
   } else {
-    requireRule(pile || s.inventory[c.item] >= c.quantity, '仓库货物不足');
+    requireRule(consume || s.inventory[c.item] >= c.quantity, '仓库货物不足');
     credit(s, price);
-    if (pile) s.groundStacks = s.groundStacks.filter((p) => p !== pile);
+    if (consume) consume();
     else s.inventory[c.item] -= c.quantity;
   }
   return [c.side === 'buy' ? '购买完成' : '出售完成'];
@@ -100,13 +129,14 @@ export function dockTransfer(
   );
   requireRule(c.direction === 'stage' || c.direction === 'return', '转运方向无效');
   requireRule(c.source === undefined || c.direction === 'stage', '地面作物仅可备货');
-  const pile = c.source !== undefined ? groundCargo(s, c.source, c.item, c.quantity) : null;
+  const consume =
+    c.source !== undefined ? consumeGroundCargo(s, c.source, c.item, c.quantity) : null;
   const cargo = s.commerce.dockCargo[c.buildingId];
   requireRule(cargo, '船坞货区不存在');
   if (c.direction === 'stage') {
-    requireRule(pile || s.inventory[c.item] >= c.quantity, '仓库货物不足');
+    requireRule(consume || s.inventory[c.item] >= c.quantity, '仓库货物不足');
     requireRule(stockTotal(cargo) + c.quantity <= COMMERCE.dockCapacity, '船坞货区已满');
-    if (pile) s.groundStacks = s.groundStacks.filter((p) => p !== pile);
+    if (consume) consume();
     else s.inventory[c.item] -= c.quantity;
     cargo[c.item] += c.quantity;
   } else {

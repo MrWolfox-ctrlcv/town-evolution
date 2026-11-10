@@ -1,22 +1,25 @@
+import {
+  inspectProfile,
+  inspectProfileSlot,
+  profileBackupPending,
+  switchToSeededCoast,
+  resetProfileTown,
+  exitProfileTown,
+} from './StartProfileActions';
+import { V7PreparationFlow } from './V7PreparationFlow';
+import { setActiveV7World } from '../domain/v7-world';
 import { StartRecoveryActions } from './StartRecoveryActions';
 import { setActiveV6World } from '../domain/v6-world';
 import { saveStartSlot, loadStartSlot } from './StartSaveActions';
-import { inspectV6Slot, v6BackupPending, type StartSlotInfo } from './V6SlotInspection';
+import type { StartSlotInfo } from './V6SlotInspection';
 import { V6PreparationFlow, type V6PreparationOptions } from './V6PreparationFlow';
-import { loadGame, type KeyValueStorage, type LoadResult } from '../domain/storage';
-import { townSession, profileStorage, PROFILE_KEY, profileLabel } from './TownProfiles';
+import { type KeyValueStorage, type LoadResult } from '../domain/storage';
+import { townSession, profileStorage, PROFILE_KEY } from './TownProfiles';
 import type { TownProfile } from './TownProfiles';
 import type { GameSession } from './GameSession';
-import { inspectSlot, type ManualSlot } from './ManualSaves';
-export type StartPage =
-  | 'title'
-  | 'settings'
-  | 'saves'
-  | 'slot'
-  | 'confirm'
-  | 'exit'
-  | 'game'
-  | 'preparing';
+import { type ManualSlot } from './ManualSaves';
+import { preparationOrigin, type StartPage } from './StartNavigation';
+export type { StartPage } from './StartNavigation';
 type Pending = { text: string; run: () => void; back: StartPage };
 export class GameStart {
   page: StartPage = 'title';
@@ -25,7 +28,21 @@ export class GameStart {
   slot: ManualSlot = 1;
   message = '';
   pending: Pending | null = null;
-  readonly preparation = new V6PreparationFlow();
+  private readonly preparation6 = new V6PreparationFlow();
+  private readonly preparation7 = new V7PreparationFlow();
+  get preparation() {
+    return this.preparation7.active || this.profile === 'v7-preview'
+      ? this.preparation7
+      : this.preparation6;
+  }
+  get preparingSeededCoast(): boolean {
+    return this.preparation7.active;
+  }
+  private cancelPreparation(): void {
+    this.preparation6.cancel();
+    this.preparation7.cancel();
+  }
+  private preparationBack: StartPage = 'title';
   private preparedV6 = false;
   private savesBack: 'settings' | 'game' = 'game';
   private requestedTownActions = false;
@@ -41,29 +58,16 @@ export class GameStart {
     return this.page === 'saves' && this.session !== null && this.savesBack === 'settings';
   }
   get hasUnpreparedV6Backup(): boolean {
-    return (
-      this.profile === 'v6-preview' && v6BackupPending(profileStorage(this.storage, this.profile))
-    );
+    return profileBackupPending(this.storage, this.profile);
   }
   inspect(profile = this.profile): LoadResult {
-    const saved = loadGame(profileStorage(this.storage, profile), this.now());
-    return profile === 'v6-preview' && saved.state && saved.state.terrainVersion !== 6
-      ? {
-          status: 'corrupt',
-          state: null,
-          warning: '实验存档版本不匹配，原始数据未更改。',
-          ...(saved.revision ? { revision: saved.revision } : {}),
-        }
-      : saved;
+    return inspectProfile(this.storage, profile, this.now());
   }
   inspectSlot(slot = this.slot): StartSlotInfo {
-    return (this.profile === 'v6-preview' ? inspectV6Slot : inspectSlot)(
-      profileStorage(this.storage, this.profile),
-      slot,
-      this.now(),
-    );
+    return inspectProfileSlot(this.storage, this.profile, slot, this.now());
   }
   start(profile: TownProfile = 'normal'): boolean {
+    if (this.page === 'preparing') this.cancelPreparation();
     if (this.storageWarning) {
       this.message = this.storageWarning;
       return false;
@@ -73,11 +77,11 @@ export class GameStart {
       return true;
     }
     this.profile = profile;
-    if (profile === 'v6-preview' && !this.preparedV6) {
+    if ((profile === 'v6-preview' || profile === 'v7-preview') && !this.preparedV6) {
       this.prepareV6(() => this.start(profile));
       return false;
     }
-    if (profile === 'v6-preview') {
+    if (profile === 'v6-preview' || profile === 'v7-preview') {
       const saved = this.inspect();
       if (saved.status === 'corrupt') {
         this.message = saved.warning ?? '存档未通过验证';
@@ -91,6 +95,15 @@ export class GameStart {
       this.page = 'saves';
       return false;
     }
+    if (profile === 'v7-preview') {
+      try {
+        this.preparation7.assertUnchanged();
+      } catch (error) {
+        this.message = String(error);
+        this.page = 'saves';
+        return false;
+      }
+    }
     if (!session.save()) {
       this.message = session.statusMessage;
       this.page = 'saves';
@@ -103,11 +116,12 @@ export class GameStart {
     return this.page === 'preparing' && this.preparation.tick();
   }
   private prepareV6(run: () => void, options: V6PreparationOptions = {}): void {
-    const back = this.page;
+    const back = preparationOrigin(this.page, this.session !== null);
+    this.preparationBack = back;
     this.page = 'preparing';
     this.message = '';
     this.preparation.start(
-      profileStorage(this.storage, 'v6-preview'),
+      profileStorage(this.storage, this.profile),
       () => {
         this.page = back;
         this.preparedV6 = true;
@@ -128,6 +142,7 @@ export class GameStart {
     this.requestedTownActions = false;
     this.session = session;
     setActiveV6World(session.state.terrainVersion === 6 ? session.state.mapSeed : null);
+    setActiveV7World(session.state.terrainVersion === 7 ? session.state.mapSeed : null);
     this.page = 'game';
     this.message = '';
     try {
@@ -137,7 +152,14 @@ export class GameStart {
     }
   }
   switchTown(profile: TownProfile): void {
-    this.preparation.cancel();
+    this.cancelPreparation();
+    if (profile === 'v7-preview' && this.session) {
+      this.preparationBack = this.page;
+      switchToSeededCoast(this, this.storage, this.now, this.preparation7, (session) =>
+        this.activate(session),
+      );
+      return;
+    }
     if (this.session && !this.session.save()) {
       this.savesBack = 'game';
       this.message = this.session.statusMessage;
@@ -146,6 +168,7 @@ export class GameStart {
     }
     this.session = null;
     setActiveV6World(null);
+    setActiveV7World(null);
     this.start(profile);
   }
   openTownActions(): void {
@@ -161,6 +184,7 @@ export class GameStart {
     return requested;
   }
   settings(): void {
+    this.cancelPreparation();
     if (!this.session) return;
     this.requestedTownActions = false;
     this.message = '';
@@ -168,6 +192,7 @@ export class GameStart {
     this.page = 'settings';
   }
   saves(): void {
+    this.cancelPreparation();
     this.requestedTownActions = false;
     this.savesBack = this.page === 'settings' ? 'settings' : 'game';
     this.message = '';
@@ -175,7 +200,7 @@ export class GameStart {
     this.page = 'saves';
   }
   chooseProfile(profile: TownProfile): void {
-    this.preparation.cancel();
+    this.cancelPreparation();
     if (this.session) return;
     this.profile = profile;
     this.message = '';
@@ -183,7 +208,10 @@ export class GameStart {
   }
   chooseSlot(slot: ManualSlot): void {
     this.slot = slot;
-    if (this.profile === 'v6-preview' && this.inspectSlot().status === 'pending') {
+    if (
+      (this.profile === 'v6-preview' || this.profile === 'v7-preview') &&
+      this.inspectSlot().status === 'pending'
+    ) {
       this.prepareV6(() => this.chooseSlot(slot), { slot });
       return;
     }
@@ -191,10 +219,12 @@ export class GameStart {
     this.page = 'slot';
   }
   back(): void {
-    this.preparation.cancel();
+    const preparing = this.page === 'preparing';
+    this.cancelPreparation();
     this.requestedTownActions = false;
     this.message = '';
-    if (this.pending) {
+    if (preparing) this.page = preparationOrigin(this.preparationBack, this.session !== null);
+    else if (this.pending) {
       this.page = this.pending.back;
       this.pending = null;
     } else if (this.page === 'slot') this.page = 'saves';
@@ -214,31 +244,19 @@ export class GameStart {
     this.page = 'confirm';
   }
   newGame(): void {
-    if (this.profile === 'v6-preview' && !this.preparedV6) {
+    if ((this.profile === 'v6-preview' || this.profile === 'v7-preview') && !this.preparedV6) {
       this.prepareV6(() => this.newGame(), { fresh: true });
       return;
     }
-    const expected = this.inspect().revision;
-    this.ask(
-      `重新开始${profileLabel(this.profile)}？当前自动存档会替换，重置前原始数据会另存保留；手动存档不变。`,
-      () => {
-        if (this.session && !this.session.save()) {
-          this.message = this.session.statusMessage;
-          return;
-        }
-        if (!expected) {
-          this.message = '无法核对存档，尚未重置。请重新打开存档页。';
-          return;
-        }
-        const session = townSession(this.storage, this.profile, this.now);
-        if (!session.reset(this.session?.saveRevision ?? expected)) {
-          this.message = session.statusMessage;
-          return;
-        }
-        this.activate(session);
-      },
+    resetProfileTown(
+      this,
+      this.storage,
+      this.now,
+      (text, run) => this.ask(text, run),
+      (session) => this.activate(session),
     );
   }
+
   private recoveryActions(): StartRecoveryActions {
     return new StartRecoveryActions(
       this,
@@ -273,24 +291,7 @@ export class GameStart {
     this.recoveryActions().reload();
   }
   exit(): void {
-    this.preparation.cancel();
-    if (!this.session) {
-      this.page = 'exit';
-      this.message = '已停留在标题页。网页版请关闭此标签页即可退出。';
-      return;
-    }
-    this.ask('保存进度并退出到标题？网页版不会自动关闭浏览器。', () => {
-      if (!this.session) return;
-      this.session.resume();
-      if (!this.session.save()) {
-        this.message = this.session.statusMessage;
-        return;
-      }
-      this.session = null;
-      setActiveV6World(null);
-      this.profile = 'normal';
-      this.page = 'title';
-      this.message = '进度已保存，可随时继续。';
-    });
+    this.cancelPreparation();
+    exitProfileTown(this, (text, run) => this.ask(text, run));
   }
 }

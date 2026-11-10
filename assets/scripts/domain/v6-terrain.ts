@@ -1,3 +1,4 @@
+import { V7_GENERATOR_REVISION } from './v7-contracts';
 import { v6SurfaceNormal } from './v6-normal';
 import { V6_GENERATOR_REVISION, key, inWorld, v6StratumPlane } from './v6-contracts';
 import type { V6Cell, V6Resource, V6Snapshot, Deposit } from './v6-contracts';
@@ -16,12 +17,19 @@ export interface CompletedCells {
 }
 /** Completed terrain only. Supported construction entry point is V6TerrainBuilder. */
 export class V6Terrain extends V6Samples {
-  readonly revision = V6_GENERATOR_REVISION;
+  readonly revision: typeof V6_GENERATOR_REVISION | typeof V7_GENERATOR_REVISION;
   readonly treeCandidates: CompletedCells['trees'];
   readonly #cells: CompletedCells['cells'];
   readonly #deposits: CompletedCells['deposits'];
-  constructor(seed: number, landform: V6Landform, grid: V6Lattice, complete: CompletedCells) {
+  constructor(
+    seed: number,
+    landform: V6Landform,
+    grid: V6Lattice,
+    complete: CompletedCells,
+    revision: typeof V6_GENERATOR_REVISION | typeof V7_GENERATOR_REVISION = V6_GENERATOR_REVISION,
+  ) {
     super(seed, landform, grid);
+    this.revision = revision;
     this.#cells = complete.cells;
     this.#deposits = complete.deposits;
     this.treeCandidates = complete.trees;

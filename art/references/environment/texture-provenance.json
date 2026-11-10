@@ -1,0 +1,26 @@
+{
+  "grass.png": {
+    "sha256": "e0f4abe797855c76bdd21c41468c1e3682efeac79c840b056feb5b6a40dd0a57",
+    "bytes": 1530055,
+    "source": "image_gen",
+    "modified_pixels": false
+  },
+  "rock.png": {
+    "sha256": "e9e1b3ade27ec081886f86c7dea7b854ba99326cac63ddedd7bcefc1d01949e6",
+    "bytes": 1499346,
+    "source": "image_gen",
+    "modified_pixels": false
+  },
+  "sand.png": {
+    "sha256": "412a6dabb14bbc82832e04e82a991296bd4d76ffdfbd966c9d088697d21077c2",
+    "bytes": 2051431,
+    "source": "image_gen",
+    "modified_pixels": false
+  },
+  "soil.png": {
+    "sha256": "b176c8e252bc7c1a1705d9836cf8d0c02768c90b1b1c9115feec5c5e304e4273",
+    "bytes": 1563328,
+    "source": "image_gen",
+    "modified_pixels": false
+  }
+}

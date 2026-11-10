@@ -69,9 +69,9 @@ test('adding the explicit preview does not change normal new-town generation', (
   assert.equal(townSession(store, 'normal', () => 0).state.terrainVersion, 4);
   assert.equal(profileStorage(store, 'normal'), store);
 });
-test('eight real title actions fit supported narrow and wide layouts', () => {
+test('nine real title actions remain reachable across supported narrow and wide layouts', () => {
   const menu = startMenu(new GameStart(memory(), () => 0), () => {});
-  assert.equal(menu.actions.length, 8);
+  assert.equal(menu.actions.length, 9);
   for (const [w, h] of [
     [360, 640],
     [390, 844],
@@ -79,10 +79,21 @@ test('eight real title actions fit supported narrow and wide layouts', () => {
     [1024, 768],
   ]) {
     const layout = startLayout(w, h, menu.actions.length, true);
-    assert.equal(layout.buttons.length, 8);
-    for (const p of layout.buttons) {
-      assert.ok(Math.abs(p.x) + layout.buttonWidth / 2 <= w / 2);
-      assert.ok(Math.abs(p.y) + layout.buttonHeight / 2 < h / 2);
-    }
+    assert.equal(layout.buttons.length, 9);
+    const reached = new Set();
+    for (const offset of [0, layout.scrollMax])
+      layout.buttons.forEach((p, i) => {
+        const y = p.y + offset;
+        if (
+          layout.scrollMax > 0 &&
+          (y - layout.buttonHeight / 2 < layout.viewportBottom - 1e-7 ||
+            y + layout.buttonHeight / 2 > layout.viewportTop + 1e-7)
+        )
+          return;
+        reached.add(i);
+        assert.ok(Math.abs(p.x) + layout.buttonWidth / 2 <= w / 2);
+        assert.ok(Math.abs(y) + layout.buttonHeight / 2 < h / 2);
+      });
+    assert.equal(reached.size, 9);
   }
 });

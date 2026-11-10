@@ -1,0 +1,283 @@
+{
+  "baselineCommit": "f7d2e478e653ec591664c074b64218c9d196eb05",
+  "before": {
+    "scope": "Deterministic Node CPU work counts and real V6ChunkMeshes with Cocos call doubles; no GPU/browser/phone timing.",
+    "sourceBuild": "/workspace/scratch/77e33cdbcd36/town-environment-art-20261107/build/v6-cold-work-before",
+    "seed": 42173,
+    "node": "v24.22.1",
+    "requests": 20,
+    "maxStepsPerRequest": 512,
+    "maxMilliseconds": "Infinity to remove wall-clock scheduling noise",
+    "keys": ["5,4", "4,5", "5,5", "6,5", "5,6", "8,7", "7,8", "8,8", "9,8", "8,9"],
+    "visualAnchors": true,
+    "syntheticSequenceNotRecordedCamera": true,
+    "scenarios": [
+      {
+        "label": "stable_A_with_distant_B_toggling",
+        "setup": {
+          "completedCellPatches": 2560,
+          "discardedCellPatches": 0,
+          "publishedCellBuilds": 2560,
+          "groupsPublished": 10,
+          "rebuiltGroupsPublished": 10,
+          "uploadBytes": 1714422,
+          "buildSteps": 13414,
+          "advanceCalls": 30,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 14950192,
+          "worldMeshCalls": 32
+        },
+        "movement": {
+          "completedCellPatches": 5120,
+          "discardedCellPatches": 4864,
+          "publishedCellBuilds": 0,
+          "groupsPublished": 0,
+          "rebuiltGroupsPublished": 0,
+          "uploadBytes": 0,
+          "buildSteps": 10240,
+          "advanceCalls": 20,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 14813788,
+          "worldMeshCalls": 0
+        },
+        "afterStop": {
+          "completedCellPatches": 1280,
+          "discardedCellPatches": 256,
+          "publishedCellBuilds": 1280,
+          "groupsPublished": 1,
+          "rebuiltGroupsPublished": 1,
+          "uploadBytes": 928104,
+          "buildSteps": 4135,
+          "advanceCalls": 9,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 28324188,
+          "worldMeshCalls": 17
+        },
+        "totalCompletedCellPatches": 6400,
+        "totalDiscardedCellPatches": 5120,
+        "residentChunks": 10,
+        "geometrySha256": "6de0acf359c9e04fa17f7beb6b0f86aa2f3524b489118b94270ce5fcdfdc3a84",
+        "memoryUsage": {
+          "resident": 21014284,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "cacheUsage": {
+          "bytes": 5725264,
+          "entries": 5,
+          "limit": 33554432,
+          "maxEntries": 32
+        },
+        "disposedUsage": {
+          "resident": 0,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "allMeshesDestroyedOnce": true
+      },
+      {
+        "label": "incompatible_A_B_alternation",
+        "setup": {
+          "completedCellPatches": 2560,
+          "discardedCellPatches": 0,
+          "publishedCellBuilds": 2560,
+          "groupsPublished": 10,
+          "rebuiltGroupsPublished": 10,
+          "uploadBytes": 1714422,
+          "buildSteps": 13414,
+          "advanceCalls": 30,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 14950192,
+          "worldMeshCalls": 32
+        },
+        "movement": {
+          "completedCellPatches": 5120,
+          "discardedCellPatches": 4864,
+          "publishedCellBuilds": 0,
+          "groupsPublished": 0,
+          "rebuiltGroupsPublished": 0,
+          "uploadBytes": 0,
+          "buildSteps": 10240,
+          "advanceCalls": 20,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 17019564,
+          "worldMeshCalls": 0
+        },
+        "afterStop": {
+          "completedCellPatches": 1024,
+          "discardedCellPatches": 0,
+          "publishedCellBuilds": 1280,
+          "groupsPublished": 1,
+          "rebuiltGroupsPublished": 1,
+          "uploadBytes": 928104,
+          "buildSteps": 3623,
+          "advanceCalls": 8,
+          "retainedRequests": 1,
+          "peakAccountedBytes": 28324188,
+          "worldMeshCalls": 17
+        },
+        "totalCompletedCellPatches": 6144,
+        "totalDiscardedCellPatches": 4864,
+        "residentChunks": 10,
+        "geometrySha256": "6de0acf359c9e04fa17f7beb6b0f86aa2f3524b489118b94270ce5fcdfdc3a84",
+        "memoryUsage": {
+          "resident": 21014284,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "cacheUsage": {
+          "bytes": 5725264,
+          "entries": 5,
+          "limit": 33554432,
+          "maxEntries": 32
+        },
+        "disposedUsage": {
+          "resident": 0,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "allMeshesDestroyedOnce": true
+      }
+    ]
+  },
+  "after": {
+    "scope": "Deterministic Node CPU work counts and real V6ChunkMeshes with Cocos call doubles; no GPU/browser/phone timing.",
+    "sourceBuild": "/workspace/scratch/77e33cdbcd36/town-environment-art-20261107/.domain-build",
+    "seed": 42173,
+    "node": "v24.22.1",
+    "requests": 20,
+    "maxStepsPerRequest": 512,
+    "maxMilliseconds": "Infinity to remove wall-clock scheduling noise",
+    "keys": ["5,4", "4,5", "5,5", "6,5", "5,6", "8,7", "7,8", "8,8", "9,8", "8,9"],
+    "visualAnchors": true,
+    "syntheticSequenceNotRecordedCamera": true,
+    "scenarios": [
+      {
+        "label": "stable_A_with_distant_B_toggling",
+        "setup": {
+          "completedCellPatches": 2560,
+          "discardedCellPatches": 0,
+          "publishedCellBuilds": 2560,
+          "groupsPublished": 10,
+          "rebuiltGroupsPublished": 10,
+          "uploadBytes": 1714422,
+          "buildSteps": 13414,
+          "advanceCalls": 30,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 14950192,
+          "worldMeshCalls": 32
+        },
+        "movement": {
+          "completedCellPatches": 2816,
+          "discardedCellPatches": 1280,
+          "publishedCellBuilds": 1280,
+          "groupsPublished": 6,
+          "rebuiltGroupsPublished": 1,
+          "uploadBytes": 928104,
+          "buildSteps": 7227,
+          "advanceCalls": 20,
+          "retainedRequests": 8,
+          "peakAccountedBytes": 28324188,
+          "worldMeshCalls": 17
+        },
+        "afterStop": {
+          "completedCellPatches": 0,
+          "discardedCellPatches": 256,
+          "publishedCellBuilds": 0,
+          "groupsPublished": 1,
+          "rebuiltGroupsPublished": 0,
+          "uploadBytes": 0,
+          "buildSteps": 5,
+          "advanceCalls": 1,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 21014284,
+          "worldMeshCalls": 0
+        },
+        "totalCompletedCellPatches": 2816,
+        "totalDiscardedCellPatches": 1536,
+        "residentChunks": 10,
+        "geometrySha256": "6de0acf359c9e04fa17f7beb6b0f86aa2f3524b489118b94270ce5fcdfdc3a84",
+        "memoryUsage": {
+          "resident": 21014284,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "cacheUsage": {
+          "bytes": 5725264,
+          "entries": 5,
+          "limit": 33554432,
+          "maxEntries": 32
+        },
+        "disposedUsage": {
+          "resident": 0,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "allMeshesDestroyedOnce": true
+      },
+      {
+        "label": "incompatible_A_B_alternation",
+        "setup": {
+          "completedCellPatches": 2560,
+          "discardedCellPatches": 0,
+          "publishedCellBuilds": 2560,
+          "groupsPublished": 10,
+          "rebuiltGroupsPublished": 10,
+          "uploadBytes": 1714422,
+          "buildSteps": 13414,
+          "advanceCalls": 30,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 14950192,
+          "worldMeshCalls": 32
+        },
+        "movement": {
+          "completedCellPatches": 5120,
+          "discardedCellPatches": 4864,
+          "publishedCellBuilds": 0,
+          "groupsPublished": 0,
+          "rebuiltGroupsPublished": 0,
+          "uploadBytes": 0,
+          "buildSteps": 10240,
+          "advanceCalls": 20,
+          "retainedRequests": 0,
+          "peakAccountedBytes": 17019564,
+          "worldMeshCalls": 0
+        },
+        "afterStop": {
+          "completedCellPatches": 1024,
+          "discardedCellPatches": 0,
+          "publishedCellBuilds": 1280,
+          "groupsPublished": 1,
+          "rebuiltGroupsPublished": 1,
+          "uploadBytes": 928104,
+          "buildSteps": 3623,
+          "advanceCalls": 8,
+          "retainedRequests": 1,
+          "peakAccountedBytes": 28324188,
+          "worldMeshCalls": 17
+        },
+        "totalCompletedCellPatches": 6144,
+        "totalDiscardedCellPatches": 4864,
+        "residentChunks": 10,
+        "geometrySha256": "6de0acf359c9e04fa17f7beb6b0f86aa2f3524b489118b94270ce5fcdfdc3a84",
+        "memoryUsage": {
+          "resident": 21014284,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "cacheUsage": {
+          "bytes": 5725264,
+          "entries": 5,
+          "limit": 33554432,
+          "maxEntries": 32
+        },
+        "disposedUsage": {
+          "resident": 0,
+          "staging": 0,
+          "limit": 268435456
+        },
+        "allMeshesDestroyedOnce": true
+      }
+    ]
+  }
+}

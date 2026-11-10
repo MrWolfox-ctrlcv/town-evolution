@@ -181,3 +181,131 @@ all other profile bytes. The shared read-only UI inspector now resolves both
 versioned v5 namespaces. The module is not recorded as executed: use the actual
 Cocos build in an authorized graphics environment, and preserve screenshots and
 console errors separately from the CPU routing tests.
+
+## Lossless build-time Effect cache (2026-11-08)
+
+The standalone preview no longer ships the official Effect parser, tokenizer, YAML
+parser or the full source chunk collection to execute nine conversions before
+`game.init`. `generated/effects.cache.json` contains the actual official `buildEffect`
+object graph and the exact 16 vertex/fragment validation pairs that compiler submitted.
+The graph codec preserves `Set`, `undefined`, property descriptors, property order,
+shared references and all shader characters. It does not normalize shader text or
+remove shader metadata. Generation checks complete object equality and canonical
+re-encoding, not only JSON equality. Cocos's ordinary rendering shader compilation
+remains unchanged.
+
+During startup the cache is inflated with the existing engine tools' `pako` package,
+decoded, and all 32 shader compiles and 16 program links are performed on a real
+WebGL1 context before exporting the effects. The original 300×150 canvas,
+`preserveDrawingBuffer: true`, all supported extensions and the exact compiler
+validation source are retained. Missing WebGL, compilation/link failure or context
+loss abort startup. Shaders/programs are cleaned on success and failure, and the
+separate validation context is released when the browser offers that extension.
+The temporary validation pairs are not retained by the exported module.
+
+### Verify, build and regenerate
+
+- `npm run check` includes `preview:effects:check -- --local`: local Effect/tool source
+  and cache integrity verification, without engine checkouts or a GPU. This is not
+  execution of shader validation or proof of current external compiler inputs.
+- `npm run preview:effects:check` verifies the current pinned engine and CLI checkouts,
+  actual source bytes (including dirty files), all engine assets, installed compiler
+  and engine-build dependencies, resolved package locations, optional/peer packages
+  that are installed, and native binaries. `COCOS_ENGINE` and `COCOS_CLI` select them.
+- `npm run preview:build` performs that full cache check before its expensive build.
+  It never silently recompiles, skips GL checks, or blesses old data with new hashes.
+  Missing, damaged or stale cache is an error.
+- `npm run preview:effects:generate` explicitly regenerates using the official
+  compiler and real `gl` (headless-gl) installed in the engine tool checkout.
+  The generator rebuilds a fresh engine bundle from the current source before
+  loading authoritative gfx mappings. Both invalid shader and invalid link negative
+  controls must fail. No success-returning GL stub is accepted.
+- On a Linux machine with Python 3.11+ and working Mesa EGL/GLES, use
+  `npm run preview:effects:generate -- --mesa` instead. This bridge performs actual
+  driver calls; it is not a browser/WebGL conformance test. The bridge is Linux-only.
+  On Windows use a working headless-gl installation and graphics driver. If no real
+  GL provider is available, regeneration fails, leaving the previous cache intact.
+
+The checked-in cache was generated with Linux/Node and Mesa llvmpipe. Ordinary
+builds do not require GL, Python or Mesa, but require identical transformation
+inputs. Node version, platform, architecture, native-tool bytes, package locations
+and source line endings are fingerprinted. A Windows installation or different
+Node/dependency layout must regenerate once there; merely sharing the same Git
+HEAD does not make a cache reusable. Engine/CLI top-level installation lock files
+are excluded because their installed dependency trees are hashed directly. All
+selected source, dependency metadata and actual dependency file bytes are covered.
+Custom `ESBUILD_BINARY_PATH` and symlinked tool packages are rejected rather than
+using an unrecorded or ambiguous executable/dependency resolution.
+The real GL provider and loaded native libraries are recorded in generation
+provenance; they are not runtime prerequisites for checking the cache.
+
+`pako` is resolved from the engine tools, not downloaded at startup. Its installed
+package contents participate in verification, and `PAKO-LICENSE.txt` is copied to
+preview output. Exact upstream engine/compiler/pako notices also accompany this
+source snapshot under `licenses/`, including the cached official shader output.
+The cache itself is an intentional source-controlled generated
+input, unlike `build/` output. Generation writes an exclusive, unique temporary
+file and atomically replaces the cache only after all checks pass.
+
+### Evidence and limits
+
+In an isolated Node+Mesa software-GLES comparison, the old official runtime
+conversion and new cached startup submitted byte-identical shader text, both passed
+32 compiles and 16 links, and returned completely equivalent object graphs. This
+is not a rendered-frame, browser interaction, Creator editor or phone test.
+
+The same minified full application bundle became smaller without HTTP compression,
+but larger with gzip/Brotli. Do not assume transport compression is enabled or claim
+unconditional download/first-frame improvement. The measured compiler CPU reduction
+and transfer-size tradeoff need evaluation on the actual browser/device and serving
+configuration before a release decision. No original Effect sources, shader checks,
+visual assets or gameplay content were removed.
+
+## Source snapshots and acceptance provenance
+
+`preview:build` must run from the project root into an empty `PREVIEW_OUT` directory.
+It records a versioned SHA-256 inventory before building and verifies it again after
+building. The inventory includes all project files, including scripts, tests, config,
+lock files, textures and generated Effect/title source inputs. Only these root-level
+local metadata/dependency/output directories are excluded: `.git`, `node_modules`,
+`.domain-build`, `.npm-cache`, `library`, `temp`, `local`, `build`, and `profiles`.
+Do not put source files in those directories. Symlinks in inventoried files are rejected.
+The separately fingerprinted official Effect build toolchain remains mandatory.
+
+A checkout with its own Git root records its actual commit and tracked status.
+Acceptance still requires the same commit and clean tracked files; an untracked
+source change is now also detected by the complete inventory. A broken or foreign
+local `.git` marker fails closed. A snapshot without its own Git root records
+`sourceSnapshot: true`, `sourceCommit: null`, and `sourceTrackedChanges: null`, even
+when nested inside another repository. It never invents a Git commit.
+
+Every generated runtime file, including HTML, loaders, copied art and licenses, is
+inventoried. The source and runtime manifests, build mode and pinned official tool
+revisions are bound by `identitySha256` in `provenance.json`. Old packages without
+this schema must be rebuilt. Missing, added, changed, duplicate, unsafe-path or
+unknown-format inputs fail verification; do not repair a stale package by editing
+its hashes. These content digests establish integrity, not a publisher signature.
+For an externally trusted reference, preserve the delivered provenance SHA-256 and
+set `PREVIEW_PROVENANCE_SHA256` to it when checking or capturing a package.
+
+Run `PREVIEW_OUT=/absolute/fresh-output npm run preview:verify` for offline source
+and package integrity only. This does not run the browser or validate gameplay.
+For browser acceptance, first run `npm run build:domain`, then run
+`scripts/preview/capture.cjs` with `PREVIEW_OUT`, `COCOS_ENGINE`, and, if needed,
+`PREVIEW_TOOLS` (containing `node_modules/playwright` and `node_modules/pngjs`) plus
+`CHROMIUM_EXECUTABLE`. Browser tooling can be isolated from the fingerprinted engine
+installation. `PREVIEW_EVIDENCE` selects an empty evidence directory; existing runs
+are never overwritten or mixed. The default is `build/screenshots`.
+
+Capture compares `.domain-build` with a fresh TypeScript compilation, records its
+compiler and fixture manifests, preloads all suite helpers, then rechecks source.
+It serves frozen, verified runtime bytes throughout the run. Source, runtime and
+fixture integrity are checked again before a passed suite result is written; early
+failures remain explicitly failed, never a pass-shaped empty failure list. This is
+integrity checking in a trusted local execution environment, not a defense against
+a malicious process controlling the compiler, Node or the entire host.
+
+The real runtime Effect shader compile/link gate is unchanged. Browser launch,
+rendered desktop/mobile viewports and all v6/legacy interactions must actually pass
+before claiming browser acceptance. Browser viewport emulation is not a physical
+phone test, Creator import, Android build, or device performance measurement.

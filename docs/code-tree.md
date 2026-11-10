@@ -168,6 +168,7 @@ town-evolution-latest/
 │       │   ├── V5SurfaceStyle.ts
 │       │   ├── V5TreeGeometry.ts
 │       │   ├── V6BridgeFootings.ts
+│       │   ├── V6BridgeKit.ts
 │       │   ├── V6CellSpans.ts
 │       │   ├── V6Coast.ts
 │       │   ├── V6CoastCliff.ts
@@ -284,6 +285,7 @@ town-evolution-latest/
 │       │   ├── v5-noise.ts
 │       │   ├── v5-starter.ts
 │       │   ├── v5-world.ts
+│       │   ├── v6-bridge-profile.ts
 │       │   ├── v6-build-cells.ts
 │       │   ├── v6-build-coast.ts
 │       │   ├── v6-build-starter.ts
@@ -581,7 +583,8 @@ town-evolution-latest/
 - **世界准备**：`domain/v6-contracts.ts`、`v6-terrain*.ts`、`v6-build-*.ts`、`v6-landform.ts`、`v6-samples.ts`、`v6-preparation.ts`、`v6-world.ts`。固定 revision、Float32 表面和完整准备结果；application 的 `V6PreparationFlow.ts` / `V6SlotInspection.ts` 将可取消准备接到新局、主档 / 备份和手动栏位。
 - **挖填与真实材料**：`v6-edit-types.ts` / `v6-edit-plan.ts` / `v6-edit-surface.ts` / `v6-edit-level.ts` 和 `actions/terrain6-edit.ts`。`v6-material-volume.ts` / `v6-volume-integral.ts` 积分真实几何，`v6-material-amount.ts` 校验4096分量；共享土石库存、掉落与地堆保留分数，不采用仓外研究token。
 - **检查点 / 保存**：`v6-save.ts` / `v6-save-header.ts` / `save-limits.ts`。正式路径保存每格当前状态，不用逐操作journal；4百万字符的命令预检防止发布不可保存的新状态，不替代浏览器存储错误处理。
-- **基础与海域**：`v6-foundation.ts` / `v6-maritime.ts`、共享 `geometry.ts` / `bridge-terrain.ts`。真实高程与完整占地校验；v6桥保留安全gate，不因存在 `V6BridgeFootings.ts` 就声称已能建桥。
+- **基础与海域**：`v6-foundation.ts` / `v6-maritime.ts`、共享 `geometry.ts` / `bridge-terrain.ts`。真实高程与完整占地校验；高差木桥已接入 v6 装配、移动、转向和导入。
+- **高差木桥**：`domain/v6-bridge-profile.ts` 由真实地表计算桥高和坡道限制，`art/V6BridgeKit.ts` / `V6BridgeFootings.ts` 构造桥面、原两端各2格坡道与真实支撑桩。桥宽2格、总长7–16格，不增加原平台外占地，不改变岸地；拒绝超限高差 / 坡度、海湖、已挖填 / 填海及占用。`ModelFactory` / `AssetRenderer` 接入实例几何、拾取与销毁释放。旧v5桥不变，本次v6桥未发布，浏览器 / GPU / 手机尚未验收。
 - **表面 / 远景**：art 的 `V6Surface*.ts` / `V6Coast*.ts` / `V6FarSurface*.ts` / `V6CellSpans.ts` / `V6ExactFlatCell.ts` 提供权威几何、分块、远景和精确平面简化；`V6SurfaceBudget.ts` 是显示内存记账，不是GPU实测。
 - **渲染 / 输入**：presentation 的 `V6IslandView.ts` / `V6ChunkMeshes.ts` / `V6TreeView.ts` / `V6TerrainTool.ts` / `V6TownNavigation.ts`，application 的 `V6TerrainPicking.ts` / `V6SurfaceSupport.ts` / `V6TreeStreaming.ts` / `V6ViewNavigation.ts`。显示、精细交互就绪、回家缩放和输入取消分别管理。
 - **共用入口拆分**：`BuildingGroundReady.ts`、`TownFarmPicking.ts` 等小模块承接实际占地就绪与农田目标；完整命名以本页真实树为准，保持旧版本分支不被terrain6误用。
@@ -600,7 +603,7 @@ terrain-v5-lab/
 ├── terrain6-integration-compat/  # 冻结旧版本与跨Node运行时对比
 ├── terrain6-integration-memory/  # 分块、记账、失败恢复与CPU测量
 ├── terrain6-integration-render/  # 生产几何离线图，不是Cocos截图
-└── terrain6-piled-bridge/        # 未接入的高桩桥实验
+└── terrain6-piled-bridge/        # 历史高桩桥实验，非当前主游戏实现
 ```
 
 主游戏源码的事实优先于这些旧实验的API说明。旧实验“只允许先挖后填、不接库存”等限制不应套用到当前生产挖填；反过来，研究测试通过也不能算正式Cocos / GPU / 手机验收。当前在线v31仍不含这次terrain6，Git源码推进与试玩部署是两项不同操作。
@@ -631,6 +634,7 @@ npm run demo:domain
 | 地形与旧档兼容            | `terrain-v5-compatibility.test.cjs`、`terrain-v5-lifecycle.test.cjs`、`v5-revision-boundary.test.cjs`                                                                                                    |
 | 海岸、填海、港口          | `terrain-v5-expansion.test.cjs`、`v5-hydrology-coast.test.cjs`、`v5-natural-port-lifecycle.test.cjs`、`v5-pier-footings.test.cjs`                                                                        |
 | 分块与树木                | `v5-resource-chunks.test.cjs`、`v5-coast-chunks.test.cjs`、`v5-tree-streaming.test.cjs`                                                                                                                  |
+| terrain6 高差桥           | `terrain6-domain-maritime.test.cjs`、`v6-bridge-mesh-lifetime.test.cjs`                                                                                                                                  |
 | terrain6 材料 / 保存      | `terrain6-domain-edit.test.cjs`、`terrain6-domain-maritime.test.cjs`、`terrain6-save-size.test.cjs`                                                                                                      |
 | terrain6 兼容             | `terrain6-compatibility-old-worlds.test.cjs`、`terrain6-compatibility-new-worlds.test.cjs`、`terrain6-compatibility-material.test.cjs`、`terrain6-compatibility-profiles.test.cjs`                       |
 | terrain6 显示 / 控制      | `v6-surface-authority.test.cjs`、`v6-far-surface.test.cjs`、`v6-object-elevation.test.cjs`、`v6-resident-recovery.test.cjs`、`terrain6-controls-start.test.cjs`、`terrain6-controls-navigation.test.cjs` |
@@ -654,3 +658,9 @@ npm run demo:domain
 新增、移动、删除模块后，对照 `find assets/scripts -name '*.ts'`、`find scripts docs -type f`、`package.json` 和实际导入更新树与阅读路线。增加地形版本时同时复核 `TerrainVersion`、生成器 revision、profile、导入拒绝路径、旧档精确兼容和实际 UI 接入，不能只添加一个目录名字。
 
 文档修改可运行 `npx --no-install prettier --check README.md README.zh-CN.md docs/code-tree.md`，检查相对链接和树中路径；代码修改仍须执行相应测试及最终 `npm run check`。不因本文件更新而改写历史验收记录。
+
+### 围栏和长凳（2026-11-08）
+
+- `domain/craft-recipes.ts`、`route-recipes.ts`：1木/2木加锯子及手册/发现；`save.ts`、`v6-save-header.ts`：仅新内容的wire11版本保护。
+- `art/BenchKit.ts`：长凳规范部件；`EnvironmentKit.ts`：复用围栏；`BuildingAssets.ts`、`HandbookAssets.ts`：运行与手册共用模型。
+- `tests/bench-fence*.test.cjs`：配方、严格存档、工具和径向拖拽控制流、模型与拾取。

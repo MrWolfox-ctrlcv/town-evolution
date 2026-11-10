@@ -119,6 +119,7 @@ function uploader() {
   new Function('require', 'module', 'exports', code)(
     (id) => {
       if (id === 'cc') return { Node, MeshRenderer: class {} };
+      if (id === '../art/V6RenderBatches') return require('../.domain-build/art/V6RenderBatches');
       if (id === '../art/V6MeshUploadParts')
         return require('../.domain-build/art/V6MeshUploadParts');
       if (id === './WorldMaterial') return { worldShadows() {} };
@@ -173,6 +174,7 @@ test('each v6 frame respects total uploaded attribute bytes and publishes the fu
     frames++;
     const bytes = f.calls.slice(before).reduce((n, p) => n + v6MeshBytes(p), 0);
     assert.ok(bytes <= 65536);
+    assert.equal(f.uploads.lastAdvanceBytes, bytes);
     assert.ok(++frames < 50);
     assert.equal(old.active, true);
     assert.equal(old.destroyed, undefined);
@@ -197,8 +199,10 @@ test('zero/insufficient budget, cancellation and failure never expose a partial 
   f.uploads.stage([{ key: 'new', mesh: mesh(1000) }]);
   let before = f.calls.length;
   assert.equal(f.uploads.advance(0, Infinity), false);
+  assert.equal(f.uploads.lastAdvanceBytes, 0);
   assert.equal(f.calls.length, before);
   assert.equal(f.uploads.advance(149, Infinity), false);
+  assert.equal(f.uploads.lastAdvanceBytes, 0);
   assert.equal(f.calls.length, before);
   assert.equal(f.uploads.advance(65536, Infinity), false);
   assert.ok(f.calls.length > before);

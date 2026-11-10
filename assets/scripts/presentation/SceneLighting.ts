@@ -1,4 +1,5 @@
 import { Camera, Color, DirectionalLight, Layers, Node, renderer, Scene, Vec3 } from 'cc';
+import { configureTownSky } from './TownSky';
 
 /** One world-space sun for title and gameplay. Mesh occlusion, not a physics approximation. */
 export function configureTownLighting(scene: Scene): void {
@@ -6,6 +7,7 @@ export function configureTownLighting(scene: Scene): void {
   const globals = scene.globals;
   // Explicit LDR units avoid HDR exposure-dependent palette changes on the mobile pipeline.
   globals.skybox.useHDR = false;
+  configureTownSky(scene);
   globals.ambient.skyLightingColor = new Color(220, 232, 240, 255);
   globals.ambient.groundLightingColor = new Color(164, 157, 137, 255);
   globals.ambient.skyIllum = 0.65;

@@ -6,6 +6,7 @@ import type { TownHUD } from './TownHUD';
 export class V6TownNavigation {
   private readonly navigation: V6ViewNavigation;
   private lastPhase = '';
+  private navigationRevision: number;
   private lastProblem: string | null = null;
   constructor(
     private readonly hud: TownHUD,
@@ -14,6 +15,7 @@ export class V6TownNavigation {
     private readonly cancelInput: () => void,
     private readonly toolActive: () => boolean,
   ) {
+    this.navigationRevision = map.navigationRevision ?? 0;
     this.navigation = new V6ViewNavigation({
       cancelInput,
       closeDetails: () => hud.closeDetails(),
@@ -23,7 +25,7 @@ export class V6TownNavigation {
     });
     hud.setTerrainNavigation({
       home: () => this.navigation.home(),
-      overview: () => this.navigation.overview(),
+      overview: () => this.overview(),
       zoom: (delta) => this.navigation.zoom(delta),
     });
   }
@@ -37,9 +39,12 @@ export class V6TownNavigation {
       this.cancelInput();
     this.lastPhase = status?.phase ?? '';
     this.lastProblem = problem;
+    const revision = this.map.navigationRevision ?? 0;
+    const navigated = revision !== this.navigationRevision;
+    this.navigationRevision = revision;
     this.navigation.update(
       !problem && !!status?.overviewVisible,
-      this.map.interacting || this.toolActive(),
+      navigated || this.map.interacting || this.toolActive(),
     );
     this.hud.terrainStatus(
       problem
@@ -54,11 +59,12 @@ export class V6TownNavigation {
     );
   }
   overview(): void {
+    this.navigationRevision = this.map.navigationRevision ?? 0;
     this.navigation.overview();
   }
   reset(): void {
     this.navigation.update(false);
-    this.navigation.overview();
+    this.overview();
   }
   dispose(): void {
     this.navigation.dispose();

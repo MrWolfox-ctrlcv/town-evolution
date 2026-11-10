@@ -336,3 +336,52 @@ test('zero height budget disables coarse mode even with perfectly flat heights',
   assert.deepEqual(far(s, 10, 10, 1, 1, undefined, 0).mesh, exactDisplay(s));
   assert.equal(far(s, 10, 10, 1, 1, undefined, 0).mesh.triangles.length, 32);
 });
+
+test('prepared natural fast fallback preserves exact expanded triangles and rejects mutable boundaries', () => {
+  const { createGame, getV6EditSurface } = require(path.join(root, 'domain/game'));
+  const { buildV6FarNaturalCell } = require(path.join(root, 'art/V6FarNaturalCell'));
+  const { V6WorldPreparation } = require(path.join(root, 'domain/v6-preparation'));
+  const prep = new V6WorldPreparation(42173);
+  while (prep.progress.status !== 'ready') prep.step(1024);
+  prep.takeResult();
+  const s = getV6EditSurface(createGame(60000, 42173, 6));
+  let checked = 0,
+    stoneCells = 0,
+    grassCells = 0;
+  for (let z = 16; z < 176; z += 7)
+    for (let x = 16; x < 176; x += 7) {
+      const fast = buildV6FarNaturalCell(s, x, z);
+      if (!fast) continue;
+      const exact = exactDisplay(s, x, z);
+      assert.deepEqual(expanded(fast), expanded(exact), `attributes at ${x},${z}`);
+      assert.deepEqual(fast.triangles, exact.triangles);
+      assert.deepEqual(fast.min, exact.min);
+      assert.deepEqual(fast.max, exact.max);
+      checked++;
+      if (fast.triangles.some((t) => t.material === 'stone')) stoneCells++;
+      else grassCells++;
+      const neighbor = s.world.at(x + 1, z);
+      if (neighbor && !neighbor.reserved)
+        assert.equal(
+          buildV6FarNaturalCell(
+            { ...s, capAt: (xx, zz) => (xx === x + 1 && zz === z ? 1 : s.capAt(xx, zz)) },
+            x,
+            z,
+          ),
+          null,
+        );
+      assert.equal(
+        buildV6FarNaturalCell({ ...s, editAt: () => ({ cut: 1, level: 1, fills: [] }) }, x, z),
+        null,
+      );
+    }
+  assert.ok(
+    checked > 100 && stoneCells > 0 && grassCells > 0,
+    `${checked}/${stoneCells}/${grassCells}`,
+  );
+  assert.equal(
+    buildV6FarNaturalCell(source(), 10, 10),
+    null,
+    'synthetic samplers keep the generic writer',
+  );
+});

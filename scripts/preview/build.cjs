@@ -2,18 +2,33 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { sourceIdentity, createProvenance, writeProvenance } = require('./provenance.cjs');
+const root = path.resolve(__dirname, '../..');
 const engine = path.resolve(process.env.COCOS_ENGINE || 'temp/cocos-engine');
-const out = path.resolve(process.env.PREVIEW_OUT || 'build/preview');
+const buildMode = process.env.PREVIEW_MODE || 'debug';
+if (!['debug', 'release'].includes(buildMode))
+  throw new Error('PREVIEW_MODE must be debug or release');
+const release = buildMode === 'release';
+const out = path.resolve(
+  process.env.PREVIEW_OUT || (release ? 'build/preview-release' : 'build/preview'),
+);
 const dependency = (name) => require(path.join(engine, 'node_modules', name));
 const cli = path.resolve(process.env.COCOS_CLI || 'temp/cocos-cli');
 const revision = '411f98df047c25902f93440d4b22925c2fb65461';
 
 async function main() {
+  if (fs.realpathSync(process.cwd()) !== fs.realpathSync(root))
+    throw new Error('Run preview:build from the project root to avoid mixing source trees');
+  if (fs.existsSync(out) && fs.readdirSync(out).length)
+    throw new Error('PREVIEW_OUT must be empty; choose a fresh build directory');
+  const source = sourceIdentity(root);
+  require('../title-snapshot.cjs').verifySnapshot();
   const actual = execFileSync('git', ['rev-parse', 'HEAD'], {
     cwd: engine,
     encoding: 'utf8',
   }).trim();
   if (actual !== revision) throw new Error(`Expected Cocos 3.8.8 ${revision}; got ${actual}`);
+  const effectPlugin = require('./effects.cjs')(engine, cli);
   fs.mkdirSync(out, { recursive: true });
   execFileSync(process.execPath, ['scripts/build-debug-infos.js'], {
     cwd: engine,
@@ -37,21 +52,32 @@ async function main() {
       'primitive',
       'legacy-pipeline',
     ],
-    compress: false,
+    compress: release,
     sourceMap: false,
-    flags: { DEBUG: true },
+    flags: { DEBUG: !release },
   });
   if (result.hasCriticalWarns) throw new Error('Engine emitted critical warnings');
   require('./verify-engine.cjs')(path.join(out, 'engine/cc.js'), engine);
+  await dependency('esbuild').build({
+    entryPoints: [path.join(__dirname, 'terrain6-worker.ts')],
+    outfile: path.join(out, 'terrain6-worker.js'),
+    bundle: true,
+    minify: release,
+    format: 'iife',
+    platform: 'browser',
+    target: 'es2020',
+    tsconfigRaw: { compilerOptions: { useDefineForClassFields: false } },
+  });
   const intermediate = path.join(out, 'app-esm.js');
   await dependency('esbuild').build({
     entryPoints: [path.join(__dirname, 'bootstrap.ts')],
     outfile: intermediate,
     bundle: true,
+    minify: release,
     format: 'esm',
     target: 'es2022',
     external: ['cc'],
-    plugins: [require('./effects.cjs')(engine, cli)],
+    plugins: [effectPlugin],
     tsconfigRaw: {
       compilerOptions: { experimentalDecorators: true, useDefineForClassFields: false },
     },
@@ -76,12 +102,20 @@ async function main() {
     path.resolve('assets/resources/buildings/warm-wood.png'),
     path.join(out, 'buildings/warm-wood.png'),
   );
+  const environment = path.resolve('assets/resources/environment');
+  fs.mkdirSync(path.join(out, 'environment'), { recursive: true });
+  for (const file of fs.readdirSync(environment).filter((file) => /\.(png|jpg|webp)$/.test(file)))
+    fs.copyFileSync(path.join(environment, file), path.join(out, 'environment', file));
   const handbook = path.resolve('assets/resources/handbook');
   for (const file of fs.readdirSync(handbook).filter((file) => file.endsWith('.png')))
     fs.copyFileSync(path.join(handbook, file), path.join(out, 'handbook', file));
   fs.copyFileSync(
     path.join(engine, 'node_modules/systemjs/dist/system.js'),
     path.join(out, 'system.js'),
+  );
+  fs.copyFileSync(
+    require.resolve('pako/LICENSE', { paths: [engine] }),
+    path.join(out, 'PAKO-LICENSE.txt'),
   );
   fs.copyFileSync(path.join(cli, 'LICENSE'), path.join(out, 'COCOS-CLI-LICENSE.txt'));
   fs.copyFileSync(path.join(engine, 'LICENSE.md'), path.join(out, 'COCOS-LICENSE.md'));
@@ -92,9 +126,17 @@ async function main() {
     if (!entry.isFile()) throw new Error(`Unexpected license entry: ${entry.name}`);
     fs.copyFileSync(path.join(engine, 'licenses', entry.name), path.join(notices, entry.name));
   }
-  fs.writeFileSync(
-    path.join(out, 'provenance.json'),
-    JSON.stringify({ engine: revision, standalonePreview: true }, null, 2),
+  writeProvenance(
+    out,
+    createProvenance(root, out, source, {
+      buildMode,
+      debug: !release,
+      compressed: release,
+      engine: revision,
+      compiler: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: cli, encoding: 'utf8' }).trim(),
+      builtAtUtc: new Date().toISOString(),
+      standalonePreview: true,
+    }),
   );
   console.log(`Actual Cocos preview compiled: ${out}`);
 }

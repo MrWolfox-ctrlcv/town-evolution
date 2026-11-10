@@ -31,7 +31,10 @@ export class StartArtwork {
     this.camera = node.addComponent(Camera);
     this.camera.projection = Camera.ProjectionType.ORTHO;
     this.camera.priority = -1;
-    this.camera.clearFlags = Camera.ClearFlag.SOLID_COLOR;
+    // A failed sky effect load must still clear to the original background color.
+    this.camera.clearFlags = parent.scene?.globals?.skybox.enabled
+      ? Camera.ClearFlag.SKYBOX
+      : Camera.ClearFlag.SOLID_COLOR;
     this.camera.clearColor = color('#77B8B6');
     this.camera.visibility = Layers.Enum.DEFAULT;
     this.camera.near = 0.1;

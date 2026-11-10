@@ -25,6 +25,24 @@ function recipe(
 /** New routes use the same registry and actual-world thumbnails as established discoveries. */
 export const ROUTE_RECIPES: readonly RecipeDefinition[] = [
   recipe(
+    'build-fence',
+    '锯木做围栏',
+    'build',
+    [p('wood', '木材')],
+    p('fence', '围栏'),
+    '把锯子拖到地上恰好1份木材，制成围栏。需1格空地，可移动和旋转；工具无限耐久。围栏目前用于摆放装饰。',
+    'saw',
+  ),
+  recipe(
+    'build-bench',
+    '锯木做长凳',
+    'build',
+    [p('wood', '木材', 2)],
+    p('bench', '长凳'),
+    '把锯子拖到地上恰好2份木材，制成长凳。需1格空地，可移动和旋转；工具无限耐久。长凳目前用于摆放装饰。',
+    'saw',
+  ),
+  recipe(
     'build-wooden-bridge',
     '双栈桥跨河',
     'evolve',

@@ -1,36 +1,66 @@
-/** Verify actual built SystemJS exports, not config text or an unrelated engine fixture. */
+/** Verify the actual SystemJS export binding, including renamed/minified callbacks. */
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-module.exports = function verifyEngine(file, engine) {
-  const { parse } = require(path.join(engine, 'node_modules/acorn'));
-  const ast = parse(fs.readFileSync(file, 'utf8'), { ecmaVersion: 'latest' });
-  const names = new Set();
-  function walk(node) {
-    if (!node || typeof node !== 'object') return;
+const requiredExports = ['tween', 'Tween', 'TweenSystem'];
+function children(node, visit) {
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) value.forEach((child) => child?.type && visit(child));
+    else if (value?.type) visit(value);
+  }
+}
+function verifySource(source, parse, analyze) {
+  const ast = parse(source, { ecmaVersion: 'latest', ranges: true });
+  const scopes = analyze(ast, { ecmaVersion: 2022, sourceType: 'script' });
+  const registrations = [];
+  function scan(node) {
     if (
       node.type === 'CallExpression' &&
-      node.callee.type === 'Identifier' &&
-      node.callee.name === 'exports'
+      node.callee.type === 'MemberExpression' &&
+      node.callee.object.name === 'System' &&
+      !node.callee.computed &&
+      node.callee.property.name === 'register'
     ) {
-      const first = node.arguments[0];
-      if (first?.type === 'Literal' && typeof first.value === 'string') names.add(first.value);
-      if (first?.type === 'ObjectExpression')
-        for (const property of first.properties) {
-          if (property.type === 'Property') names.add(property.key.name ?? property.key.value);
-        }
+      const callback = node.arguments.at(-1);
+      if (
+        ['FunctionExpression', 'ArrowFunctionExpression'].includes(callback?.type) &&
+        callback.params[0]?.type === 'Identifier'
+      )
+        registrations.push(callback);
     }
-    for (const value of Object.values(node)) {
-      if (Array.isArray(value)) value.forEach(walk);
-      else if (value && typeof value === 'object') walk(value);
-    }
+    children(node, scan);
   }
-  walk(ast);
-  for (const name of ['tween', 'Tween', 'TweenSystem'])
-    assert.ok(names.has(name), `Built Cocos engine lacks required export ${name}`);
-  return {
-    passed: true,
-    kind: 'actual built SystemJS AST export validation',
-    requiredExports: ['tween', 'Tween', 'TweenSystem'],
-  };
+  scan(ast);
+  const groups = registrations.map((callback) => {
+    const binding = scopes.scopes
+      .flatMap((scope) => scope.variables)
+      .find((variable) => variable.identifiers.includes(callback.params[0]));
+    const references = new Set(binding?.references.map((ref) => ref.identifier));
+    const names = new Set();
+    function exportsIn(node) {
+      if (node.type === 'CallExpression' && references.has(node.callee)) {
+        const first = node.arguments[0];
+        if (first?.type === 'Literal' && typeof first.value === 'string') names.add(first.value);
+        if (first?.type === 'ObjectExpression')
+          for (const property of first.properties)
+            if (property.type === 'Property' && !property.computed)
+              names.add(property.key.name ?? property.key.value);
+      }
+      children(node, exportsIn);
+    }
+    exportsIn(callback.body);
+    return names;
+  });
+  assert.ok(
+    groups.some((names) => requiredExports.every((name) => names.has(name))),
+    'Built Cocos engine lacks required exports in one System.register module: ' +
+      requiredExports.join(', '),
+  );
+  return { passed: true, kind: 'actual built SystemJS lexical export validation', requiredExports };
+}
+module.exports = function verifyEngine(file, engine) {
+  const { parse } = require(path.join(engine, 'node_modules/acorn'));
+  const { analyze } = require(path.join(engine, 'node_modules/eslint-scope'));
+  return verifySource(fs.readFileSync(file, 'utf8'), parse, analyze);
 };
+module.exports.verifySource = verifySource;

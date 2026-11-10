@@ -4,8 +4,10 @@ import { V5IslandView } from './V5IslandView';
 import { V6IslandView } from './V6IslandView';
 import type { SurfaceRay } from '../application/NaturalPicking';
 import { emptyNaturalMesh } from '../art/NaturalMesh';
-import { Node, Mesh, MeshRenderer, Material, Color } from 'cc';
-import { worldMaterial, worldShadows } from './WorldMaterial';
+import { Node, Mesh, MeshRenderer, Material } from 'cc';
+import { worldShadows } from './WorldMaterial';
+import { TerrainMaterial } from './TerrainMaterial';
+import { createWaterMaterial } from './WaterMaterial';
 import { replaceIslandMesh } from './IslandMeshUpload';
 import { ContinuousResources } from '../art/ContinuousResources';
 import { buildContinuousCoast, coastProtectionSignature } from '../art/ContinuousCoast';
@@ -37,6 +39,7 @@ export class IslandView {
   private readonly waterRenderer: MeshRenderer;
   private detailMesh: Mesh[] = [];
   private readonly extraChunks = new Map<MeshRenderer, Node[]>();
+  private readonly terrainMaterial = new TerrainMaterial();
   private readonly material: Material;
   private readonly waterMaterial: Material;
   private readonly terrainRenderer: MeshRenderer;
@@ -49,13 +52,8 @@ export class IslandView {
     parent: Node,
     private size: number,
   ) {
-    this.material = worldMaterial();
-    this.waterMaterial = new Material();
-    this.waterMaterial.initialize({
-      effectName: 'builtin-unlit',
-      defines: { USE_VERTEX_COLOR: true },
-    });
-    this.waterMaterial.setProperty('mainColor', new Color(255, 255, 255, 255));
+    this.material = this.terrainMaterial.material;
+    this.waterMaterial = createWaterMaterial();
     const layer = (name: string): MeshRenderer => {
       const node = new Node(name);
       parent.addChild(node);
@@ -85,7 +83,7 @@ export class IslandView {
     );
   }
   sync(state: GameState): void {
-    if (state.terrainVersion === 6) {
+    if (state.terrainVersion === 6 || state.terrainVersion === 7) {
       if (!this.v6) {
         this.v5?.dispose();
         this.v5 = null;
@@ -280,7 +278,7 @@ export class IslandView {
         node.destroy();
       }
     this.extraChunks.clear();
-    this.material.destroy();
+    this.terrainMaterial.dispose();
     this.waterMaterial.destroy();
   }
 }

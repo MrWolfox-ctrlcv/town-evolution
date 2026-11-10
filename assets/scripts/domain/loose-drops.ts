@@ -66,7 +66,8 @@ function available(
         p.z === z &&
         !(source.type === 'natural' && p.id === source.resourceId) &&
         !(source.type === 'terrain6' && source.x === x && source.z === z) &&
-        (world.terrainVersion !== 6 || !!getV6EditSurface(world).exposedResourceAt(x, z)),
+        ((world.terrainVersion !== 6 && world.terrainVersion !== 7) ||
+          !!getV6EditSurface(world).exposedResourceAt(x, z)),
     )
   )
     return false;

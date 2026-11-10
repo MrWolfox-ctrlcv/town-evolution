@@ -223,6 +223,7 @@ function fixture({ width = 1200, height = 800, dpr = 1, realProcessor = false } 
   );
   const hud = Object.assign(Object.create(data.exports.TownHUD.prototype), {
     canvas,
+    controls: { root: canvas },
     radial,
     tools: tray,
     handbook: book,

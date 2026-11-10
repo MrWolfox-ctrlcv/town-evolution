@@ -2,7 +2,7 @@ import { riceProductUnit } from './RiceGeometry';
 import type { Crop } from '../domain/types';
 import { part } from './AssetTypes';
 import type { AssetRecipe, Part, V3 } from './AssetTypes';
-import { compileAsset } from './MeshCompiler';
+import { assetBounds } from './MeshCompiler';
 /** One harvested good, not a planted crop: recognizable roots, heads, or tied wheat bundles. */
 export function cropProductUnit(item: Crop): Part[] {
   if (item === 'rice') return riceProductUnit();
@@ -94,7 +94,7 @@ export function cropProductPile(item: Crop, amount: number): AssetRecipe {
       size: p.size.map((v) => v * scale) as unknown as V3,
       rotation: [p.rotation?.[0] ?? 0, (p.rotation?.[1] ?? 0) + yaw, p.rotation?.[2] ?? 0] as V3,
     }));
-    const bounds = compileAsset({ id: item, footprint: [1, 1], parts: source });
+    const bounds = assetBounds({ id: item, footprint: [1, 1], parts: source });
     const rise = layer * (item === 'rice' ? 0.055 : item === 'wheat' ? 0.082 : 0.12);
     for (const p of source)
       parts.push({

@@ -1,3 +1,5 @@
+import { prepareV6RenderBatches, v6RenderBatchCost, type V6RenderBatch } from './V6RenderBatches';
+import type { V6CachedSurface } from './V6SurfaceCache';
 import type { MeshData } from './AssetTypes';
 import { V6SurfaceSupport } from '../application/V6SurfaceSupport';
 import { prepareV6TerrainPickingSteps } from '../application/V6TerrainPicking';
@@ -8,7 +10,11 @@ import { emptyV6SurfaceMesh, appendV6Mesh, finishV6ChunkSteps } from './V6Surfac
 import { V6SurfaceBudget, v6SurfaceCost } from './V6SurfaceBudget';
 export interface V6SurfaceJob {
   key: string;
+  wanted: boolean;
+  signature: string;
+  cached: V6CachedSurface | undefined;
   detail: boolean;
+  previousBatches: readonly V6RenderBatch[] | undefined;
   cells: Array<[number, number]>;
   index: number;
   cellJob: Generator<V6SurfaceMesh, V6SurfaceMesh> | null;
@@ -23,6 +29,7 @@ export function* mergeV6SurfaceJob(
   job: V6SurfaceJob,
   budget: V6SurfaceBudget,
 ): Generator<void, V6SurfaceChunk> {
+  if (job.cached) return job.cached.chunk;
   let bytes = job.coast ? v6SurfaceCost(job.coast) : 0;
   for (const patch of job.patches.values()) bytes += v6SurfaceCost(patch);
   budget.reserve(bytes);
@@ -47,6 +54,14 @@ export function* mergeV6SurfaceJob(
   }
   let chunk: V6SurfaceChunk;
   if (job.detail) {
+    yield* prepareV6RenderBatches(
+      mesh,
+      job.spans,
+      job.coast && 'mesh' in job.coast ? job.coast : null,
+      job.previousBatches,
+      job.cells,
+    );
+    budget.reserve(v6RenderBatchCost(mesh));
     const support = new V6SurfaceSupport(mesh.positions, mesh.indices);
     while (!support.step(128)) yield;
     chunk = { ...(yield* finishV6ChunkSteps(job.key, mesh)), support, detail: true };

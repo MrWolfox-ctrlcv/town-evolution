@@ -24,6 +24,9 @@ export class BottomActions {
   private readonly rotate: ActionButton;
   private readonly heading: Label;
   private readonly opacity: UIOpacity;
+  private page = 0;
+  private visibleActions: Action[] = [];
+  private actionSignature = '';
   private requested = false;
   private animateNext = false;
   private data: ContextData | null = null;
@@ -66,10 +69,13 @@ export class BottomActions {
     });
   }
   open(): void {
+    this.cancel();
+    this.page = 0;
     this.requested = true;
     this.animateNext = true;
   }
   close(): void {
+    this.cancel();
     this.requested = false;
     this.animateNext = false;
     Tween.stopAllByTarget(this.context);
@@ -92,7 +98,7 @@ export class BottomActions {
     return -this.screen.height / 2 + (this.context.active ? 108 + this.screen.panelHeight : 102);
   }
   layout(width: number, height: number): void {
-    const l = (this.screen = hudLayout(width, height, this.data?.actions.length ?? 0));
+    const l = (this.screen = hudLayout(width, height, this.visibleActions.length));
     this.updateTrays();
     Tween.stopAllByTarget(this.context);
     Tween.stopAllByTarget(this.opacity);
@@ -104,7 +110,7 @@ export class BottomActions {
     this.heading.node.getComponent(UITransform)!.setContentSize(l.panelWidth - 112, 32);
     this.closeButton.layout(l.panelWidth / 2 - 22, l.detailY, 44, { height: 52, fontSize: 10 });
     this.rotate.layout(l.panelWidth / 2 - 72, l.detailY, 48, { height: 52, fontSize: 10 });
-    const count = this.data?.actions.length ?? 0;
+    const count = this.visibleActions.length;
     this.buttons.forEach((b, i) => {
       const row = Math.floor(i / l.actionColumns),
         used = Math.min(l.actionColumns, count - row * l.actionColumns);
@@ -124,12 +130,45 @@ export class BottomActions {
     );
   }
   render(data: ContextData): void {
-    const relayout =
-      this.data?.actions.length !== data.actions.length ||
-      Boolean(this.data?.rotation) !== Boolean(data.rotation);
+    const changedContext =
+      this.data?.tab !== data.tab ||
+      Boolean(this.data?.contextHeading) !== Boolean(data.contextHeading) ||
+      this.data?.actions.length !== data.actions.length;
+    if (changedContext) this.page = 0;
+    const previousCount = this.visibleActions.length;
+    const previousRotation = Boolean(this.data?.rotation);
     this.data = data;
-    this.buttons.forEach((b, i) => b.set(data.actions[i] ?? null));
+    const pages = data.actions.length > 6 ? Math.ceil(data.actions.length / 5) : 1;
+    this.page = Math.min(this.page, pages - 1);
+    this.visibleActions =
+      pages === 1
+        ? data.actions
+        : [
+            ...data.actions.slice(this.page * 5, this.page * 5 + 5),
+            {
+              text: `更多 ${this.page + 1}/${pages}`,
+              icon: 'quantity',
+              run: () => {
+                this.cancel();
+                this.page = (this.page + 1) % pages;
+                this.render(this.data!);
+              },
+            },
+          ];
+    const signature = JSON.stringify([
+      this.page,
+      ...this.visibleActions.map((a) => [a.text, a.icon, a.enabled, a.reason, a.caution]),
+    ]);
+    if (changedContext || signature !== this.actionSignature) this.cancel();
+    this.actionSignature = signature;
+    this.buttons.forEach((button, index) => {
+      const action = this.visibleActions[index];
+      // Refresh future taps without changing the command captured by an existing press.
+      button.set(action ?? null);
+    });
     this.rotate.set(data.rotation);
+    const relayout =
+      previousCount !== this.visibleActions.length || previousRotation !== Boolean(data.rotation);
     this.heading.string =
       data.contextHeading || data.tab === 'manage'
         ? data.detail.split(/\r?\n/)[0].trim()

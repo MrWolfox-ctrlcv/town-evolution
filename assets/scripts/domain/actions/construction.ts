@@ -131,6 +131,20 @@ export function rotateBuilding(
     }
     throw new Error('此处只有一个临海朝向，请长按移动到其他岸边');
   }
+  if ((s.terrainVersion === 6 || s.terrainVersion === 7) && b.kind === 'woodenBridge') {
+    for (let step = 1; step < 4; step++) {
+      const candidate = { ...b, rotation: ((original + step) % 4) as Building['rotation'] };
+      try {
+        validatePlacement(s, candidate);
+      } catch {
+        continue;
+      }
+      b.rotation = candidate.rotation;
+      b.baseElevation = candidate.baseElevation!;
+      return ['已转向木桥'];
+    }
+    throw new Error('此处没有其他合法木桥朝向');
+  }
   b.rotation = ((original + 1) % 4) as Building['rotation'];
   validatePlacement(s, b);
   return ['已转向建筑'];

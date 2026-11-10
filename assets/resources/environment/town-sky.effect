@@ -1,0 +1,161 @@
+/*
+ * Skybox vertex projection adapted from Cocos Creator 3.8.8 pipeline/skybox.effect.
+ * Source: https://github.com/cocos/cocos-engine/blob/411f98df047c25902f93440d4b22925c2fb65461/editor/assets/effects/pipeline/skybox.effect
+ * The gradient and cloud fragment artwork below is original to Town Evolution.
+ *
+ * Copyright (c) 2013-2016 Chukong Technologies Inc.
+ * Copyright (c) 2017-2023 Xiamen Yaji Software Co., Ltd.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+CCEffect %{
+  techniques:
+  - passes:
+    - vert: town-sky-vs:vert
+      frag: town-sky-fs:frag
+      properties: &props
+        environmentMap: { value: grey }
+        zenithColor: { value: [0.43, 0.72, 0.94, 1.0] }
+        horizonColor: { value: [0.98, 0.91, 0.81, 1.0] }
+        hazeColor: { value: [0.77, 0.88, 0.94, 1.0] }
+        cloudColor: { value: [1.0, 0.98, 0.93, 1.0] }
+        cloudShadow: { value: [0.77, 0.83, 0.92, 1.0] }
+        cloudSpeed: { value: 0.0008, target: skyParams.x }
+        orthoHorizonLift: { value: 0.62, target: skyParams.y }
+        cloudOpacity: { value: 0.94, target: skyParams.z }
+        environmentBlend: { value: 0.0, target: skyParams.w }
+      priority: max - 10
+      rasterizerState: &rasterizer
+        cullMode: none
+      depthStencilState: &depth
+        depthTest: true
+        depthWrite: false
+    - vert: town-sky-vs:vert
+      frag: town-sky-fs:frag
+      propertyIndex: 0
+      phase: deferred-forward
+      priority: max - 10
+      rasterizerState: *rasterizer
+      depthStencilState: *depth
+}%
+
+CCProgram town-sky-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <legacy/decode>
+
+  out mediump vec4 viewDir;
+
+  vec4 vert () {
+    CCDecode(viewDir);
+    mat4 matViewRotOnly = mat4(mat3(cc_matView));
+    vec4 pos = matViewRotOnly * viewDir;
+    // Keep the official orthographic adaptation, including the mobile-driver workaround.
+    if (cc_matProj[3].w > 0.0) {
+      mat4 matProj = cc_matProj;
+      matProj[0].x = 5.2;
+      matProj[1].y = 2.6;
+      matProj[2].zw = vec2(-1.0);
+      matProj[3].zw = vec2(0.0);
+      pos = matProj * pos;
+    } else {
+      pos = cc_matProj * pos;
+    }
+    pos.z = 0.99999 * pos.w;
+    return pos;
+  }
+}%
+
+CCProgram town-sky-fs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <common/texture/texture-lod>
+  #include <common/data/unpack>
+  #include <common/color/gamma>
+  #include <common/math/coordinates>
+
+  in mediump vec4 viewDir;
+  uniform samplerCube environmentMap;
+  uniform TownSky {
+    vec4 zenithColor;
+    vec4 horizonColor;
+    vec4 hazeColor;
+    vec4 cloudColor;
+    vec4 cloudShadow;
+    vec4 skyParams;
+  };
+
+  // Soft-edged octagonal lobes create block-cloud silhouettes without noise textures.
+  float cloudLobe (vec2 p, vec2 center, vec2 size) {
+    vec2 q = abs((p - center) / size);
+    return max(max(q.x, q.y), (q.x + q.y) * 0.72);
+  }
+
+  vec2 cloudBand (vec2 sky, float repeatCount, float height, float thickness, float phase) {
+    float u = sky.x * repeatCount + phase;
+    float cell = mod(floor(u), repeatCount);
+    float stagger = sin(cell * 2.399 + phase) * thickness * 0.26;
+    vec2 p = vec2((fract(u) - 0.5) * 2.25, (sky.y - height - stagger) / thickness);
+    float shape = cloudLobe(p, vec2(0.0, -0.18), vec2(0.65, 0.24));
+    shape = min(shape, cloudLobe(p, vec2(-0.35, 0.02), vec2(0.25, 0.34)));
+    shape = min(shape, cloudLobe(p, vec2(-0.06, 0.25), vec2(0.34, 0.57)));
+    shape = min(shape, cloudLobe(p, vec2(0.33, 0.08), vec2(0.28, 0.36)));
+    shape = min(shape, cloudLobe(p, vec2(0.57, -0.12), vec2(0.19, 0.22)));
+    float mask = 1.0 - smoothstep(0.94, 1.04, shape);
+    // Cool undersides and gently stepped lit facets echo the island's low-poly stone.
+    float light = 0.32 + smoothstep(-0.38, 0.66, p.y) * 0.60;
+    light += step(0.08, p.y + p.x * 0.36) * 0.08;
+    return vec2(mask, clamp(light, 0.0, 1.0));
+  }
+
+  vec4 frag () {
+    vec3 direction = normalize(RotationVecFromAxisY(viewDir.xyz, cc_surfaceTransform.z, cc_surfaceTransform.w));
+    // The isometric camera sees below the physical horizon. Lift only the authored sky
+    // latitude in ORTHO, not its camera, geometry, picking rays or world-space rotation.
+    float elevation = direction.y;
+    if (cc_matProj[3].w > 0.0) elevation += skyParams.y;
+    float azimuth = atan(direction.z, direction.x) * 0.15915494 + 0.5;
+    // Periodic azimuth and cell staggering keep the cube seam and drift loop continuous.
+    float drift = fract(cc_time.x * skyParams.x);
+    vec2 sky = vec2(azimuth + drift, elevation);
+    vec3 color = mix(horizonColor.rgb, hazeColor.rgb, smoothstep(-0.31, -0.02, elevation));
+    color = mix(color, zenithColor.rgb, smoothstep(-0.04, 0.45, elevation));
+    vec2 distant = cloudBand(sky, 7.0, 0.025, 0.070, 0.31);
+    vec2 nearCloud = cloudBand(sky, 4.0, 0.205, 0.125, 0.08);
+    float horizonFade = smoothstep(-0.09, 0.01, elevation);
+    color = mix(color, mix(cloudShadow.rgb, cloudColor.rgb, distant.y), distant.x * skyParams.z * 0.68 * horizonFade);
+    color = mix(color, mix(cloudShadow.rgb, cloudColor.rgb, nearCloud.y), nearCloud.x * skyParams.z * horizonFade);
+    // Keep Cocos' expected sampler alive and allow an optional authored cube later.
+    // Default blend is zero, so no texture download is needed for the complete sky.
+    vec4 environment = fragTextureLod(environmentMap, direction, 0.0);
+    #if USE_RGBE_CUBEMAP
+      vec3 sampledColor = LinearToSRGB(unpackRGBE(environment));
+    #else
+      vec3 sampledColor = environment.rgb;
+    #endif
+    color = mix(color, sampledColor, clamp(skyParams.w, 0.0, 1.0));
+    // Like pipeline/skybox, this is the final background color, not a lit surface.
+    // Do not multiply by ambient intensity or flip HDR/IBL to display sky artwork.
+    #if CC_USE_RGBE_OUTPUT
+      return packRGBE(SRGBToLinear(color));
+    #else
+      return vec4(color, 1.0);
+    #endif
+  }
+}%

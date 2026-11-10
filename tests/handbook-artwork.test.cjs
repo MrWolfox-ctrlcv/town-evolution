@@ -46,7 +46,8 @@ test('unified digging tool reuses the live tray category PNG', () => {
   const tray = fs.readFileSync('assets/scripts/presentation/ToolTray.ts', 'utf8');
   const icons = fs.readFileSync('assets/scripts/presentation/TrayIcons.ts', 'utf8');
   assert.match(tray, /kind === 'diggingTool' \? 'diggingCategory' : kind/);
-  assert.ok(icons.includes("this.art.set('diggingCategory', new CropArtwork('digging-tools'))"));
+  assert.match(icons, /diggingCategory: 'digging-tools'/);
+  assert.match(icons, /new CropArtwork\(names\[kind\] \?\? kind\)/);
 });
 
 test('house, shop, products and farms use the exact canonical town recipes', () => {

@@ -1,0 +1,83 @@
+// Original water shading, following the techniques explained by Cocos' water tutorial.
+// No tutorial textures, models, cubemaps, or shader source are included.
+// Engine chunks are supplied by the MIT-licensed Cocos Creator 3.8.8 engine.
+CCEffect %{
+  techniques:
+  - name: opaque
+    passes:
+    - vert: town-water-vs:vert
+      frag: town-water-fs:frag
+      rasterizerState:
+        cullMode: back
+      depthStencilState:
+        depthTest: true
+        depthWrite: true
+      blendState:
+        targets:
+        - blend: false
+      properties:
+        waterStyle: { value: [0.065, 0.16, 0.32, 0] }
+        skyColor: { value: [0.65, 0.83, 0.87, 1], linear: true, editor: { type: color } }
+        foamColor: { value: [0.87, 0.96, 0.93, 1], linear: true, editor: { type: color } }
+}%
+
+CCProgram town-water-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <builtin/uniforms/cc-local>
+  in vec3 a_position;
+  in vec4 a_color;
+  out vec3 v_worldPosition;
+  out vec4 v_color;
+
+  vec4 vert () {
+    // CPU coastalWaveHeight is the ONLY displacement. Do not raise the water here:
+    // terrain occlusion, dock clearance, and hidden-bed culling depend on its bounds.
+    vec4 worldPosition = cc_matWorld * vec4(a_position, 1.0);
+    v_worldPosition = worldPosition.xyz;
+    v_color = a_color;
+    return cc_matViewProj * worldPosition;
+  }
+}%
+
+CCProgram town-water-fs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <legacy/output-standard>
+  in vec3 v_worldPosition;
+  in vec4 v_color;
+  uniform WaterSurface {
+    vec4 waterStyle;
+    vec4 skyColor;
+    vec4 foamColor;
+  };
+
+  vec4 frag () {
+    vec2 p = v_worldPosition.xz;
+    float t = cc_time.x;
+    // Coherent world-space flow never stretches when the map/camera changes.
+    float broad = sin(dot(p, vec2(0.31, -0.24)) - t * 0.2);
+    float rippleA = sin(dot(p, vec2(1.7, 0.55)) + t * 0.5 + broad * 1.8);
+    float rippleB = sin(dot(p, vec2(-0.68, 1.41)) - t * 0.37 + broad);
+    float breakup = 0.5 + 0.5 * sin(dot(p, vec2(0.73, -0.47)) + t * 0.19);
+    // These analytic normals affect light only, not surface height or picking.
+    vec3 n = normalize(vec3(rippleA * 0.055, 1.0, rippleB * 0.045));
+    vec3 perspectiveView = cc_cameraPos.xyz - v_worldPosition;
+    vec3 orthographicView = cc_matViewInv[2].xyz;
+    vec3 viewDirection = normalize(mix(perspectiveView, orthographicView,
+      step(0.5, cc_matProj[3][3])));
+    float grazing = 1.0 - clamp(dot(n, viewDirection), 0.0, 1.0);
+    float fresnel = grazing * grazing * grazing;
+    // A soft analytic sky tint avoids a reflection camera, depth texture, or cubemap.
+    vec3 color = SRGBToLinear(clamp(v_color.rgb, 0.0, 1.0));
+    color *= 1.0 + (rippleA * 0.65 + rippleB * 0.35) * waterStyle.x;
+    color = mix(color, skyColor.rgb, 0.035 + fresnel * waterStyle.z);
+    float glint = smoothstep(0.62, 0.97, rippleA) * smoothstep(0.3, 0.85, rippleB);
+    // Sparse broken surface flecks, not a false white shoreline over the ocean.
+    float foam = smoothstep(0.84, 0.985, rippleA * rippleB) *
+      smoothstep(0.55, 0.9, breakup) * waterStyle.y;
+    color = mix(color, foamColor.rgb, clamp(glint * 0.07 + foam, 0.0, 0.25));
+    // Water must stay opaque: submerged geometry is intentionally not all rendered.
+    return CCFragOutput(vec4(color, 1.0));
+  }
+}%

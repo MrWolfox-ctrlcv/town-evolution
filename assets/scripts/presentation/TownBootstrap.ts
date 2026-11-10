@@ -5,6 +5,8 @@ import { ExclusiveGameStorage } from '../application/ExclusiveGameStorage';
 import type { GameSession } from '../application/GameSession';
 import { StartScreen } from './StartScreen';
 import { configureTownLighting } from './SceneLighting';
+import { prepareTownEnvironment } from './EnvironmentEffect';
+import { bindSafeViewportChanges } from './SafeViewport';
 import { bindBrowserInputGuard } from './BrowserInputGuard';
 import { bindInputProvenance, clearInputProvenance } from './InputProvenance';
 const { ccclass } = _decorator;
@@ -21,7 +23,14 @@ export class TownBootstrap extends Component {
   private storageWarning = '';
   private releaseBrowserInput: ReturnType<typeof bindBrowserInputGuard> | null = null;
   private releaseInputProvenance: (() => void) | null = null;
+  private releaseSafeViewport: (() => void) | null = null;
+  private cancelEnvironment: (() => void) | null = null;
   onLoad(): void {
+    this.cancelEnvironment = prepareTownEnvironment(() => {
+      if (this.isValid && this.node.isValid) this.startTown();
+    });
+  }
+  private startTown(): void {
     this.releaseInputProvenance = bindInputProvenance(input);
     configureTownLighting(this.node.scene!);
     const locks =
@@ -46,6 +55,7 @@ export class TownBootstrap extends Component {
     this.menu = new StartScreen(this.node, this.flow, () => this.queueRender());
     this.render();
     this.storage.start();
+    this.releaseSafeViewport = bindSafeViewportChanges(() => this.queueRender());
     screen.on('window-resize', this.onResize, this);
     game.on(Game.EVENT_HIDE, this.onHide, this);
     game.on(Game.EVENT_SHOW, this.onShow, this);
@@ -56,16 +66,21 @@ export class TownBootstrap extends Component {
     });
   }
   update(dt: number): void {
+    if (!this.flow) return;
     if (this.flow.tickPreparation() && this.flow.page !== 'preparing') this.queueRender();
     if (this.flow.page === 'game') this.controller?.tick(dt);
     else this.menu.tick(dt);
   }
   onDestroy(): void {
+    this.cancelEnvironment?.();
+    this.cancelEnvironment = null;
     this.flow?.preparation.cancel();
     this.releaseInputProvenance?.();
     this.releaseInputProvenance = null;
     this.releaseBrowserInput?.();
     this.releaseBrowserInput = null;
+    this.releaseSafeViewport?.();
+    this.releaseSafeViewport = null;
     screen.off('window-resize', this.onResize, this);
     game.off(Game.EVENT_HIDE, this.onHide, this);
     game.off(Game.EVENT_SHOW, this.onShow, this);

@@ -177,6 +177,10 @@ export function createDemoGame(now: number, seed = DEMO_SEED): GameState {
   barrel.compost = compostInputPlan(createCompostState(), 'treeSeed', 1, now);
   pile('roastedCarrot', 2, 22, 10);
 
+  // Decorative saw recipes are additive and keep all existing practice identities intact.
+  add('fence', 23, 17);
+  add('bench', 23, 18);
+
   // Show an actual reclaimed tile, leaving other shore cells available for the nine-mud test.
   outer: for (let z = 1; z < CONFIG.gridSize - 1; z++)
     for (let x = 1; x < CONFIG.gridSize - 1; x++) {

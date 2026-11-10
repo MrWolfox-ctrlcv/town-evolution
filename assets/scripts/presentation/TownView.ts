@@ -41,9 +41,11 @@ export class TownView {
           .filter(([id]) => id !== this.lifted)
           .map(([id, entry]) => ({ id, surface: entry.surface })),
       (sample) =>
-        this.previous?.terrainVersion === 6 ? this.island.terrainDistance(sample) : null,
+        this.previous?.terrainVersion === 6 || this.previous?.terrainVersion === 7
+          ? this.island.terrainDistance(sample)
+          : null,
       (hit) =>
-        this.previous?.terrainVersion !== 6 ||
+        (this.previous?.terrainVersion !== 6 && this.previous?.terrainVersion !== 7) ||
         (hit.kind === 'building' ? this.buildingReady(hit.id) : this.resources.isUsable(hit)),
     );
     return this.picking.hit(ray, exclude);
@@ -72,7 +74,7 @@ export class TownView {
     this.island.sync(state);
     const effectiveNow = Math.max(now, state.lastSeenAt);
     this.resources.sync(state, this.island.naturalSurface, effectiveNow, this.island.dropSupport);
-    townChanges(previous, state, this.feedback, (id) => this.resources.dropOrigin(id));
+    townChanges(previous, state, this.feedback, this.resources);
     const live = new Set(state.buildings.map((b) => b.id));
     for (const [id, entry] of this.buildings)
       if (!live.has(id)) {
@@ -197,7 +199,7 @@ export class TownView {
     return nearest;
   }
   private buildingReady(id: string): boolean {
-    if (this.previous?.terrainVersion !== 6) return true;
+    if (this.previous?.terrainVersion !== 6 && this.previous?.terrainVersion !== 7) return true;
     const b = this.previous.buildings.find((entry) => entry.id === id);
     return !!b && buildingGroundReady(b, (x, z) => this.island.isGroundReady(x, z));
   }
@@ -207,7 +209,9 @@ export class TownView {
       this.buildings,
       this.lifted,
       this.resources,
-      this.previous?.terrainVersion === 6 ? (sample) => this.island.terrainDistance(sample) : null,
+      this.previous?.terrainVersion === 6 || this.previous?.terrainVersion === 7
+        ? (sample) => this.island.terrainDistance(sample)
+        : null,
       (id) => this.buildingReady(id),
     );
   }
@@ -264,6 +268,9 @@ export class TownView {
   pickDrop(ray: geometry.Ray): string | null {
     const hit = this.visibleHit(ray);
     return hit?.kind === 'drop' ? hit.id : null;
+  }
+  stackOrigin(x: number, z: number) {
+    return this.resources.stackOrigin(x, z);
   }
   dropOrigin(id: string) {
     return this.resources.dropOrigin(id);

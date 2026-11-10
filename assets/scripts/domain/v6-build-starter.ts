@@ -110,21 +110,7 @@ export function* buildStarter(
     });
   }
   const clear = (x: number, z: number) => x >= 1 && x <= 9 && z >= 1 && z <= 7;
-  function at(x: number, z: number): StarterCell | null {
-    if (x >= 36 || z >= 36 || clear(x, z)) return null;
-    for (const p of pockets) {
-      const dx = x - p.x,
-        dz = z - p.z,
-        c = Math.cos(p.angle),
-        s = Math.sin(p.angle),
-        d = ((dx * c + dz * s) / p.rx) ** 2 + ((-dx * s + dz * c) / p.rz) ** 2,
-        h = p.peak * Math.max(0, 1 - d) ** 2 * (0.93 + 0.14 * jitter(seed, x, z));
-      if (h > 0.02) return { biome: p.biome, surfaceHeight: h };
-    }
-    return legacyCandidate(x, z, seed).biome === 'forest'
-      ? { biome: 'forest', surfaceHeight: 0 }
-      : null;
-  }
+  const at = (x: number, z: number) => starterCellAt(seed, pockets, x, z);
   const treeCandidates: { x: number; z: number }[] = [];
   let options: { x: number; z: number; score: number }[] = [];
   for (let z = 1; z < 36; z++)
@@ -154,7 +140,7 @@ export function* buildStarter(
     if (treeCandidates.some((q) => Math.abs(q.x - p.x) + Math.abs(q.z - p.z) < 2)) continue;
     treeCandidates.push({ x: p.x, z: p.z });
   }
-  return { at, treeCandidates, pockets };
+  return createV6Starter(seed, pockets, treeCandidates);
 }
 
 export interface V6Starter {
@@ -170,4 +156,34 @@ export interface V6Starter {
     rz: number;
     peak: number;
   }[];
+}
+
+function starterCellAt(
+  seed: number,
+  pockets: V6Starter['pockets'],
+  x: number,
+  z: number,
+): StarterCell | null {
+  if (x >= 36 || z >= 36 || (x >= 1 && x <= 9 && z >= 1 && z <= 7)) return null;
+  for (const p of pockets) {
+    const dx = x - p.x,
+      dz = z - p.z,
+      c = Math.cos(p.angle),
+      s = Math.sin(p.angle),
+      d = ((dx * c + dz * s) / p.rx) ** 2 + ((-dx * s + dz * c) / p.rz) ** 2,
+      h = p.peak * Math.max(0, 1 - d) ** 2 * (0.93 + 0.14 * jitter(seed, x, z));
+    if (h > 0.02) return { biome: p.biome, surfaceHeight: h };
+  }
+  return legacyCandidate(x, z, seed).biome === 'forest'
+    ? { biome: 'forest', surfaceHeight: 0 }
+    : null;
+}
+
+/** Recreate local methods from validated recipe data, never clone a closure. */
+export function createV6Starter(
+  seed: number,
+  pockets: V6Starter['pockets'],
+  treeCandidates: V6Starter['treeCandidates'],
+): V6Starter {
+  return { at: (x, z) => starterCellAt(seed, pockets, x, z), treeCandidates, pockets };
 }

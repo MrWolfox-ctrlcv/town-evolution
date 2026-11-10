@@ -63,9 +63,8 @@ export function commerceActions(
   if (b.kind === 'shop')
     return [
       ...selectors,
-      ...(item === 'chilledVegetable' || item === 'soil'
-        ? []
-        : [
+      ...(isCrop(item)
+        ? [
             button(`买${quantity('shop')} · ${quantity('shop') * COMMERCE.prices[item].buy}币`, {
               type: 'shopTrade',
               buildingId: b.id,
@@ -73,7 +72,8 @@ export function commerceActions(
               quantity: quantity('shop'),
               side: 'buy',
             }),
-          ]),
+          ]
+        : []),
       button(
         `卖${quantity('inventory')} · +${quantity('inventory') * COMMERCE.prices[item].sell}币`,
         {
@@ -127,6 +127,8 @@ export function commerceDescription(session: GameSession, ui: UiState): string |
     const item = ui.tradeItem;
     const title = itemLabel(item);
     if (!isTradableItem(item)) return `商店 · ${title}暂不可交易`;
+    if (!isCrop(item))
+      return `商店 · ${title}仅可售出${item === 'chilledVegetable' ? '（清理旧库存）' : ''} / 库存${session.state.inventory[item]}`;
     return `商店 · ${title}在售${stock?.[item] ?? 0} / 库存${session.state.inventory[item]}`;
   }
   if (b.kind === 'orderBoard') return '订单板 · 批量交付';

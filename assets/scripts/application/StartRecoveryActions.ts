@@ -1,3 +1,5 @@
+import { peekTerrain7Save } from '../domain/v7-save-header';
+import { hasPreparedV7World } from '../domain/v7-world';
 import { importSave, SaveVersionError } from '../domain/save';
 import { SAVE_KEY, BACKUP_KEY, assertSaveRevision } from '../domain/storage';
 import type { KeyValueStorage, SaveRevision } from '../domain/storage';
@@ -22,7 +24,7 @@ export class StartRecoveryActions {
     private readonly prepare: (run: () => void, options: V6PreparationOptions) => void,
   ) {}
   recover(): void {
-    if (this.host.profile === 'v6-preview') {
+    if (this.host.profile === 'v6-preview' || this.host.profile === 'v7-preview') {
       this.recoverV6();
       return;
     }
@@ -41,24 +43,25 @@ export class StartRecoveryActions {
     if (!this.host.session?.hasSaveConflict) return;
     this.ask('读取其他页面的最新自动进度？本页未保存进度将被替换，请先存入空手动栏位。', () => {
       const load = () => {
-        if (this.host.profile === 'v6-preview') {
-          const raw = profileStorage(this.storage, this.host.profile).getItem(SAVE_KEY);
-          try {
-            if (!raw) throw Error('主存档不存在');
-            importSave(raw, this.now());
-          } catch {
-            this.host.message = '最新主存档未通过验证，当前小镇与原始数据仍保留。';
-            return;
-          }
+        try {
+          const scoped = profileStorage(this.storage, this.host.profile);
+          const raw = scoped.getItem(SAVE_KEY);
+          if (raw === null) throw Error('主存档不存在');
+          importSave(raw, this.now());
+          const latest = townSession(this.storage, this.host.profile, this.now, {
+            initializeMetadata: false,
+          });
+          // Empty storage also creates a normal session: only the validated primary is eligible.
+          if (latest.mode !== 'normal' || latest.saveRevision.primary !== raw)
+            throw Error('最新主存档已改变');
+          assertSaveRevision(scoped, { primary: raw });
+          this.activate(latest);
+        } catch {
+          this.host.message = '最新主存档未通过验证或已改变，当前小镇与原始数据仍保留。';
         }
-        const latest = townSession(this.storage, this.host.profile, this.now);
-        if (latest.mode !== 'normal') {
-          this.host.message = latest.statusMessage;
-          return;
-        }
-        this.activate(latest);
       };
-      if (this.host.profile === 'v6-preview') this.prepare(load, { source: 'primary' });
+      if (this.host.profile === 'v6-preview' || this.host.profile === 'v7-preview')
+        this.prepare(load, { source: 'primary' });
       else load();
     });
   }
@@ -106,8 +109,18 @@ export class StartRecoveryActions {
         );
       };
       try {
-        const header = expected.primary === null ? null : peekTerrain6Save(expected.primary);
-        if (header && !hasPreparedV6World(header.mapSeed)) {
+        const header =
+          expected.primary === null
+            ? null
+            : (this.host.profile === 'v7-preview' ? peekTerrain7Save : peekTerrain6Save)(
+                expected.primary,
+              );
+        if (
+          header &&
+          !(this.host.profile === 'v7-preview' ? hasPreparedV7World : hasPreparedV6World)(
+            header.mapSeed,
+          )
+        ) {
           this.prepare(validatePrimary, { source: 'primary' });
           return;
         }

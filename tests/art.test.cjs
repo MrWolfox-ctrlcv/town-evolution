@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { ASSETS, cropStage } = require('../.domain-build/art/AssetCatalog');
 const { compileAsset } = require('../.domain-build/art/MeshCompiler');
 test('all canonical assets compile into finite indexed vertex-colored meshes within budgets', () => {
-  assert.equal(Object.keys(ASSETS).length, 222);
+  assert.equal(Object.keys(ASSETS).length, 224);
   for (const asset of Object.values(ASSETS)) {
     const m = compileAsset(asset),
       n = m.positions.length / 3;

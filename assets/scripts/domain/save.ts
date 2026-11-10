@@ -1,8 +1,9 @@
+import { parseSaveWorldHeader } from './save-world-header';
+import { V7_GENERATOR_REVISION } from './v7-world';
 import { MAX_SAVE_CHARACTERS } from './save-limits';
 export { MAX_SAVE_CHARACTERS } from './save-limits';
-import { parseTerrain6, validateTerrain6Resources } from './v6-save';
+import { validateTerrain6Resources } from './v6-save';
 import { V6_GENERATOR_REVISION } from './v6-world';
-import { SaveVersionError } from './save-version';
 export { SaveVersionError } from './save-version';
 import { parseBridgeState } from './bridge-save';
 import { parseCompostState } from './compost-save';
@@ -40,37 +41,8 @@ export function importSave(text: string, now: number): GameState {
     throw new Error('存档不是有效 JSON');
   }
   requireRule(record(data), '存档结构无效');
-  if (data.schemaVersion !== 8 && data.schemaVersion !== 9 && data.schemaVersion !== 10)
-    throw new SaveVersionError('不支持此存档版本，请保留备份');
-  if (data.schemaVersion >= 9)
-    requireRule(
-      data.terrainVersion !== undefined &&
-        data.landExtensions !== undefined &&
-        data.fusion !== undefined,
-      '当前存档缺少地图或融合记录',
-    );
+  const { sourceVersion, terrainVersion, terrain6 } = parseSaveWorldHeader(data);
   requireRule(integer(data.mapSeed) && data.mapSeed > 0, '地图种子无效');
-  const terrainVersion = data.terrainVersion === undefined ? 1 : data.terrainVersion;
-  requireRule(
-    terrainVersion === 1 ||
-      terrainVersion === 2 ||
-      terrainVersion === 3 ||
-      terrainVersion === 4 ||
-      terrainVersion === 5 ||
-      terrainVersion === 6,
-    '地图版本无效',
-  );
-  if (terrainVersion === 5 && data.terrainRevision !== V5_GENERATOR_REVISION)
-    throw new SaveVersionError(
-      '此 v5 预览地形版本不兼容，请保留原始存档；不会重新生成或重解释旧数据',
-    );
-  if (
-    terrainVersion === 6 &&
-    (data.schemaVersion !== 10 || data.terrainRevision !== V6_GENERATOR_REVISION)
-  )
-    throw new SaveVersionError('此 v6 地形版本不兼容，请保留原始存档；不会重新生成或重解释旧数据');
-  requireRule(terrainVersion === 6 || data.terrain6 === undefined, '旧地图不能包含v6地形记录');
-  const terrain6 = terrainVersion === 6 ? parseTerrain6(data.terrain6, data.mapSeed) : undefined;
   const landExtensions = importLandExtensions(data.landExtensions, data.mapSeed, terrainVersion);
   requireRule(
     integer(data.coins) &&
@@ -80,7 +52,7 @@ export function importSave(text: string, now: number): GameState {
     '存档数值无效',
   );
   requireRule(integer(data.lastSeenAt, MAX_TIME), '存档时间无效');
-  const inventory = importStock(data.inventory, data.schemaVersion, [], terrainVersion);
+  const inventory = importStock(data.inventory, sourceVersion, [], terrainVersion);
   requireRule(typeof data.cropRecoveryAvailable === 'boolean', '种苗恢复状态无效');
   requireRule(
     Array.isArray(data.buildings) && data.buildings.length <= worldSize(terrainVersion) ** 2,
@@ -130,7 +102,7 @@ export function importSave(text: string, now: number): GameState {
       z: raw.z,
       rotation: raw.rotation,
     };
-    if (terrainVersion === 6) {
+    if (terrainVersion >= 6) {
       requireRule(
         typeof raw.baseElevation === 'number' &&
           Number.isFinite(raw.baseElevation) &&
@@ -158,7 +130,7 @@ export function importSave(text: string, now: number): GameState {
     requireRule(raw.bridge === undefined || b.kind === 'woodenBridge', '此建筑不应有木桥状态');
     if (b.kind === 'woodenBridge') {
       requireRule(
-        data.schemaVersion === 10 && raw.job === undefined && raw.processingJob === undefined,
+        sourceVersion === 10 && raw.job === undefined && raw.processingJob === undefined,
         '木桥版本或生产状态无效',
       );
       b.bridge = parseBridgeState(
@@ -170,9 +142,9 @@ export function importSave(text: string, now: number): GameState {
     }
     requireRule(raw.compost === undefined || b.kind === 'compostBarrel', '此建筑不应有堆肥状态');
     if (b.kind === 'compostBarrel') {
-      requireRule(data.schemaVersion === 10, '旧版本不应有堆肥木桶');
+      requireRule(sourceVersion === 10, '旧版本不应有堆肥木桶');
       requireRule(raw.job === undefined && raw.processingJob === undefined, '堆肥生产状态冲突');
-      b.compost = parseCompostState(raw.compost, savedTime, acceptId, data.schemaVersion);
+      b.compost = parseCompostState(raw.compost, savedTime, acceptId, sourceVersion);
     }
     if (raw.processingJob !== undefined) {
       requireRule(
@@ -183,7 +155,7 @@ export function importSave(text: string, now: number): GameState {
     }
     requireRule(raw.collectionBox === undefined || b.kind === 'farm', '此建筑不应有田箱');
     if (raw.collectionBox !== undefined)
-      b.collectionBox = parseFarmBox(raw.collectionBox, acceptId, data.schemaVersion);
+      b.collectionBox = parseFarmBox(raw.collectionBox, acceptId, sourceVersion);
     if (b.kind === 'farm') {
       requireRule(raw.farmSize === undefined || raw.farmSize === 6, '田地大小无效');
       requireRule(raw.irrigated === undefined || raw.irrigated === true, '田地灌水状态无效');
@@ -231,7 +203,7 @@ export function importSave(text: string, now: number): GameState {
     buildings.push(b);
   }
   const looseDrops = parseLooseDrops(
-    data.looseDrops === undefined && data.schemaVersion === 8 ? [] : data.looseDrops,
+    data.looseDrops === undefined && sourceVersion === 8 ? [] : data.looseDrops,
     {
       mapSeed: data.mapSeed,
       terrainVersion,
@@ -244,14 +216,19 @@ export function importSave(text: string, now: number): GameState {
   requireRule(data.nextId > maxId, '存档编号顺序无效');
   const state: GameState = {
     schemaVersion: 10,
-    fusion: importFusion(data.fusion, buildings, savedTime, data.schemaVersion),
+    fusion: importFusion(data.fusion, buildings, savedTime, sourceVersion),
     mapSeed: data.mapSeed,
     terrainVersion,
     ...(terrainVersion === 5 ? { terrainRevision: V5_GENERATOR_REVISION } : {}),
-    ...(terrain6 ? { terrainRevision: V6_GENERATOR_REVISION, terrain6 } : {}),
+    ...(terrain6
+      ? {
+          terrainRevision: terrainVersion === 7 ? V7_GENERATOR_REVISION : V6_GENERATOR_REVISION,
+          terrain6,
+        }
+      : {}),
     landExtensions,
     ...importFoundation(
-      data,
+      { ...data, schemaVersion: sourceVersion },
       false,
       worldSize(terrainVersion),
       data.mapSeed,
@@ -260,7 +237,7 @@ export function importSave(text: string, now: number): GameState {
     ),
     looseDrops,
     cropRecoveryAvailable: data.cropRecoveryAvailable,
-    commerce: importCommerce(data.commerce, buildings, savedTime, false, false, data.schemaVersion),
+    commerce: importCommerce(data.commerce, buildings, savedTime, false, false, sourceVersion),
     coins: data.coins,
     inventory,
     buildings,
@@ -269,17 +246,30 @@ export function importSave(text: string, now: number): GameState {
     lastSeenAt: savedTime,
   };
   requireRule(!landExtensions.some((p) => blocksDockWater(p, buildings)), '扩地占用船坞出口');
-  if (terrainVersion === 5 || terrainVersion === 6)
+  if (terrainVersion >= 5)
     requireRule(
       buildings.every((b) => b.kind !== 'dock' || hasDockExit(state, b)),
       '船坞必须保留通向外海的两格出口',
     );
-  if (terrainVersion === 6) validateTerrain6Resources(state);
+  if (terrainVersion >= 6) validateTerrain6Resources(state);
   validateTownPlacements(state);
   validateDropPlacements(state);
   requireRule(getUsedStorage(state) <= getCapacity(state), '库存超过仓储容量');
   return advance(state, now);
 }
 export function exportSave(state: GameState): string {
-  return JSON.stringify(importSave(JSON.stringify(state), state.lastSeenAt));
+  const validated = importSave(
+    JSON.stringify(state.terrainVersion === 7 ? { ...state, schemaVersion: 12 } : state),
+    state.lastSeenAt,
+  );
+  // Old clients reject this wire version before unknown-kind recovery can select a backup.
+  // Discoveries outlive entities. Neither transient selection snapshots nor item stocks store buildings.
+  const hasNewContent =
+    validated.buildings.some((b) => b.kind === 'bench' || b.kind === 'fence') ||
+    validated.fusion.discoveries['build-bench'] !== undefined ||
+    validated.fusion.discoveries['build-fence'] !== undefined;
+  return JSON.stringify({
+    ...validated,
+    schemaVersion: validated.terrainVersion === 7 ? 12 : hasNewContent ? 11 : 10,
+  });
 }

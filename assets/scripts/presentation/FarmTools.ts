@@ -71,7 +71,7 @@ export class FarmTools {
           this.highlights,
           `${b.id}:${cell}`,
           p.x,
-          0.18,
+          (b.baseElevation ?? 0) + 0.18,
           p.z,
           0.12,
           0.035,
@@ -83,13 +83,15 @@ export class FarmTools {
       }
     }
   }
-  move(id: number, point: Point): void {
+  move(id: number, point: Point, blocked = false): void {
     if (id !== this.active) return;
-    const samples = sampleStroke(this.previous, point, 3);
+    const previous = this.previous;
+    this.previous = { ...point };
+    if (blocked) return;
+    const samples = sampleStroke(previous, point, 3);
     // Interpolation may round its final point by one ulp. Keep the original pointer endpoint
     // so a repeated move/up is identical, without suppressing real subpixel movement.
     if (this.kind === 'harvest' && samples.length) samples[samples.length - 1] = { ...point };
-    this.previous = { ...point };
     let changed = false;
     for (const sample of samples) {
       // Pointer up often repeats the last move after its refresh. A stationary sickle must
@@ -135,9 +137,9 @@ export class FarmTools {
     if (changed) this.refresh();
   }
 
-  end(id: number, point: Point): boolean {
+  end(id: number, point: Point, blocked = false): boolean {
     if (id !== this.active) return false;
-    this.move(id, point);
+    this.move(id, point, blocked);
     const acted = this.acted;
     this.cancel();
     return acted;

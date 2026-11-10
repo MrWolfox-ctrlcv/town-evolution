@@ -71,7 +71,7 @@ its complete transitive build dependency graph is not yet reproducibly locked.
 - [ ] Sustained frame times and memory, not only initial FPS.
 - [ ] Repeated creation/remodeling without retained mesh/material leaks.
 - [ ] Touch accuracy near UI, screen edges and buildings.
-- [ ] Native safe-area/notch and system navigation insets (not yet automatically inset).
+- [ ] Native safe-area/notch and system navigation insets on actual devices (automatic native/Web inset support implemented; source-level coordinate/input tests only, see `safe-area.md`).
 - [ ] Background/foreground, interrupted activity and process restart.
 - [ ] Initial loading size/time and thermal behavior.
 

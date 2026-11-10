@@ -1,7 +1,7 @@
 import { collectionGains } from './Collections';
 import type { CollectionEvent } from './Collections';
 import { createGame, dispatch, advance } from '../domain/game';
-import type { GameState, Command } from '../domain/game';
+import type { GameState, Command, Result } from '../domain/game';
 import {
   loadGame,
   saveGame,
@@ -55,11 +55,20 @@ export class GameSession {
     if (result.status === 'recovered' || result.status === 'corrupt') this.mode = result.status;
     if (result.warning) this.message = result.warning;
   }
-  reason(command: Command): string | null {
+  private blockedReason(): string | null {
     if (this.conflict) return this.saveWarning;
     if (this.mode !== 'normal')
       return this.mode === 'recovered' ? '先采用备份存档' : '存档损坏，请确认恢复或新局';
-    const result = dispatch(this.state, command, this.now());
+    return null;
+  }
+  /** Fresh advisory result only. run never consumes or caches a preview snapshot. */
+  preview(command: Command): Result {
+    const blocked = this.blockedReason();
+    if (blocked) return { ok: false, state: this.state, error: blocked };
+    return dispatch(this.state, command, this.now());
+  }
+  reason(command: Command): string | null {
+    const result = this.preview(command);
     return result.ok ? null : result.error;
   }
   run(command: Command): boolean {
@@ -71,7 +80,8 @@ export class GameSession {
         // Ordinary storage denial still permits in-memory play and surfaces on save.
       }
     }
-    const reason = this.reason(command);
+    // Preview and commit have the same gate, but a commit dispatches only once.
+    const reason = this.blockedReason();
     if (reason) {
       this.message = reason;
       return false;

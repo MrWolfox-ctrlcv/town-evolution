@@ -7,6 +7,7 @@ export interface TrayEntry {
   kind: TrayKind;
   node: Node;
   text: Label;
+  prepare?: () => void;
 }
 /** Each side pages independently; hidden entries never intercept map gestures. */
 export class TrayColumn {
@@ -96,6 +97,9 @@ export class TrayColumn {
       e.node.active = shown.includes(e);
     });
     shown.forEach((e, i) => {
+      const prepare = e.prepare;
+      delete e.prepare;
+      prepare?.();
       e.node.setPosition(0, -i * 60);
     });
     this.pager.active = pages > 1;

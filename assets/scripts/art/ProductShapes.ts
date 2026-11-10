@@ -1,4 +1,5 @@
 import type { V3 } from './AssetTypes';
+import { sawnWoodShape } from './SawnWoodShape';
 /** Closed profiles for cut timber, a tapered carrot root, and a rope loop. */
 function lathe(profile: Array<[number, number]>, smooth: boolean) {
   const vertices: V3[] = [],
@@ -45,6 +46,7 @@ function rope() {
   return { vertices, faces, smooth: true };
 }
 export const PRODUCT_SHAPES = {
+  sawnTimber: sawnWoodShape(),
   log: lathe(
     [
       [-0.5, 0.5],

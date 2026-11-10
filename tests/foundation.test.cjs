@@ -104,7 +104,7 @@ test('four manually stacked woods and hammer construct a house without charging 
 });
 test('wood crafting rejects unspecified counts atomically for each tool', () => {
   for (const [tool, counts] of [
-    ['saw', [1, 2, 5, 6]],
+    ['saw', [5, 6]],
     ['hammer', [5, 6]],
   ])
     for (const amount of counts) {

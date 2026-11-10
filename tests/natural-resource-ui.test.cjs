@@ -91,6 +91,13 @@ function fixture() {
   const session = {
     state,
     reason: () => null,
+    preview(command) {
+      // This routing double keeps injected rejection text consistent across both APIs.
+      const error = this.reason(command);
+      return error
+        ? { ok: false, state: this.state, error }
+        : { ok: true, state: this.state, events: [] };
+    },
     run: (command) => commands.push(command),
     message: '',
   };
@@ -224,10 +231,13 @@ test('natural resources block stock drops instead of dropping at their ground pr
   const { StockDrag } = presentation('StockDrag', {
     './ModelFactory': { ModelFactory: Factory },
     '../application/CommerceSelection': require('../.domain-build/application/CommerceSelection.js'),
+    '../application/DropSnapshot': require('../.domain-build/application/DropSnapshot'),
   });
   const { session, map, town } = fixture();
   const drag = new StockDrag(new TargetNode(), session, map, town, () => {});
+  session.state.inventory = { soil: 2 };
   drag.item = 'soil';
+  drag.sourceAmount = 2;
   assert.equal(drag.dropCommand({ resourceId: stone.id, x: 4, z: 9 }, null), null);
   assert.deepEqual(drag.dropCommand({ x: 2.3, z: 5.2 }, null), {
     type: 'dropProduct',
@@ -303,6 +313,7 @@ test('soil commerce UI uses the soil label and never offers new soil for sale by
   const { commerceActions } = presentation('CommercePanel', {
     '../domain/island': game,
     '../application/CommerceSelection': require('../.domain-build/application/CommerceSelection.js'),
+    '../application/DropSnapshot': require('../.domain-build/application/DropSnapshot'),
   });
   const state = game.createGame(0);
   const shop = { id: 'shop-display-fixture', kind: 'shop' };
@@ -327,6 +338,7 @@ test('tree seeds never offer an implicit trade and digging art uses the provided
   const { commerceActions } = presentation('CommercePanel', {
     '../domain/island': game,
     '../application/CommerceSelection': require('../.domain-build/application/CommerceSelection.js'),
+    '../application/DropSnapshot': require('../.domain-build/application/DropSnapshot'),
   });
   const state = game.createGame(0);
   state.buildings.push({ id: 'shop-display-fixture', kind: 'shop' });
@@ -375,6 +387,7 @@ test('one digging category switches its drag image between shovel and pickaxe wi
   const draws = [];
   Object.assign(surface, {
     held: 'diggingTool',
+    origin: { x: 0, y: 0 },
     ghostAppearance: null,
     width: 100,
     height: 100,
@@ -524,6 +537,7 @@ test('saw misses identify a missing target without dispatching or revealing a ma
 test('HUD passes the contextual tool appearance through its drag adapter', () => {
   const { TownHUD } = presentation('TownHUD', {
     cc: {},
+    './SafeControls': {},
     './Widgets': {},
     '../application/HudLayout': {},
     './ToolTray': {},

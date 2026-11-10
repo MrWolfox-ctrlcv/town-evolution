@@ -12,6 +12,8 @@ The current tool split is explicit and does not infer a recipe from material cou
 | ---------------------------------------------------- | ------ | ------------ |
 | Wood 1                                               | Hammer | Notice board |
 | Wood 2                                               | Hammer | Crate        |
+| Wood 1                                               | Saw    | Fence        |
+| Wood 2                                               | Saw    | Bench        |
 | Wood 3                                               | Saw    | Handcart     |
 | Wood 4                                               | Saw    | Boat         |
 | Wood 3                                               | Hammer | Wooden pier  |
@@ -47,7 +49,7 @@ Boat attachment and whether it gates new-dock departure remain pending. Existing
 
 ## Save safety
 
-Runtime states and newly written saves now use schema 10. The importer accepts schemas 8 and 9, supplies zero only for product keys introduced after each source version, and retains old jobs, IDs, terrain versions, fields, discoveries and commerce. Current stock records must contain every known key; malformed or unknown values reject rather than reset. Current-version map, foundation, fusion and loose-drop records are mandatory. Only schema 8 may omit additive records. Drop IDs and reserved crate IDs join the global uniqueness check before validating nextId. Historical producer references are checked but need not still exist. Emergency crop recovery includes town inventory, ground stacks, loose drops, field boxes, planted crops and other existing stock owners.
+Runtime states remain schema 10. Exported saves containing a fence, bench or their discovery records use wire schema 11; all other exports stay schema 10. Schemas 8–11 import into the unchanged internal shape. Wire 11 normalizes to the strict schema-10 parsers, without permitting legacy missing-field defaults. The importer accepts schemas 8 and 9, supplies zero only for product keys introduced after each source version, and retains old jobs, IDs, terrain versions, fields, discoveries and commerce. Current stock records must contain every known key; malformed or unknown values reject rather than reset. Current-version map, foundation, fusion and loose-drop records are mandatory. Only schema 8 may omit additive records. Drop IDs and reserved crate IDs join the global uniqueness check before validating nextId. Historical producer references are checked but need not still exist. Emergency crop recovery includes town inventory, ground stacks, loose drops, field boxes, planted crops and other existing stock owners.
 
 The first successful version-8 upgrade preserves the exact original text in a one-time pre-schema-9 archive as well as the normal rotating backup. Upgrades from versions 8 or 9 also preserve pre-schema-10 bytes, including when adopting a valid old backup after the primary is missing or corrupt. Later autosaves do not replace that migration archive. If archival storage fails, the old primary remains unchanged. Reads do not write. Existing revision checks prevent a second page from overwriting a newer save.
 
@@ -66,3 +68,13 @@ The demo template adds all new building kinds, all new products in inventory and
 ## Verification checkpoint
 
 Focused tests cover schema migration and failures, nursery growth, crop recovery, processing snapshots, explicit tool recipes, merge previews, batch transport and shipping-price snapshots. Focused domain safety suites, `build:domain`, project structure and the architecture check pass at this checkpoint. The independent review found and closed missing new-stock recovery checks and current-version fallback defaults. A full final aggregate pass, final art exports, browser visual review, touch/GPU performance and publication must be checked separately after the remaining interaction decisions are integrated. No GitHub push or deployment is part of this integration step.
+
+## Decorative saw recipes (2026-11-08)
+
+One wood plus saw creates a fence; two wood plus saw creates a bench. These are the confirmed quantities, not new balance proposals. Each occupies one dry, unoccupied tile and uses existing selection, rotation and movement. Tools retain unlimited durability. There are no resident rest bonuses, enclosure systems, prices or new fusion routes. The bench uses canonical readable wooden parts and the shared warm-wood texture; the fence reuses its existing canonical model.
+
+The current building path has no whole-object inventory. Dropping either finished prop over either sidebar safely cancels the move and preserves it. Only the existing product/loose-drop and attached-material recovery paths are supported; neither prop is dismantled into wood.
+
+The wire-11 version marker makes the unchanged preceding client stop at the primary version gate, before unknown-kind recovery could select a stale backup. It also protects discovery-only saves. Older clients cannot read the new entities. A schema-11 manual slot is rejected read-only. Existing older tabs stop on revision conflict. This is not universal two-way compatibility: if schema 11 exists only in a rotating backup while the primary is schema 10, an old client can rotate that backup away. An explicitly confirmed reset or old-slot restore through the current storage adapter archives the prior primary in before-reset; repeated explicit resets may replace that archive under the existing policy. Preserve an external copy before moving between client versions.
+
+The new demo template adds both props without pre-discovering recipes or moving prior practice objects. Saved demos are not repopulated or reset; only a confirmed reset adopts the template. The title uses the authoritative generated snapshot.

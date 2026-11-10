@@ -29,6 +29,7 @@ export class RecipeHandbook {
   constructor(
     private readonly parent: Node,
     private readonly standalone = false,
+    inputRoot = parent,
   ) {
     this.launcher = new ActionButton(parent, () => {});
     this.launcher.node.name = 'RecipeBookOpen';
@@ -66,7 +67,7 @@ export class RecipeHandbook {
       sheet.on(Node.EventType.MOUSE_WHEEL, this.wheel, this);
     }
     this.ownership = new HandbookInputGuard(
-      parent,
+      inputRoot,
       {
         start: (e) => this.capture(e),
         move: (e) => this.captureMove(e),

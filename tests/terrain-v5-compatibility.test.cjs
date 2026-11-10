@@ -199,7 +199,7 @@ for (const seed of [1, 42, 42173, 1000000000])
         raw.terrainVersion = 6;
       },
       (raw) => {
-        raw.schemaVersion = 11;
+        raw.schemaVersion = 12;
       },
       (raw) => {
         delete raw.naturalResources;

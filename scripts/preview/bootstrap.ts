@@ -1,3 +1,4 @@
+import { configureV6WorkerFactory } from '../../assets/scripts/application/V6WorkerPreparation';
 import {
   game,
   Game,
@@ -16,6 +17,11 @@ import { effects } from 'cocos-preview-effects';
 import { buildingReview } from './building-review';
 import { terrainReview } from './terrain-review';
 import { TownBootstrap } from '../../assets/scripts/presentation/TownBootstrap';
+configureV6WorkerFactory(
+  typeof Worker === 'function'
+    ? () => new Worker(new URL('./terrain6-worker.js', document.baseURI))
+    : null,
+);
 if (typeof tween !== 'function' || typeof Tween !== 'function' || typeof TweenSystem !== 'function')
   throw new Error('Preview engine is missing required Cocos tween exports');
 game.on(Game.EVENT_POST_SUBSYSTEM_INIT, () => {

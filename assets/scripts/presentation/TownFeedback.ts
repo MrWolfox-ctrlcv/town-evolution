@@ -3,6 +3,7 @@ import { resourceTreeVisual } from '../art/TreeKit';
 import { woodChipPose } from '../art/FeedbackMath';
 import { _decorator, Component, Node, isValid } from 'cc';
 import type { Building } from '../domain/game';
+import type { SurfacePoint } from '../application/NaturalPicking';
 import type { ModelFactory } from './ModelFactory';
 interface Effect {
   root: Node;
@@ -25,13 +26,13 @@ export class TownFeedback extends Component {
     this.effects.push(effect);
     effect.pose(0);
   }
-  chop(x: number, z: number, seed = 1, v5 = false): void {
+  chop(x: number, z: number, seed = 1, v5 = false, origin?: SurfacePoint): void {
     const root = new Node('CommittedTreeChop');
     const wide = v5 ? v5TreeVisual(seed, x, z) : null;
     root.setPosition(
-      x + 0.5 + (wide?.offset[0] ?? 0),
-      v5 ? 0.015 : 0,
-      z + 0.5 + (wide?.offset[2] ?? 0),
+      origin?.x ?? x + 0.5 + (wide?.offset[0] ?? 0),
+      origin?.y ?? (v5 ? 0.015 : 0),
+      origin?.z ?? z + 0.5 + (wide?.offset[2] ?? 0),
     );
     const visual = wide ?? resourceTreeVisual(seed, x, z);
     const tree = this.factory.asset(visual.asset, 'FallingTree');
@@ -130,9 +131,9 @@ export class TownFeedback extends Component {
       },
     });
   }
-  stack(x: number, z: number): void {
+  stack(x: number, z: number, origin?: SurfacePoint): void {
     const root = new Node('CommittedStackPulse');
-    root.setPosition(x + 0.5, 0.09, z + 0.5);
+    root.setPosition(origin?.x ?? x + 0.5, origin ? origin.y + 0.09 : 0.09, origin?.z ?? z + 0.5);
     const bars = [-1, 1].map((side) =>
       this.factory.shape(root, 'StackSpark', side * 0.48, 0, 0, 0.08, 0.08, 0.65, '#F3D37C'),
     );

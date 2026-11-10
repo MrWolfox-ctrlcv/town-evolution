@@ -2,6 +2,7 @@ import { v6WorldHeight, v6PreparedSamples } from './V6SurfaceSamples';
 import type { V6SurfaceSource, V6SurfaceMesh } from './V6SurfaceContracts';
 import { buildV6SurfaceMeshSteps } from './V6SurfaceMesh';
 import { emptyV6SurfaceMesh } from './V6SurfaceMerge';
+import { buildV6FarNaturalCell } from './V6FarNaturalCell';
 import { v6SurfaceNormal } from './V6SurfaceNormals';
 import {
   v6FarCellMaterial,
@@ -53,6 +54,18 @@ export function* buildV6FarSurfaceSteps(
       if (!cell || cell.reserved) continue;
       const material = detail(x, z) ? null : v6FarCellMaterial(source, x, z, maxError);
       if (!material) {
+        // Rejected coarse candidates usually only need the original top lattice,
+        // not the general excavation/clipping/wall writer. This path is exact.
+        const natural = maxError > 0 && !detail(x, z) ? buildV6FarNaturalCell(source, x, z) : null;
+        if (natural) {
+          if (width === 1 && depth === 1) {
+            yield natural;
+            return natural;
+          }
+          appendPartial(mesh, natural, mesh.positions.length / 3, 0, 0);
+          yield mesh;
+          continue;
+        }
         const exact = buildV6SurfaceMeshSteps(source, x, z, 1, 1);
         const metadata = new Map<
           V6SurfaceMesh['triangles'][number],

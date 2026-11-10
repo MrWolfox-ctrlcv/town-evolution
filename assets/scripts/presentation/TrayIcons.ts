@@ -34,52 +34,50 @@ export const TRAY_LABELS: Record<TrayKind, string> = {
 /** Shared image resources, with readable silhouettes while textures are loading. */
 export class TrayIcons {
   private readonly art = new Map<TrayAppearance, CropArtwork>();
-  constructor() {
-    for (const kind of Object.keys(TRAY_LABELS) as TrayKind[])
-      if (kind !== 'chilledVegetable')
-        this.art.set(
-          kind,
-          new CropArtwork(
-            kind === 'vegetable'
-              ? 'carrot'
-              : kind === 'wateringCan'
-                ? 'watering-can'
-                : kind === 'diggingTool'
-                  ? 'digging-tool'
-                  : kind === 'treeSeed'
-                    ? 'tree-seed'
-                    : kind === 'roastedCarrot'
-                      ? 'roasted-carrot'
-                      : kind === 'milledRice'
-                        ? 'milled-rice'
-                        : kind,
-          ),
-        );
-    this.art.set('diggingPickaxe', new CropArtwork('digging-pickaxe'));
-    this.art.set('diggingCategory', new CropArtwork('digging-tools'));
+  private disposed = false;
+  private artwork(kind: TrayAppearance): CropArtwork | undefined {
+    if (kind === 'chilledVegetable' || this.disposed) return;
+    let art = this.art.get(kind);
+    if (!art) {
+      const names: Partial<Record<TrayAppearance, string>> = {
+        vegetable: 'carrot',
+        wateringCan: 'watering-can',
+        diggingTool: 'digging-tool',
+        treeSeed: 'tree-seed',
+        roastedCarrot: 'roasted-carrot',
+        milledRice: 'milled-rice',
+        diggingPickaxe: 'digging-pickaxe',
+        diggingCategory: 'digging-tools',
+      };
+      art = new CropArtwork(names[kind] ?? kind);
+      this.art.set(kind, art);
+    }
+    return art;
   }
   draw(node: Node, kind: TrayAppearance, size = 40): void {
+    if (this.disposed) return;
+    const artwork = this.artwork(kind);
     for (const art of this.art.values()) art.clear(node);
     const g = node.getComponent(Graphics) ?? node.addComponent(Graphics);
     g.clear();
     if (kind === 'mud') {
       drawMudIcon(g, size);
-      this.art.get(kind)?.bind(node, size);
+      artwork?.bind(node, size);
       return;
     }
     if (kind === 'soil') {
       drawSoilIcon(g, size);
-      this.art.get(kind)?.bind(node, size);
+      artwork?.bind(node, size);
       return;
     }
     if (kind === 'treeSeed') {
       drawTreeSeedIcon(g, size);
-      this.art.get(kind)?.bind(node, size);
+      artwork?.bind(node, size);
       return;
     }
     // New goods use generated PNGs only; never substitute an unrelated drawn silhouette.
     if (['rice', 'sapling', 'milledRice', 'flour', 'bread', 'roastedCarrot'].includes(kind)) {
-      this.art.get(kind)?.bind(node, size);
+      artwork?.bind(node, size);
       return;
     }
     g.lineWidth = 5;
@@ -156,9 +154,12 @@ export class TrayIcons {
       g.circle(0, 0, 14);
     }
     g.fill();
-    this.art.get(kind)?.bind(node, size);
+    artwork?.bind(node, size);
   }
   dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
     for (const art of this.art.values()) art.dispose();
+    this.art.clear();
   }
 }

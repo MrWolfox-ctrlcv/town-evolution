@@ -48,7 +48,7 @@ export class LooseDropView {
       // A missing support is visible and recoverable, never deleted or moved to another tile.
       const y = (height ?? 0.022) + 0.008 - shape.minY * shape.scale;
       const ready =
-        state.terrainVersion !== 6 ||
+        (state.terrainVersion !== 6 && state.terrainVersion !== 7) ||
         (height !== null && this.groundReady(Math.floor(p.x), Math.floor(p.z)));
       const signature = `${asset}:${p.x}:${p.z}:${y}:${ready}`;
       const prior = old.get(drop.id);
