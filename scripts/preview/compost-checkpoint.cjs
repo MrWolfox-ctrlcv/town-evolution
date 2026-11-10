@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const { inspect, until, ready, driver } = require('./ui-driver.cjs');
+const { focusWorldTargets } = require('./focus-world-targets.cjs');
 const stockDrop = require('./stock-input.cjs');
 module.exports = async (page, evidence, name, touch, { showTool }) => {
   const { click, button, townActions } = driver(page, touch);
@@ -16,6 +17,7 @@ module.exports = async (page, evidence, name, touch, { showTool }) => {
     view.save.inventory.treeSeed >= 2,
     'Two shown seeds available for start and withdrawal checks',
   );
+  view = await focusWorldTargets(page, [barrel], touch, { unitPixels: 24 });
   await showTool('TreeSeedStock', 'ProductsRightNext');
   const before = (await inspect(page)).save;
   await stockDrop(page, 'TreeSeedStock', barrel.id, touch, 'cancel');
@@ -51,6 +53,7 @@ module.exports = async (page, evidence, name, touch, { showTool }) => {
   assert.equal(view.save.buildings.find((b) => b.id === barrel.id).compost.job, undefined);
   assert.ok(view.labels.some((l) => l.text.includes('肥料用途待设计')));
   await page.screenshot({ path: path.join(evidence, `${name}-compost-tool-output.png`) });
+  view = await focusWorldTargets(page, [oven], touch, { unitPixels: 24 });
   const beforeRoast = view.save;
   await click(view.buildings.find((b) => b.id === oven.id));
   await button('胡萝卜2 → 烤胡萝卜1');

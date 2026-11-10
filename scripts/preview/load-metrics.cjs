@@ -13,6 +13,54 @@ function readPerformance() {
   };
   const number = (value) => (Number.isFinite(value) ? value : null);
   const fields = (entry, keys) => Object.fromEntries(keys.map((key) => [key, number(entry[key])]));
+  const safely = (read) => {
+    try {
+      return read() ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const text = (value) =>
+    typeof value === 'string'
+      ? value
+          .replace(/https?:\/\/[^\s]+/g, clean)
+          .replace(/[\u0000-\u001f\u007f]/g, '')
+          .slice(0, 256)
+      : null;
+  // Resolve an already loaded module only. Never import/fetch or wait for frames.
+  const cc = safely(() => window.cc) ?? safely(() => System.get(System.resolve('cc')));
+  const device = safely(() => cc.director.root.device);
+  const memory = safely(() => device.memoryStatus);
+  const canvas = safely(() => document.querySelector('#GameCanvas'));
+  const width = number(safely(() => canvas.width)),
+    height = number(safely(() => canvas.height));
+  const deviceSnapshot = {
+    numDrawCalls: number(safely(() => device.numDrawCalls)),
+    numTris: number(safely(() => device.numTris)),
+    numInstances: number(safely(() => device.numInstances)),
+    memoryStatus: memory ? fields(memory, ['bufferSize', 'textureSize']) : null,
+    renderer: text(safely(() => device.renderer)),
+    vendor: text(safely(() => device.vendor)),
+    canvas: {
+      width,
+      height,
+      pixels: width !== null && height !== null ? number(width * height) : null,
+    },
+    activeMeshRenderers: number(
+      safely(() => {
+        if (!cc?.MeshRenderer) return null;
+        const scene = cc.director.getScene();
+        if (!scene) return null;
+        return scene
+          .getComponentsInChildren(cc.MeshRenderer)
+          .filter((r) =>
+            typeof r.enabledInHierarchy === 'boolean'
+              ? r.enabledInHierarchy
+              : r.enabled && r.node?.activeInHierarchy,
+          ).length;
+      }),
+    ),
+  };
   const resources = p.getEntriesByType('resource');
   const navigation = p.getEntriesByType('navigation')[0];
   const names = new Map();
@@ -25,9 +73,10 @@ function readPerformance() {
   }
   const total = (key) => resources.reduce((n, e) => n + (e[key] || 0), 0);
   return {
-    timeOrigin: p.timeOrigin,
-    elapsedMs: p.now(),
-    frames: window.__townPreview?.frames ?? null,
+    device: deviceSnapshot,
+    timeOrigin: number(p.timeOrigin),
+    elapsedMs: number(p.now()),
+    frames: number(window.__townPreview?.frames),
     ready: window.__townPreview?.ready ?? null,
     document: clean(location.href),
     navigation: navigation
@@ -97,6 +146,8 @@ function start(page, file, provenance) {
     },
     notes: [
       'Resource sizes are Resource Timing bytes, not GPU memory or decoded texture memory.',
+      'Device fields are a single read of Cocos currently recorded counters, not a frame average or CPU/GPU profile. Unavailable fields are null.',
+      'activeMeshRenderers counts enabled scene components, not actual draw calls; device memoryStatus is Cocos allocated buffer/texture memory, not total process/GPU residency.',
       'Zero transfer can mean cache reuse or timing visibility limits; it does not prove a cache hit.',
       'Snapshots overlap within a timeOrigin. Do not sum them; a new timeOrigin identifies reload.',
       'Elapsed time after responses includes scripting, initialization, rendering and scheduling; it is not a CPU profile.',

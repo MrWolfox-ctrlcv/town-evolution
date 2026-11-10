@@ -131,3 +131,58 @@ jobs:
           name: cocos-runtime-${{ matrix.suite }}-${{ matrix.device }}
           path: build/screenshots
           if-no-files-found: warn
+
+  performance:
+    needs: build
+    runs-on: ubuntu-22.04
+    # Setup/download time is separate; capture enforces each scenario's strict budget.
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [desktop, mobile]
+    env:
+      PREVIEW_EVIDENCE: ${{ github.workspace }}/build/performance
+      PREVIEW_MODE: release
+      PREVIEW_OUT: ${{ github.workspace }}/build/preview
+      PREVIEW_TOOLS: ${{ github.workspace }}/temp/preview-tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocos-standalone-preview
+          path: build/preview
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocos-build-evidence
+          path: build
+      - name: Restore the exact verified runner-derived source
+        run: |
+          test "$(cat build/ci-derived-source/upstream-commit.txt)" = "$GITHUB_SHA"
+          git bundle verify build/ci-derived-source/derived.bundle
+          git fetch build/ci-derived-source/derived.bundle HEAD
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$(cat build/ci-derived-source/derived-commit.txt)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Install isolated browser tools and project compiler
+        run: |
+          npm ci --ignore-scripts
+          mkdir -p "$PREVIEW_TOOLS"
+          npm install --prefix "$PREVIEW_TOOLS" --ignore-scripts --no-audit --no-fund playwright@1.56.1 pngjs@7.0.0
+          cd "$PREVIEW_TOOLS"
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Prepare verified domain fixtures
+        run: npm run build:domain
+      - name: Sample independent fixed-view release performance
+        run: node scripts/preview/profile.cjs --device=${{ matrix.device }}
+      - name: Preserve independent rendering and CPU samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocos-performance-${{ matrix.device }}
+          path: build/performance
+          if-no-files-found: warn

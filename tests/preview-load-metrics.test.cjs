@@ -89,3 +89,63 @@ test('metrics journal keeps verified release provenance and previous samples if 
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('official device snapshot reads finite counters and live canvas without importing modules', () => {
+  const device = {
+    numDrawCalls: 42,
+    numTris: Infinity,
+    numInstances: NaN,
+    memoryStatus: { bufferSize: 1234, textureSize: Infinity },
+    renderer: 'Renderer http://name:password@localhost:8/info?token=secret#fragment',
+    vendor: 'vendor\u0000name',
+  };
+  const cc = {
+    MeshRenderer: class {},
+    director: {
+      root: { device },
+      getScene: () => ({
+        getComponentsInChildren: () => [
+          { enabledInHierarchy: true },
+          { enabledInHierarchy: false },
+          { enabled: true, node: { activeInHierarchy: true } },
+        ],
+      }),
+    },
+  };
+  let gets = 0;
+  const context = {
+    URL,
+    System: {
+      resolve: (name) => name,
+      get: () => {
+        gets++;
+        return cc;
+      },
+      import: () => {
+        throw Error('must not import');
+      },
+    },
+    performance: { timeOrigin: 1, now: () => 2, getEntriesByType: () => [] },
+    window: {},
+    document: { querySelector: () => ({ width: 1280, height: 800 }) },
+    location: { href: 'http://localhost/' },
+  };
+  const result = vm.runInNewContext(`(${metrics.readPerformance.toString()})()`, context);
+  assert.equal(gets, 1);
+  assert.equal(result.device.numDrawCalls, 42);
+  assert.equal(result.device.numTris, null);
+  assert.equal(result.device.numInstances, null);
+  assert.equal(result.device.memoryStatus.bufferSize, 1234);
+  assert.equal(result.device.memoryStatus.textureSize, null);
+  assert.equal(result.device.activeMeshRenderers, 2);
+  assert.equal(result.device.canvas.pixels, 1024000);
+  assert.equal(result.device.vendor, 'vendorname');
+  assert.doesNotMatch(JSON.stringify(result), /password|secret|token|fragment/);
+  delete context.System;
+  context.document.querySelector = () => null;
+  const missing = vm.runInNewContext(`(${metrics.readPerformance.toString()})()`, context);
+  assert.equal(missing.device.numDrawCalls, null);
+  assert.equal(missing.device.memoryStatus, null);
+  assert.equal(missing.device.activeMeshRenderers, null);
+  assert.equal(missing.device.canvas.pixels, null);
+});
