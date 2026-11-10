@@ -41,6 +41,12 @@ export class MapGesture {
       this.mode = this.pointers.size === 2 ? 'pinch' : 'blocked';
     }
   }
+  get navigating(): boolean {
+    return (
+      this.pointers.size > 0 &&
+      (this.mode === 'pan' || this.mode === 'pinch' || (this.mode === 'pending' && !this.candidate))
+    );
+  }
   get interacting(): boolean {
     return this.pointers.size > 0;
   }

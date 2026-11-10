@@ -151,8 +151,10 @@ export class MapCamera {
         this.zoomAt(Math.exp(-Math.max(-500, Math.min(500, delta)) * 0.002), p, p);
     });
   }
-  visibleBounds(maxHeight = 64) {
-    return visibility.cameraVisibleBounds(this.camera, maxHeight);
+  readonly visibleBounds = (maxHeight = 64) =>
+    visibility.cameraVisibleBounds(this.camera, maxHeight);
+  get navigating(): boolean {
+    return this.gesture.navigating;
   }
   get interacting(): boolean {
     return this.gesture.interacting;
@@ -245,12 +247,10 @@ export class MapCamera {
     const t = ((height ?? 0) - ray.o.y) / ray.d.y;
     return t < 0 ? null : new Vec3(ray.o.x + ray.d.x * t, height ?? 0, ray.o.z + ray.d.z * t);
   }
-  contains(p: Point): boolean {
-    return !this.hooks.covered(p) && visibility.cameraContainsPoint(this.camera, p);
-  }
-  boxVisible(min: Readonly<WorldPoint>, max: Readonly<WorldPoint>): boolean {
-    return visibility.cameraSceneBoxVisible(this.camera, min, max);
-  }
+  readonly contains = (p: Point): boolean =>
+    !this.hooks.covered(p) && visibility.cameraContainsPoint(this.camera, p);
+  readonly boxVisible = (min: Readonly<WorldPoint>, max: Readonly<WorldPoint>): boolean =>
+    visibility.cameraSceneBoxVisible(this.camera, min, max);
   readonly maxOverviewError = () =>
     visibility.cameraTerrainError(this.camera, fittedOrthoHeight(this.aspect, this.size));
   maxTerrainError(): number {

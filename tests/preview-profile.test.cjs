@@ -121,7 +121,52 @@ test('home profiling matches the actual MapCamera Vec3 XZ focus, not the report 
   const camera = fs.readFileSync('assets/scripts/presentation/MapCamera.ts', 'utf8');
   assert.match(camera, /focus = new Vec3\(6, 0, 6\)/);
   assert.match(camera, /this\.focus\.set\(frame\.x, 0, frame\.z\)/);
-  const profile = fs.readFileSync('scripts/preview/profile.cjs', 'utf8');
-  assert.match(profile, /c\.map\.focus\.x === 6 && c\.map\.focus\.z === 6/);
-  assert.doesNotMatch(profile, /c\.map\.focus\.y === 6/);
+  const profile = fs.readFileSync('scripts/preview/profile-scene.cjs', 'utf8');
+  assert.match(profile, /z: c\.map\.focus\.z/);
+  assert.doesNotMatch(profile, /c\.map\.focus\.y/);
+});
+
+test('Node scene polling does not click through preparing or a still-visible menu', async () => {
+  const { entered, homeReady, pollScene } = require('../scripts/preview/profile-scene.cjs');
+  const good = {
+    page: 'game',
+    profile: 'v6-preview',
+    menuVisible: false,
+    surface: { overviewVisible: true },
+    awaitingOverview: false,
+    focus: { x: 6, z: 6 },
+    homeReady: true,
+  };
+  const states = [
+    { ...good, page: 'preparing' },
+    { ...good, menuVisible: true },
+    { ...good, surface: { overviewVisible: false } },
+    good,
+  ];
+  let index = 0,
+    clock = 0;
+  const seen = [];
+  const result = await pollScene(
+    async () => states[index++],
+    entered,
+    1000,
+    (s) => seen.push(s),
+    async (ms) => (clock += ms),
+    () => clock,
+  );
+  assert.equal(result, good);
+  assert.equal(seen.length, 4);
+  assert.equal(homeReady(good), true);
+  assert.equal(homeReady({ ...good, focus: { x: 6, z: 0 } }), false);
+  await assert.rejects(
+    pollScene(
+      async () => ({ ...good, page: 'preparing' }),
+      entered,
+      400,
+      () => {},
+      async (ms) => (clock += ms),
+      () => clock,
+    ),
+    /deadline/,
+  );
 });

@@ -42,7 +42,10 @@ export class V6TownNavigation {
       (problem !== null && problem !== this.lastProblem) ||
       (this.lastPhase && status?.phase === 'overview' && this.lastPhase !== 'overview')
     )
-      this.cancelInput();
+      if (!this.map.navigating)
+        // Loading invalidates edits, not navigation. Keep a held pan/pinch alive
+        // so the player can leave an unready or failed region without lifting first.
+        this.cancelInput();
     this.lastPhase = status?.phase ?? '';
     this.lastProblem = problem;
     const revision = this.map.navigationRevision ?? 0;

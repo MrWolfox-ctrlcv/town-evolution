@@ -504,3 +504,42 @@ test('actual IslandView status flows through TownView to navigation without call
   assert.match(messages.at(-1), /拉近或回家后操作/);
   assert.equal(calls.at(-1), 'cancel');
 });
+
+test('loading or surface failure preserves held camera navigation but still cancels unsafe tools', () => {
+  const { V6TownNavigation } = presentation('V6TownNavigation');
+  const calls = [];
+  const map = {
+    navigationRevision: 0,
+    interacting: true,
+    navigating: true,
+    reset() {},
+    overview() {},
+    zoomBy() {},
+  };
+  const town = {
+    surfaceProblem: null,
+    surfaceStatus: { overviewVisible: true, phase: 'ready', readyChunks: 1, requestedChunks: 1 },
+  };
+  const hud = { setTerrainNavigation() {}, closeDetails() {}, terrainStatus() {} };
+  const nav = new V6TownNavigation(
+    hud,
+    map,
+    town,
+    () => calls.push('cancel'),
+    () => false,
+  );
+  nav.tick();
+  town.surfaceStatus.phase = 'overview';
+  nav.tick();
+  town.surfaceProblem = 'loading failed';
+  nav.tick();
+  assert.deepEqual(calls, [], 'pan/pinch keeps receiving subsequent movement');
+  map.navigating = false;
+  town.surfaceProblem = null;
+  town.surfaceStatus.phase = 'ready';
+  nav.tick();
+  town.surfaceStatus.phase = 'overview';
+  nav.tick();
+  assert.deepEqual(calls, ['cancel'], 'non-navigation drag remains invalidated');
+  nav.dispose();
+});

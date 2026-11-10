@@ -185,3 +185,26 @@ test('movement before long-press threshold stays pan even if finger is held late
   );
   assert.equal(e.filter((v) => v[0] === 'pan').length, 2);
 });
+
+test('navigation state distinguishes held pan/pinch from object drag and cancelled contacts', () => {
+  const empty = setup();
+  assert.equal(empty.gesture.navigating, false);
+  begin(empty.gesture, 1, 0);
+  assert.equal(empty.gesture.navigating, true);
+  move(empty.gesture, 1, 30);
+  assert.equal(empty.gesture.navigating, true);
+  begin(empty.gesture, 2, 50);
+  assert.equal(empty.gesture.navigating, true);
+  empty.gesture.interrupt();
+  assert.equal(empty.gesture.navigating, false);
+  const object = setup('building:b1');
+  begin(object.gesture, 1, 0);
+  assert.equal(object.gesture.navigating, false);
+  object.setTime(500);
+  object.gesture.poll();
+  assert.equal(object.gesture.navigating, false);
+  object.gesture.clear();
+  begin(object.gesture, 1, 0);
+  move(object.gesture, 1, 30);
+  assert.equal(object.gesture.navigating, true, 'quick swipe on an object is still a pan');
+});

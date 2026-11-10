@@ -7,6 +7,7 @@ const { verifyPackage, inventory } = require('./provenance.cjs');
 const { verifyFixtures } = require('./acceptance-fixtures.cjs');
 const { withDeadline } = require('./acceptance-deadline.cjs');
 const { sampleFrames } = require('./profile-sample.cjs');
+const { readScene, entered, homeReady, pollScene } = require('./profile-scene.cjs');
 const { quantiles, summarizeCPU, profileDevice } = require('./profile-stats.cjs');
 const root = path.resolve(__dirname, '../..');
 const out = path.resolve(process.env.PREVIEW_OUT || 'build/preview');
@@ -23,6 +24,10 @@ const result = {
   status: 'running',
   stages: [],
   errors: [],
+  notes: [
+    'Independent SwiftShader diagnostic, not functional acceptance or physical-device FPS.',
+    'Page-target CPU samples exclude worker CPU and GPU time.',
+  ],
 };
 let browser,
   server,
@@ -114,36 +119,36 @@ async function main() {
   await page.goto(`http://127.0.0.1:${server.address().port}/`, { waitUntil: 'domcontentloaded' });
   await ready(page);
   const ui = driver(page, device === 'mobile');
-  stage('enter v6 through real UI');
-  await ui.button('自然挖填实验', { exact: true });
-  await page.waitForFunction(
-    async () => {
-      const cc = await System.import('cc');
-      const b = cc.director.getScene().getChildByName('Town')?.getComponent('TownBootstrap');
-      return (
-        b?.flow.page === 'game' &&
-        b.flow.profile === 'v6-preview' &&
-        b.controller?.town.surfaceStatus?.overviewVisible &&
-        !b.controller.v6Navigation?.navigation.awaitingOverview
-      );
-    },
-    undefined,
-    { timeout: 90000 },
-  );
+  const captureCPU = async (name, action = async () => {}) => {
+    const cdp = await context.newCDPSession(page);
+    await cdp.send('Profiler.enable');
+    await cdp.send('Profiler.start');
+    try {
+      await Promise.all([action(), new Promise((resolve) => setTimeout(resolve, 7000))]);
+    } finally {
+      const { profile } = await cdp.send('Profiler.stop');
+      write(`${name}.cpuprofile`, profile);
+      write(`${name}-cpu-summary.json`, summarizeCPU(profile));
+      await cdp.detach();
+    }
+  };
+  const waitScene = (predicate, milliseconds) =>
+    pollScene(
+      () => page.evaluate(readScene),
+      predicate,
+      milliseconds,
+      (scene) => {
+        result.lastScene = scene;
+        write('profile-result.json', result);
+      },
+    );
+  stage('preparing CPU sampling starts before the real v6 menu click');
+  await captureCPU('preparing', () => ui.button('自然挖填实验', { exact: true }));
+  stage('await actual game, hidden menu and published first overview');
+  await waitScene(entered, 90000);
   await ui.named('TerrainView:回家');
   stage('await local home surface, not whole island');
-  await page.waitForFunction(
-    async () => {
-      const cc = await System.import('cc');
-      const c = cc.director
-        .getScene()
-        .getChildByName('Town')
-        .getComponent('TownBootstrap').controller;
-      return c.map.focus.x === 6 && c.map.focus.z === 6 && c.town.isGroundReady(6, 6);
-    },
-    undefined,
-    { timeout: 45000 },
-  );
+  await waitScene(homeReady, 45000);
   stage('60 unprofiled engine frames');
   const frames = await page.evaluate(sampleFrames, 60);
   write('frame-samples.json', frames);
@@ -151,21 +156,14 @@ async function main() {
   result.drawCalls = quantiles(frames.samples.map((s) => s.drawCalls));
   result.triangles = quantiles(frames.samples.map((s) => s.triangles));
   stage('7 second CPU sampling, separate from frame timings');
-  const cdp = await context.newCDPSession(page);
-  await cdp.send('Profiler.enable');
-  await cdp.send('Profiler.start');
-  await new Promise((resolve) => setTimeout(resolve, 7000));
-  const { profile } = await cdp.send('Profiler.stop');
-  write('runtime.cpuprofile', profile);
-  write('cpu-summary.json', summarizeCPU(profile));
-  await cdp.detach();
+  await captureCPU('runtime');
   await page.screenshot({ path: path.join(evidence, 'fixed-home-view.png'), timeout: 10000 });
   verifyPackage(root, out, checked.provenanceSha256);
   assert.deepEqual(inventory(path.join(root, '.domain-build')), fixtures.manifest);
   result.status = result.errors.length ? 'collected-with-runtime-errors' : 'collected';
   result.notes = [
     'SwiftShader software-renderer results are not physical-device FPS.',
-    'CPU samples are not GPU time. Streaming may continue; surface status is recorded.',
+    'Page-target CPU samples exclude worker CPU and GPU time. Streaming may continue; surface status is recorded.',
     'No visual quality, LOD, map size, save contents or functional acceptance budgets changed.',
   ];
 }
