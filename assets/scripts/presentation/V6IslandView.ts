@@ -1,3 +1,4 @@
+import { CooperativePrebuild } from '../application/CooperativePrebuild';
 import type { WorldBoxTest } from '../application/WorldVisibility';
 import type { Material, MeshRenderer } from 'cc';
 import type { GameState } from '../domain/types';
@@ -15,6 +16,7 @@ import type { DropSupport } from './DropSupport';
 /** All ground authorities travel in one transaction. Hidden uploads are never pickable. */
 export class V6IslandView {
   naturalSurface: NaturalSurfaceData = { positions: [], resources: [], chunks: [] };
+  private prebuild: CooperativePrebuild | null = null;
   private state: GameState | null = null;
   private source: ReturnType<typeof getV6EditSurface> | null = null;
   private coast: ReturnType<typeof createV6CoastSource> | null = null;
@@ -49,6 +51,9 @@ export class V6IslandView {
         this.coast,
         undefined,
         new Set(state.trees.map((t) => `${t.x},${t.z}`)),
+      );
+      this.prebuild = new CooperativePrebuild(
+        () => !this.chunks || this.chunks.isSettled() || !!this.chunks.advance(512, 3),
       );
       this.meshes = new V6ChunkMeshes(this.renderer.node, this.material);
       this.waterMotion.configure(this.waterRenderer, this.coast.water, state.mapSeed);
@@ -85,6 +90,7 @@ export class V6IslandView {
             state.landExtensions,
             this.coast!.water,
           );
+        this.prebuild?.stop();
         this.chunks.update(this.source, [...changed.values()], topology ? this.coast! : undefined);
         this.meshes!.cancel();
         this.meshes!.retain(this.chunks.cachedMeshes());
@@ -169,6 +175,7 @@ export class V6IslandView {
     const start = performance.now(),
       totalMs = buildMs + uploadMs;
     try {
+      this.prebuild?.check();
       // Spend the remaining frame budget, not one mandatory frame per tiny chunk.
       // Each edit/seam group still stages and publishes atomically, at most 4 groups.
       for (let group = 0; group < 4 && performance.now() - start < totalMs; group++) {
@@ -199,6 +206,7 @@ export class V6IslandView {
       }
       return changed;
     } catch (error) {
+      this.prebuild?.stop();
       this.meshes.cancel();
       this.pending = null;
       this.chunks.abort();
@@ -208,6 +216,8 @@ export class V6IslandView {
       this.failureView = view;
       console.warn('Terrain6 surface staging stopped; previous complete snapshot retained', error);
       return changed;
+    } finally {
+      if (!this.failure && !this.pending && !this.chunks.isSettled()) this.prebuild?.start();
     }
   }
   pickTerrain(ray: SurfaceRay) {
@@ -220,16 +230,18 @@ export class V6IslandView {
   surfaceStatus() {
     const live = this.chunks?.resident();
     const overviewVisible = !!live && [...live.values()].some((c) => c.mesh.indices.length > 0);
-    const overview = !this.requestedFine.size || !live || live.size < this.requestedOverview;
-    const ready = this.chunks?.isSettled() ?? false;
+    const overview = !this.requestedFine.size;
+    const fineReady = [...this.requestedFine].filter((key) => {
+      const [x, z] = v5CoastChunkBounds(key);
+      return this.chunks?.ready(x, z);
+    }).length;
+    const ready = !this.failure && fineReady === this.requestedFine.size;
     return {
       overviewVisible,
       overviewComplete:
         !!live && this.requestedOverview > 0 && live.size === this.requestedOverview,
       phase: overview ? ('overview' as const) : ready ? ('ready' as const) : ('detail' as const),
-      readyChunks: overview
-        ? (live?.size ?? 0)
-        : [...this.requestedFine].filter((k) => live?.get(k)?.detail).length,
+      readyChunks: overview ? (live?.size ?? 0) : fineReady,
       requestedChunks: overview ? this.requestedOverview : this.requestedFine.size,
     };
   }
@@ -250,6 +262,8 @@ export class V6IslandView {
     return !this.failure && !!this.chunks && !this.chunks.isSettled();
   }
   dispose(): void {
+    this.prebuild?.stop();
+    this.prebuild = null;
     this.constrained = false;
     this.requestedOverview = 0;
     this.meshes?.dispose();

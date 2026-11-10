@@ -444,6 +444,9 @@ test('the five v6 camera buttons remain available outside the six-action shelf w
 });
 test('actual IslandView status flows through TownView to navigation without calling full coarse editable', () => {
   const { V6IslandView } = presentation('V6IslandView', {
+    '../art/V6Coast': {
+      v5CoastChunkBounds: (key) => [Number(key) * 16, 0, Number(key) * 16 + 16, 16],
+    },
     '../art/V6SurfaceBudget': { V6SurfaceBudgetError: class extends Error {} },
   });
   const { IslandView } = presentation('IslandView');
@@ -453,7 +456,11 @@ test('actual IslandView status flows through TownView to navigation without call
     keys = Array.from({ length: 196 }, (_, i) => String(i));
   let settled = false;
   const surface = Object.create(V6IslandView.prototype);
-  surface.chunks = { resident: () => live, isSettled: () => settled };
+  surface.chunks = {
+    resident: () => live,
+    isSettled: () => settled,
+    ready: (x) => live.get(String(x / 16))?.detail === true,
+  };
   surface.coast = { keys };
   surface.requestedOverview = keys.length;
   surface.requestedFine = new Set();
@@ -498,6 +505,14 @@ test('actual IslandView status flows through TownView to navigation without call
   nav.tick();
   assert.equal(town.surfaceStatus.phase, 'ready');
   assert.match(messages.at(-1), /当前区域已就绪/);
+  // A complete home chunk is usable even while the other 195 overview chunks are absent.
+  for (const key of keys.slice(1)) live.delete(key);
+  settled = false;
+  nav.tick();
+  assert.equal(town.surfaceStatus.overviewComplete, false);
+  assert.equal(town.surfaceStatus.phase, 'ready');
+  assert.equal(town.surfaceStatus.requestedChunks, 1);
+  assert.equal(town.surfaceStatus.readyChunks, 1);
   surface.requestedFine.clear();
   nav.tick();
   assert.equal(town.surfaceStatus.phase, 'overview');

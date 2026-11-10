@@ -248,3 +248,32 @@ test('retained work remains under the original budget and abort frees it after a
   c.dispose();
   assert.equal(c.memoryUsage().resident, 0);
 });
+
+test('cooperative CPU work completes a transaction without render frames or early surface publication', (t) => {
+  const { CooperativePrebuild } = require('../.domain-build/application/CooperativePrebuild');
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const f = fixture();
+  f.chunks.request(['0,0']);
+  let slices = 0,
+    transaction = null;
+  const pump = new CooperativePrebuild(() => {
+    slices++;
+    transaction = f.chunks.advance(512, 3);
+    return !!transaction;
+  });
+  pump.start();
+  for (let i = 0; !transaction && i < 10000; i++) {
+    t.mock.timers.tick(4);
+    assert.equal(f.chunks.resident().size, 0);
+    assert.equal(f.chunks.ready(6, 6), false);
+  }
+  assert.ok(transaction);
+  const completedSlices = slices;
+  t.mock.timers.tick(1000);
+  assert.equal(slices, completedSlices);
+  assert.equal(f.chunks.advance(512, 3), transaction);
+  transaction.commit();
+  assert.equal(f.chunks.ready(6, 6), true);
+  pump.stop();
+  f.chunks.dispose();
+});

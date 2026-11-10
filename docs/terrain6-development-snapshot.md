@@ -23,3 +23,13 @@ The successful CI on `fd7ed12` applies to the previous source, not this snapshot
 The new commit's GitHub Actions result must be checked separately. A source CI
 pass alone does not prove a Cocos build, visual acceptance, or device performance.
 Work continued after freezing; later edits are not included in this snapshot.
+
+## 2026-11-10：加载预算与渲染帧解耦（待新一轮实机复测）
+
+独立正式包采样中，桌面 60 帧间隔 P50 约 165 ms，手机视口约 79 ms；两者均为 Chromium SwiftShader 软件渲染，不能作为真实桌面或手机硬件 FPS。页面 CPU 采样不包含 GPU 或其他进程/worker，不能凭 idle 占比判断唯一瓶颈。
+
+回家后显示的 `196` 是整岛远景分块驻留请求数，不是重复网络下载。此次桌面记录中局部 `homeReady=true`，但旧状态仍显示 `overview 3/196`。现局部 `detail/ready` 按当前需要的精细块逐块判断，全岛是否完成仍由独立的 `overviewComplete` 如实表达。
+
+已确认加载调度浪费：CPU 地形构建原本每个渲染帧仅获得 3 ms，在 165 ms 的帧间隔下加载预算被慢帧率一起拖慢。现在增加可取消的协作预构建：每片最多 512 步/3 ms，片间至少让出事件循环 4 ms，最多准备一个待发布事务即停。GPU 上传、支撑面、拾取和提交仍在原渲染更新中按原子组执行；旧表面在事务发布前保持不变。地形编辑/切换和销毁取消旧调度，错误交回现有安全失败路径。未减小地图、修改 LOD/画质或放宽验收时限。
+
+回归覆盖无渲染帧时 CPU 仍可准备真实事务、准备期间不发布、一个事务背压、取消、错误以及局部/全岛状态区分。**修改后的新性能采样尚未完成，不代表渲染已流畅。**
