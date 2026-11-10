@@ -19,6 +19,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Fetch pinned official Cocos 3.8.8 engine
         run: |
           git clone --depth 1 --branch v3.8.8 https://github.com/cocos/cocos-engine.git "$COCOS_ENGINE"
@@ -36,9 +39,11 @@ jobs:
           npm install --no-save --ignore-scripts --no-audit --no-fund esbuild@0.28.2 systemjs@6.15.1 playwright@1.56.1 pngjs@7.0.0 glsl-tokenizer@2.1.5 glsl-parser@2.0.1 js-yaml@4.1.0 jsdom@26.1.0
           npx playwright install --with-deps chromium
       - name: Install Chinese UI fonts
-        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk
+        run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk libegl1-mesa libgles2-mesa
       - name: Install project build dependencies
         run: npm ci --ignore-scripts
+      - name: Regenerate effects for this runner with real Mesa
+        run: npm run preview:effects:generate -- --mesa
       - name: Build actual engine and project scripts
         run: node scripts/preview/build.cjs
       - name: Verify actual compiled tween scheduling
