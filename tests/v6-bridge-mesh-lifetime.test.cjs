@@ -25,7 +25,7 @@ test('terrain-dependent bridge meshes are instance-owned and released exactly wh
     }
   }
   class MeshRenderer {
-    setMaterial(material) {
+    setSharedMaterial(material) {
       materialUses.push(material);
     }
   }

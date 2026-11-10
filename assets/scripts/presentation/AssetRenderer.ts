@@ -1,4 +1,5 @@
 import { Node, Mesh, MeshRenderer, Material } from 'cc';
+import type { WorldMaterialScope } from './WorldMaterial';
 import { worldMaterial, worldShadows } from './WorldMaterial';
 import { worldMesh } from './WorldMesh';
 import { acquireBuildingTexture } from './BuildingTexture';
@@ -13,8 +14,8 @@ export class AssetRenderer {
   private readonly material: Material;
   private wood: ResourceLease<BuildingTexture> | null = null;
   private disposed = false;
-  constructor() {
-    this.material = worldMaterial();
+  constructor(private readonly materialScope: WorldMaterialScope = 'repeated-assets') {
+    this.material = worldMaterial(true, false, materialScope);
   }
   create(id: string, name = id): Node {
     const recipe = ASSETS[id];
@@ -46,9 +47,9 @@ export class AssetRenderer {
       worldShadows(renderer);
       // Pure palette assets never request or upload the wood image.
       const material = textured
-        ? (this.wood ??= acquireBuildingTexture()).value.material
+        ? (this.wood ??= acquireBuildingTexture(this.materialScope)).value.material
         : this.material;
-      renderer.setMaterial(material, 0);
+      renderer.setSharedMaterial(material, 0);
     }
     return node;
   }
@@ -70,8 +71,10 @@ export class AssetRenderer {
       if (wood) node.addChild(target);
       const renderer = target.addComponent(MeshRenderer);
       renderer.mesh = mesh;
-      renderer.setMaterial(
-        wood ? (this.wood ??= acquireBuildingTexture()).value.material : this.material,
+      renderer.setSharedMaterial(
+        wood
+          ? (this.wood ??= acquireBuildingTexture(this.materialScope)).value.material
+          : this.material,
         0,
       );
       worldShadows(renderer);

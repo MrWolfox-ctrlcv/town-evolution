@@ -57,7 +57,7 @@ test('wood acquisition is lazy and asynchronous disposal guards run before uploa
   assert.ok(!renderer.includes('new BuildingTexture('));
   assert.match(
     renderer,
-    /textured\s*\? \(this\.wood \?\?= acquireBuildingTexture\(\)\)\.value\.material\s*: this\.material/,
+    /textured\s*\? \(this\.wood \?\?= acquireBuildingTexture\(this\.materialScope\)\)\.value\.material\s*: this\.material/,
   );
   assert.match(renderer, /this\.wood\?\.release\(\);\s*this\.wood = null/);
   assert.match(renderer, /if \(this\.disposed\) throw new Error/);

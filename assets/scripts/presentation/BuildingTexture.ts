@@ -1,16 +1,18 @@
 import { SharedResource } from '../application/SharedResource';
 import { assetManager, ImageAsset, Texture2D } from 'cc';
+import type { WorldMaterialScope } from './WorldMaterial';
 import { worldMaterial } from './WorldMaterial';
 /** One image-generated albedo shared by every inherited timber component. */
 export class BuildingTexture {
-  readonly material = worldMaterial(true, true);
+  readonly material;
   private finishReady!: () => void;
   readonly ready = new Promise<void>((resolve) => (this.finishReady = resolve));
   private image: ImageAsset | null = null;
   private texture: Texture2D | null = null;
   private readonly fallback = new Texture2D();
   private disposed = false;
-  constructor() {
+  constructor(scope: WorldMaterialScope = 'standalone') {
+    this.material = worldMaterial(true, true, scope);
     // The standard albedo-map variant is selected once, before any async upload.
     this.fallback.reset({ width: 1, height: 1, format: Texture2D.PixelFormat.RGBA8888 });
     this.fallback.uploadData(new Uint8Array([183, 126, 67, 255]));
@@ -49,4 +51,6 @@ export class BuildingTexture {
 
 // One GPU upload is shared across the town, previews and UI factories that actually need wood.
 const sharedWood = new SharedResource(() => new BuildingTexture());
-export const acquireBuildingTexture = () => sharedWood.acquire();
+const instancedWood = new SharedResource(() => new BuildingTexture('repeated-assets'));
+export const acquireBuildingTexture = (scope: WorldMaterialScope = 'standalone') =>
+  (scope === 'repeated-assets' ? instancedWood : sharedWood).acquire();
