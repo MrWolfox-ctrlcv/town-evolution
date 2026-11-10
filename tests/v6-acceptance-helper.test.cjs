@@ -32,14 +32,34 @@ function fixture() {
     statusMessage: '',
     preview(command) {
       calls.push(structuredClone(command));
-      const next = structuredClone(state);
-      next.terrain6.nextOperation++;
-      next.looseDrops.push({
-        id: 'd1',
-        item: 'soil',
-        amount: 1.25,
-        source: { type: 'terrain6', x: command.x, z: command.z, operation: 1 },
-      });
+      // Model each advisory command on its receiver snapshot, as GameSession does.
+      const next = structuredClone(this.state);
+      if (command.type === 'pickupDrop') {
+        const drop = next.looseDrops.find((d) => d.id === command.dropId);
+        assert.ok(drop, 'planning must pick up a drop produced by its prior dig');
+        next.inventory[drop.item] += drop.amount;
+        next.looseDrops = next.looseDrops.filter((d) => d.id !== command.dropId);
+      } else {
+        assert.equal(command.type, 'editTerrain6');
+        next.terrain6.nextOperation++;
+        next.terrain6.cells = [{ x: command.x, z: command.z, level: command.level }];
+        if (command.kind === 'fill') {
+          if (next.inventory[command.material] < 1)
+            return { ok: false, state: this.state, error: 'insufficient material' };
+          next.inventory[command.material] -= 1;
+        } else
+          next.looseDrops.push({
+            id: 'd1',
+            item: 'soil',
+            amount: 1.25,
+            source: {
+              type: 'terrain6',
+              x: command.x,
+              z: command.z,
+              operation: command.expectedOperation,
+            },
+          });
+      }
       return { ok: true, state: next };
     },
     run() {
@@ -154,7 +174,14 @@ test('isolated local candidate search is bounded and never previews remote resou
   const result = await inspectScene(f.page, { candidates: true });
   assert.equal(result.candidates.length, 8);
   assert.ok(f.calls.length <= 48);
-  assert.ok(f.calls.every((c) => Math.hypot(c.x - 6, c.z - 6) <= 32));
+  const edits = f.calls.filter((c) => c.type === 'editTerrain6');
+  assert.ok(edits.length > 0);
+  assert.ok(edits.every((c) => Math.hypot(c.x - 6, c.z - 6) <= 32));
+  assert.ok(
+    f.calls.every(
+      (c) => c.type === 'editTerrain6' || (c.type === 'pickupDrop' && c.dropId === 'd1'),
+    ),
+  );
   assert.equal(f.state.terrain6.nextOperation, 1);
   assert.equal(f.state.inventory.soil, 0);
 });

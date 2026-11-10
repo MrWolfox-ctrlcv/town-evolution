@@ -45,6 +45,22 @@ function fixture(profile = 'demo', pages = [['测试']], nodes = []) {
   const camera = (name) => ({ node: node(name), orthoHeight: 8, worldToScreen: (p) => p });
   const scene = {
     ...node('Scene'),
+    getChildByName: (name) =>
+      name === 'Town'
+        ? {
+            getComponent: (type) =>
+              type === 'TownBootstrap'
+                ? {
+                    flow: { page: 'game' },
+                    menu: { root: { activeInHierarchy: false } },
+                    controller: {
+                      hud: { bottom: { context: { activeInHierarchy: true } } },
+                      ui: { tab: 'tools' },
+                    },
+                  }
+                : null,
+          }
+        : null,
     getComponentsInChildren: (kind) =>
       ({
         camera: [camera('UICamera'), camera('WorldCamera')],

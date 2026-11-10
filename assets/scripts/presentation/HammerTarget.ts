@@ -24,9 +24,9 @@ export function hammerTarget(
     // Merely crossing another building on the way must not turn it into an assembly.
     const attached = session.state.fusion.attachments[buildingId];
     const single: Command = { type: 'useTool', tool: 'hammer', buildingId };
-    if (attached && Object.values(attached).some((amount) => amount > 0)) {
-      if (session.reason(single) === null) return single;
-    }
+    // Routing is read-only: the shared hover preview validates once; release validates
+    // again in run(). Invalid attached materials must not fall back to another recipe.
+    if (attached && Object.values(attached).some((amount) => amount > 0)) return single;
     if (mixed.selected.length) return null;
     entities.observe(session.state, buildingId);
     if (!entities.selected.some((s) => s.id === buildingId)) return null;
