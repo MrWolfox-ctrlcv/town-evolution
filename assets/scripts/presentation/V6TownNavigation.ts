@@ -27,6 +27,12 @@ export class V6TownNavigation {
       home: () => this.navigation.home(),
       overview: () => this.overview(),
       zoom: (delta) => this.navigation.zoom(delta),
+      toggleView: () => {
+        this.cancelInput();
+        this.hud.closeDetails();
+        this.navigation.update(false, true);
+        return this.map.toggleOverhead();
+      },
     });
   }
   tick(): void {

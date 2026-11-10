@@ -5,6 +5,7 @@ export interface TerrainNavigationHandlers {
   home(): void;
   overview(): void;
   zoom(delta: number): void;
+  toggleView?(): boolean;
 }
 /** V6-only view controls stay reachable even when the six-slot context shelf is full. */
 export class TerrainNavigation {
@@ -19,10 +20,16 @@ export class TerrainNavigation {
       { text: '全岛', run: () => handlers.overview() },
       { text: '＋', run: () => handlers.zoom(-1) },
       { text: '−', run: () => handlers.zoom(1) },
+      ...(handlers.toggleView ? [{ text: '俯视', run: () => {} }] : []),
     ].map((action) => {
       const button = new ActionButton(this.root, () => {});
       button.node.name = `TerrainView:${action.text}`;
-      button.set(action);
+      if (action.text === '俯视') {
+        button.node.name = 'TerrainView:视角';
+        const toggle = () =>
+          button.set({ text: handlers.toggleView!() ? '斜视' : '俯视', run: toggle });
+        button.set({ text: '俯视', run: toggle });
+      } else button.set(action);
       return button;
     });
     this.status = label(this.root, '', 12);
@@ -36,9 +43,13 @@ export class TerrainNavigation {
     this.cancel();
     this.root.setPosition(0, height / 2 - 93);
     this.root.getComponent(UITransform)!.setContentSize(Math.max(1, width - 24), 80);
-    const cell = Math.min(62, Math.max(44, (width - 36) / 4));
+    const cell = Math.min(62, Math.max(44, (width - 36) / this.buttons.length));
     this.buttons.forEach((button, i) =>
-      button.layout((i - 1.5) * cell, 17, cell - 4, { height: 44, fontSize: 15, theme: 'quiet' }),
+      button.layout((i - (this.buttons.length - 1) / 2) * cell, 17, cell - 4, {
+        height: 44,
+        fontSize: 15,
+        theme: 'quiet',
+      }),
     );
     this.status.node.setPosition(0, -23);
     this.status.node.getComponent(UITransform)!.setContentSize(Math.max(1, width - 28), 32);

@@ -6,6 +6,8 @@ const assert = require('node:assert/strict');
 const { verifyPackage, inventory } = require('./provenance.cjs');
 const { verifyFixtures } = require('./acceptance-fixtures.cjs');
 const { withDeadline } = require('./acceptance-deadline.cjs');
+const { capturePlan } = require('./capture-plan.cjs');
+const selection = capturePlan(process.argv.slice(2));
 const engine = path.resolve(process.env.COCOS_ENGINE || 'temp/cocos-engine');
 const out = path.resolve(process.env.PREVIEW_OUT || 'build/preview');
 const tools = path.resolve(process.env.PREVIEW_TOOLS || engine);
@@ -44,8 +46,8 @@ const server = http.createServer((req, res) => {
   res.setHeader('Content-Type', types[path.extname(file)] || 'application/octet-stream');
   res.end(data);
 });
-async function capture(browser, width, height, device, suite = 'legacy') {
-  const name = suite === 'v6' ? `${device}-v6` : device;
+async function capture(browser, width, height, device, suite = 'checkpoint') {
+  const name = `${device}-${suite}`;
   const touch = device === 'mobile';
   const trace = require('./phase-trace.cjs')(evidence, `${name}-capture`);
   let setupExpired = false;
@@ -121,46 +123,9 @@ async function capture(browser, width, height, device, suite = 'legacy') {
         await trace('initial page screenshot', () =>
           page.screenshot({ path: path.join(evidence, `${name}.png`) }),
         );
-        if (suite === 'v6') {
-          const v6 = await require('./v6-interactions.cjs')(page, evidence, name, touch);
-          assert.deepEqual(errors, [], 'Runtime errors after actual v6 interactions');
-          fs.writeFileSync(
-            path.join(evidence, `${name}.json`),
-            JSON.stringify(
-              { width, height, colors: colors.size, errors, browserWarnings, v6 },
-              null,
-              2,
-            ),
-          );
-          return;
-        }
-        await trace('title interactions', () =>
-          require('./title-interactions.cjs')(page, evidence, name, touch),
+        const scenario = await trace(`${suite} interactions`, () =>
+          require('./scenario-runner.cjs').runScenario(suite, page, evidence, name, touch),
         );
-        await trace('demo interactions', () =>
-          require('./demo-interactions.cjs')(page, evidence, name, touch),
-        );
-        await trace('settings interactions', () =>
-          require('./settings-interactions.cjs')(page, evidence, name, touch),
-        );
-        const checkpoint = [];
-        for (let cycle = 0; cycle < 3; cycle++) {
-          if (cycle) {
-            const { button, townActions } = require('./ui-driver.cjs').driver(page, touch);
-            await townActions();
-            await button('存档');
-            await button('重置演示岛');
-            await button('确认');
-          }
-          checkpoint.push(
-            await require('./checkpoint-interactions.cjs')(
-              page,
-              evidence,
-              `${name}-round${cycle + 1}`,
-              touch,
-            ),
-          );
-        }
         assert.deepEqual(errors, [], 'Runtime errors after real interactions');
         fs.writeFileSync(
           path.join(evidence, `${name}.json`),
@@ -170,7 +135,8 @@ async function capture(browser, width, height, device, suite = 'legacy') {
             colors: colors.size,
             errors,
             browserWarnings,
-            checkpoint,
+            suite,
+            scenario,
           }),
         );
       },
@@ -206,7 +172,7 @@ async function main() {
   evidenceStarted = true;
   fs.writeFileSync(
     path.join(evidence, 'suite-results.json'),
-    JSON.stringify({ status: 'running', failures }),
+    JSON.stringify({ status: 'running', selection, failures }),
   );
   const checked = verifyPackage(sourceRoot, out, process.env.PREVIEW_PROVENANCE_SHA256);
   const fixtures = verifyFixtures(sourceRoot);
@@ -221,6 +187,7 @@ async function main() {
     'compost-checkpoint',
   ])
     require(`./${name}.cjs`);
+  require('./scenario-runner.cjs');
   assert.deepEqual(
     inventory(path.join(sourceRoot, '.domain-build')),
     fixtures.manifest,
@@ -249,19 +216,13 @@ async function main() {
         : {}),
       args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl'],
     });
-    // Each suite gets fresh storage. A legacy failure must not prevent new v6 evidence,
-    // and a v6 failure must not silently remove any existing acceptance assertions.
-    for (const suite of ['v6', 'legacy']) {
-      for (const [width, height, name] of [
-        [1280, 800, 'desktop'],
-        [390, 844, 'mobile'],
-      ]) {
-        try {
-          await capture(browser, width, height, name, suite);
-        } catch (error) {
-          failures.push({ suite, device: name, error: String(error) });
-          console.error(`${suite} ${name} acceptance failed:`, error);
-        }
+    // Fresh contexts isolate independent scenarios; all checkpoint rounds remain sequential.
+    for (const { suite, device, width, height } of selection) {
+      try {
+        await capture(browser, width, height, device, suite);
+      } catch (error) {
+        failures.push({ suite, device, error: String(error) });
+        console.error(`${suite} ${device} acceptance failed:`, error);
       }
     }
     verifyPackage(sourceRoot, out, checked.provenanceSha256);
@@ -270,11 +231,11 @@ async function main() {
       fixtures.manifest,
       'Acceptance fixtures changed during capture',
     );
-    assert.deepEqual(failures, [], 'All actual browser acceptance suites must pass');
+    assert.deepEqual(failures, [], 'All selected actual browser acceptance suites must pass');
     fs.writeFileSync(
       path.join(evidence, 'suite-results.json'),
       JSON.stringify(
-        { status: 'passed', provenanceSha256: checked.provenanceSha256, failures },
+        { status: 'passed', selection, provenanceSha256: checked.provenanceSha256, failures },
         null,
         2,
       ),
@@ -290,7 +251,7 @@ main().catch((error) => {
   if (evidenceStarted)
     fs.writeFileSync(
       path.join(evidence, 'suite-results.json'),
-      JSON.stringify({ status: 'failed', error: String(error), failures }, null, 2),
+      JSON.stringify({ status: 'failed', selection, error: String(error), failures }, null, 2),
     );
   console.error(error);
   process.exitCode = 1;

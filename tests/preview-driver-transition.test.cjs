@@ -1,7 +1,7 @@
 /** Driver synchronization unit checks; not a substitute for actual browser acceptance. */
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { driver } = require('../scripts/preview/ui-driver.cjs');
+const { driver, until } = require('../scripts/preview/ui-driver.cjs');
 
 test('townActions waits for visible context, not only the flow page or stale settings labels', async () => {
   let stage = 0,
@@ -50,4 +50,17 @@ test('exact button matching cannot confuse 存档 with 存档管理', async () =
   };
   await driver(page, false).button('存档', { exact: true });
   assert.deepEqual(clicks, [20]);
+});
+
+test('scene transition polling awaits inspection and returns the exact snapshot that met readiness', async () => {
+  let reads = 0;
+  const result = await until(
+    null,
+    (state) => state.ready,
+    'scene transition',
+    1000,
+    async () => ({ ready: ++reads === 2 }),
+  );
+  assert.equal(reads, 2);
+  assert.equal(result.ready, true);
 });

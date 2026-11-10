@@ -67,7 +67,15 @@ export function steppedMapZoom(zoom: number, delta: number, gridSize: number): n
  * 40-cell worlds. Retreat along the existing direction, preserving projection.
  */
 export const V6_VIEW_TOP = 64.015 + 8;
-export function cameraDepth(gridSize: number, orthoHeight: number, top = MAX_TERRAIN_HEIGHT + 4) {
+export function cameraDepth(
+  gridSize: number,
+  orthoHeight: number,
+  top = MAX_TERRAIN_HEIGHT + 4,
+  overhead = false,
+) {
+  // A genuine top view exposes deep cuts without disabling terrain occlusion.
+  if (overhead)
+    return { x: 0, y: Math.max(30, top + 8), z: 0, near: 0.1, far: Math.max(100, top + 20) };
   const length = Math.hypot(15, 20, 18);
   const up = 20 / length;
   const horizontal = Math.hypot(15, 18) / length;

@@ -97,6 +97,17 @@ test('real starter excavation spills conserved products outside the opaque pit o
     !terrain || terrain.distance > 1,
     'actual camera-to-product ray is not blocked by the near slope',
   );
+  // Same excavated cell is genuinely hidden from the default view, but its
+  // actual cut triangles are visible from the player-controlled overhead view.
+  const hidden = picker.pick({
+    o: { x: 18.5 + 15, y: 0.015 + 20, z: 17.5 + 18 },
+    d: { x: -15, y: -20, z: -18 },
+  });
+  assert.ok(hidden && hidden.distance < 1);
+  const overhead = picker.pick({ o: { x: 18.5, y: 80, z: 17.5 }, d: { x: 0, y: -1, z: 0 } });
+  assert.equal(overhead.x, 18);
+  assert.equal(overhead.z, 17);
+  assert.equal(overhead.surface, 'cut');
   const collected = dispatch(result.state, { type: 'pickupDrop', dropId: drop.id }, 1000);
   assert.equal(collected.ok, true, collected.error);
   assert.equal(collected.state.inventory.stone, initial.inventory.stone + drop.amount);

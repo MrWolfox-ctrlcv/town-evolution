@@ -27,15 +27,7 @@ import {
   steppedMapZoom,
 } from '../application/CameraFraming';
 import { MapGesture, type Point } from '../application/MapGesture';
-export interface MapHooks {
-  covered(point: Point): boolean;
-  ground?(ray: geometry.Ray): { x: number; y: number; z: number } | null;
-  tap(point: { x: number; z: number }, ray: geometry.Ray): void;
-  candidate(ray: geometry.Ray): string | null;
-  drag(id: string, point: Vec3, ray: geometry.Ray | null, screen: Point): void;
-  drop(id: string, ray: geometry.Ray | null, screen: Point): void;
-  cancel(): void;
-}
+import type { MapHooks } from './MapCameraHooks';
 export class MapCamera {
   private readonly camera: Camera;
   private readonly focus = new Vec3(6, 0, 6);
@@ -76,6 +68,14 @@ export class MapCamera {
   private size: number;
   private zoom: number;
   navigationRevision = 0;
+  overhead = false;
+  toggleOverhead(): boolean {
+    this.cancelGesture();
+    this.overhead = !this.overhead;
+    this.navigationRevision++;
+    this.update();
+    return this.overhead;
+  }
   private aspect = 1;
   constructor(
     parent: Node,
@@ -280,11 +280,11 @@ export class MapCamera {
   private update(): void {
     this.camera.orthoHeight = fittedOrthoHeight(this.aspect, this.size) * this.zoom;
     const top = this.terrainVersion === 6 || this.terrainVersion === 7 ? V6_VIEW_TOP : undefined;
-    const depth = cameraDepth(this.size, this.camera.orthoHeight, top);
+    const depth = cameraDepth(this.size, this.camera.orthoHeight, top, this.overhead);
     this.camera.near = depth.near;
     this.camera.far = depth.far;
     this.camera.node.setPosition(this.focus.x + depth.x, depth.y, this.focus.z + depth.z);
-    this.camera.node.lookAt(this.focus);
+    this.camera.node.lookAt(this.focus, this.overhead ? new Vec3(0, 0, -1) : undefined);
     fitTownShadowDepth(this.camera, top);
     this.camera.camera.update();
   }

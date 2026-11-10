@@ -328,7 +328,7 @@ test('off-screen tall casters remain requested when their real sun-direction sha
     'unknown/horizontal shadow extent is retained',
   );
 });
-test('the four v6 camera buttons remain available outside the six-action shelf with persistent readable status', () => {
+test('the five v6 camera buttons remain available outside the six-action shelf with persistent readable status', () => {
   class Transform {
     setContentSize(width, height) {
       this.width = width;
@@ -397,14 +397,19 @@ test('the four v6 camera buttons remain available outside the six-action shelf w
     },
   };
   const { TerrainNavigation } = presentation('TerrainNavigation', widgetDependencies);
+  let overhead = false;
   const widget = new TerrainNavigation(new UiNode(), {
     home: () => calls.push('home'),
     overview: () => calls.push('overview'),
     zoom: (delta) => calls.push(delta),
+    toggleView: () => {
+      calls.push('view');
+      return (overhead = !overhead);
+    },
   });
   assert.deepEqual(
     buttons.map((b) => b.action.text),
-    ['回家', '全岛', '＋', '−'],
+    ['回家', '全岛', '＋', '−', '俯视'],
   );
   for (const [width, height] of [
     [320, 568],
@@ -424,9 +429,14 @@ test('the four v6 camera buttons remain available outside the six-action shelf w
   widget.render(status);
   widget.render(status);
   assert.equal(widget.status.string, status);
-  assert.equal(buttons.length, 4, 'progress must not recreate button gestures');
+  assert.equal(buttons.length, 5, 'progress must not recreate button gestures');
   for (const b of buttons) b.action.run();
-  assert.deepEqual(calls, ['home', 'overview', -1, 1]);
+  assert.deepEqual(calls, ['home', 'overview', -1, 1, 'view']);
+  assert.equal(buttons[4].action.text, '斜视');
+  assert.equal(buttons[4].node.name, 'TerrainView:视角');
+  buttons[4].action.run();
+  assert.equal(buttons[4].action.text, '俯视');
+  assert.equal(overhead, false);
   widget.cancel();
   assert.ok(buttons.every((b) => b.cancelled >= 4));
   widget.dispose();

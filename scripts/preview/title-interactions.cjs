@@ -165,25 +165,19 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
     await until(page, (state) => state.profile === 'normal' && state.save !== null, 'normal game');
     // Profile persistence precedes the scheduled Cocos render and deferred node destruction.
     // Wait for the actual scene transition, then keep the ownership assertions below.
-    await page.waitForFunction(
-      async () => {
-        const cc = await System.import('cc');
-        const scene = cc.director.getScene();
-        const boot = scene.getChildByName('Town').getComponent('TownBootstrap');
-        const nodes = (node) => [node, ...node.children.flatMap(nodes)];
-        const active = nodes(scene).filter((node) => node.activeInHierarchy);
-        return (
-          boot.flow.page === 'game' &&
-          !boot.menu.root.activeInHierarchy &&
-          boot.menu.artwork === null &&
-          !active.some((node) => node.name === 'TitleDemoIsland') &&
-          active.filter((node) => node.name === 'TownSession').length === 1
-        );
-      },
-      undefined,
-      { timeout: 10000 },
+    const playing = await trace('game scene transition', () =>
+      until(
+        page,
+        (state) =>
+          state.page === 'game' &&
+          state.titleWorlds === 0 &&
+          state.gameWorlds === 1 &&
+          state.template === null,
+        'title world released and one game world active',
+        10000,
+        titleState,
+      ),
     );
-    const playing = await titleState(page);
     assert.equal(playing.titleWorlds, 0);
     assert.equal(playing.gameWorlds, 1);
     assert.equal(playing.template, null, 'No hidden background retained during gameplay');
@@ -193,8 +187,15 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
     assert.equal((await titleState(page)).page, 'game');
     await button('退出到标题');
     await button('确认');
-    await until(page, (state) => state.labels.some((label) => label.text === '小镇进化'), 'title');
-    const returned = await titleState(page);
+    const returned = await trace('title scene transition', () =>
+      until(
+        page,
+        (state) => state.page === 'title' && state.titleWorlds === 1 && state.gameWorlds === 0,
+        'game world released and one title world active',
+        10000,
+        titleState,
+      ),
+    );
     assert.equal(returned.titleWorlds, 1);
     assert.equal(returned.gameWorlds, 0);
     assert.equal(returned.template, before.template);

@@ -19,6 +19,8 @@ function basis(eye, focus) {
   const distance = Math.hypot(vector.x, vector.y, vector.z);
   const forward = { x: vector.x / distance, y: vector.y / distance, z: vector.z / distance };
   const planar = Math.hypot(forward.x, forward.z);
+  if (planar < 1e-10)
+    return { forward, right: { x: 1, y: 0, z: 0 }, up: { x: 0, y: 0, z: -1 }, distance };
   const right = { x: forward.z / planar, y: 0, z: -forward.x / planar };
   const up = {
     x: (-forward.x * forward.y) / planar,
@@ -577,5 +579,40 @@ test('v6 prospective overview error uses its actual target scale and framebuffer
     assert.ok(map.maxTerrainError() < map.maxOverviewError());
     map.overview();
     near(map.maxTerrainError(), target);
+  }
+});
+
+test('player overhead view is reversible and keeps mouse/touch ground projection coherent', () => {
+  for (const viewport of [
+    { width: 390, height: 844, dpr: 2 },
+    { width: 1280, height: 800, dpr: 1 },
+  ]) {
+    const { map } = fixture(6, null, viewport);
+    const before = {
+      focus: { ...map.focus },
+      zoom: map.zoom,
+      position: { ...map.camera.node.position },
+    };
+    assert.equal(map.overhead, false);
+    const revision = map.navigationRevision;
+    assert.equal(map.toggleOverhead(), true);
+    assert.equal(map.navigationRevision, revision + 1);
+    assert.equal(map.camera.node.position.x, map.focus.x);
+    assert.equal(map.camera.node.position.z, map.focus.z);
+    assert.ok(map.camera.node.position.y > 72);
+    for (const touch of [false, true]) {
+      const point = { x: 6.25, y: 0, z: 6.5 };
+      const screen = { ...map.project(point), touch };
+      const ray = map.screenRay(screen);
+      near(ray.d.x, 0);
+      near(ray.d.z, 0);
+      const hit = map.ground(screen, 0);
+      near(hit.x, point.x);
+      near(hit.z, point.z);
+    }
+    assert.equal(map.toggleOverhead(), false);
+    assert.deepEqual({ ...map.camera.node.position }, before.position);
+    assert.deepEqual({ ...map.focus }, before.focus);
+    assert.equal(map.zoom, before.zoom);
   }
 });

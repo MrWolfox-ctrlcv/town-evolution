@@ -155,14 +155,14 @@ async function inspect(page) {
     { profileKeys, profileKey: PROFILE_KEY },
   );
 }
-async function until(page, predicate, message, timeout = 10000) {
+async function until(page, predicate, message, timeout = 10000, read = inspect) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    const state = await inspect(page);
+    const state = await read(page);
     if (predicate(state)) return state;
     await new Promise((resolve) => setTimeout(resolve, 150));
   }
-  throw new Error(`UI verification timed out: ${message}; ${JSON.stringify(await inspect(page))}`);
+  throw new Error(`UI verification timed out: ${message}; ${JSON.stringify(await read(page))}`);
 }
 async function ready(page, timeout = 45000) {
   await page.waitForFunction(() => window.__townPreview?.ready === true, undefined, {

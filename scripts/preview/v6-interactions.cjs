@@ -85,6 +85,7 @@ async function scene(page, request = {}) {
       const surface = town?.island.v6?.source;
       const status = {
         page: boot?.flow.page ?? null,
+        overhead: map?.overhead ?? false,
         profile: boot?.flow.profile ?? null,
         frames: window.__townPreview?.frames ?? 0,
         warning: boot?.flow.storageWarning ?? '',
@@ -552,6 +553,13 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
         collected[drop.item] += drop.amount;
         await closeDetails();
       }
+      // A deep cut may be entirely behind the near slope in the default view.
+      // Use the player's real camera control, never pick through opaque terrain.
+      if (!(await scene(page)).overhead) {
+        await ui.named('TerrainView:视角');
+        assert.equal((await scene(page)).overhead, true, 'Visible control enters overhead view');
+      }
+      await focusCell(target);
       await waitScene(
         page,
         (s) => s.groundReady && s.clear,
@@ -606,6 +614,17 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
       touch,
     });
     await shot('filled');
+    await ui.named('TerrainView:视角');
+    assert.equal(
+      (await scene(page)).overhead,
+      false,
+      'Visible control restores default isometric view',
+    );
+    assert.deepEqual(
+      relevant(await savedState()),
+      relevant(filled),
+      'View switching never alters gameplay',
+    );
     report.checks.push(
       'unobstructed published target, real dig, explicit actual-drop pickup, real fill from collected materials',
     );

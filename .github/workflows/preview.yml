@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 jobs:
-  screenshot:
+  build:
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     env:
@@ -37,7 +37,6 @@ jobs:
           mv package-lock.json package-lock.upstream.json
           npm install --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org
           npm install --no-save --ignore-scripts --no-audit --no-fund esbuild@0.28.2 systemjs@6.15.1 playwright@1.56.1 pngjs@7.0.0 glsl-tokenizer@2.1.5 glsl-parser@2.0.1 js-yaml@4.1.0 jsdom@26.1.0
-          npx playwright install --with-deps chromium
       - name: Install Chinese UI fonts
         run: sudo apt-get update && sudo apt-get install -y fonts-noto-cjk libegl1-mesa libgles2-mesa
       - name: Install project build dependencies
@@ -55,21 +54,17 @@ jobs:
           git add -- scripts/preview/generated/effects.cache.json
           git -c user.name='Town Evolution CI' -c user.email='town-evolution-ci@users.noreply.github.com' commit -m 'build: record runner-specific compiled effect cache'
           git rev-parse HEAD > build/ci-derived-source/derived-commit.txt
+          git bundle create build/ci-derived-source/derived.bundle HEAD ^"$(cat build/ci-derived-source/upstream-commit.txt)"
       - name: Build actual engine and project scripts
         run: node scripts/preview/build.cjs
       - name: Verify actual compiled tween scheduling
         run: node scripts/preview/tween-smoke.cjs
-      - name: Prepare domain fixtures for browser interaction checks
-        run: npm run build:domain
-      - name: Render actual game at desktop and mobile sizes
-        run: node scripts/preview/capture.cjs
       - name: Preserve screenshots and diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: cocos-runtime-evidence
+          name: cocos-build-evidence
           path: |
-            build/screenshots
             build/tween-smoke.json
             build/ci-derived-source
           if-no-files-found: warn
@@ -79,4 +74,57 @@ jobs:
         with:
           name: cocos-standalone-preview
           path: build/preview
+          if-no-files-found: warn
+
+  acceptance:
+    needs: build
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [v6, title, profiles, settings, checkpoint]
+        device: [desktop, mobile]
+    env:
+      PREVIEW_OUT: ${{ github.workspace }}/build/preview
+      PREVIEW_TOOLS: ${{ github.workspace }}/temp/preview-tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocos-standalone-preview
+          path: build/preview
+      - uses: actions/download-artifact@v4
+        with:
+          name: cocos-build-evidence
+          path: build
+      - name: Restore the exact verified runner-derived source
+        run: |
+          test "$(cat build/ci-derived-source/upstream-commit.txt)" = "$GITHUB_SHA"
+          git bundle verify build/ci-derived-source/derived.bundle
+          git fetch build/ci-derived-source/derived.bundle HEAD
+          git checkout --detach FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$(cat build/ci-derived-source/derived-commit.txt)"
+          test -z "$(git status --porcelain --untracked-files=no)"
+      - name: Install isolated browser tools and project compiler
+        run: |
+          npm ci --ignore-scripts
+          mkdir -p "$PREVIEW_TOOLS"
+          npm install --prefix "$PREVIEW_TOOLS" --ignore-scripts --no-audit --no-fund playwright@1.56.1 pngjs@7.0.0
+          cd "$PREVIEW_TOOLS"
+          npx playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+      - name: Prepare verified domain fixtures
+        run: npm run build:domain
+      - name: Run complete independent scenario with real browser input
+        run: node scripts/preview/capture.cjs --suite=${{ matrix.suite }} --device=${{ matrix.device }}
+      - name: Preserve scenario screenshots and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocos-runtime-${{ matrix.suite }}-${{ matrix.device }}
+          path: build/screenshots
           if-no-files-found: warn
