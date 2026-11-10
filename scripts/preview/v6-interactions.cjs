@@ -9,6 +9,7 @@ const { V6_GENERATOR_REVISION, V6_SIZE } = require('../../.domain-build/domain/v
 const { V6_EDIT_MAX_LEVEL, v6EditPlane } = require('../../.domain-build/domain/v6-material-volume');
 const { SAVE_KEY } = require('../../.domain-build/domain/storage');
 const PLANES = Array.from({ length: V6_EDIT_MAX_LEVEL + 1 }, (_, level) => v6EditPlane(level));
+const progressByPage = new WeakMap();
 const SAVE = `town-evolution.v6-preview.${V6_GENERATOR_REVISION}.${SAVE_KEY}`;
 const STATE_KEYS = [
   'schemaVersion',
@@ -284,15 +285,26 @@ async function scene(page, request = {}) {
 
 async function waitScene(page, predicate, label, request = {}, timeout = 90000) {
   const deadline = Date.now() + timeout;
+  const progress = progressByPage.get(page);
+  const activity = progress?.begin('wait', label, { request, timeoutMs: timeout });
   let last;
-  do {
-    last = await scene(page, request);
-    assert.equal(last.problem, null, `${label}: terrain publication failed: ${last.problem}`);
-    assert.equal(last.warning, '', `${label}: storage unavailable: ${last.warning}`);
-    if (predicate(last)) return last;
-    await page.waitForTimeout(150);
-  } while (Date.now() < deadline);
-  throw new Error(`V6 acceptance timed out: ${label}; ${JSON.stringify(last)}`);
+  try {
+    do {
+      last = await scene(page, request);
+      progress?.sample(activity, last);
+      assert.equal(last.problem, null, `${label}: terrain publication failed: ${last.problem}`);
+      assert.equal(last.warning, '', `${label}: storage unavailable: ${last.warning}`);
+      if (predicate(last)) {
+        progress?.end(activity);
+        return last;
+      }
+      await page.waitForTimeout(150);
+    } while (Date.now() < deadline);
+    throw new Error(`V6 acceptance timed out: ${label}; ${JSON.stringify(last)}`);
+  } catch (error) {
+    progress?.end(activity, error);
+    throw error;
+  }
 }
 
 module.exports = async function v6Interactions(page, evidence, name, touch) {
@@ -306,14 +318,19 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
     checks: [],
   };
   const file = path.join(evidence, `${name}-v6.json`);
+  const progress = require('./v6-progress.cjs')(path.join(evidence, `${name}-v6-progress.json`));
+  progressByPage.set(page, progress);
   const ui = driver(page, touch);
   let stage = 'fresh title';
   const checkpoint = (label, data = {}) => {
     stage = label;
+    progress.stage(label);
     report.stages.push({ stage, ...data });
   };
   const shot = (suffix) =>
-    page.screenshot({ path: path.join(evidence, `${name}-v6-${suffix}.png`), timeout: 10000 });
+    progress.run('screenshot', suffix, () =>
+      page.screenshot({ path: path.join(evidence, `${name}-v6-${suffix}.png`), timeout: 10000 }),
+    );
   const closeDetails = async () => {
     if ((await inspect(page)).targets.some((t) => t.name === 'ContextClose'))
       await ui.named('ContextClose');
@@ -653,7 +670,9 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
     };
     const saved = await savedState();
     assert.deepEqual(relevant(saved), relevant(filled));
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    await progress.run('navigation', 'reload', () =>
+      page.reload({ waitUntil: 'domcontentloaded' }),
+    );
     await ready(page);
     assert.equal((await scene(page)).page, 'title', 'Reload follows the real title lifecycle');
     await ui.button('自然挖填实验');
@@ -665,6 +684,7 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
       120000,
     );
     // An early explicit home choice must survive any still-pending first-publication overview.
+    checkpoint('resume home publication');
     report.resumeHadPendingOverview = resumed.awaitingOverview;
     await ui.named('TerrainView:回家');
     const requestedHome = (await scene(page)).camera;
@@ -678,6 +698,7 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
       requestedHome,
       'Resume publication respects user home choice',
     );
+    checkpoint('resume exact saved state');
     const restored = await savedState();
     assert.deepEqual(
       relevant(restored),
@@ -685,6 +706,7 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
       'Reload preserves exact terrain checkpoints, inventory, drops, resources, tools and world entities',
     );
     await focusCell(target);
+    checkpoint('resume edited cell publication');
     const finalCell = await waitScene(
       page,
       (s) => s.groundReady,
@@ -727,6 +749,8 @@ module.exports = async function v6Interactions(page, evidence, name, touch) {
     }
     fs.writeFileSync(file, JSON.stringify(report, null, 2));
     throw error;
+  } finally {
+    progressByPage.delete(page);
   }
 };
 // Focused isolated checks use these helpers; they are not runtime acceptance evidence.

@@ -146,7 +146,11 @@ module.exports = async (page, evidence, name, touch) => {
   for (const id of ['gather-wood', 'build-order-board', 'build-crate', 'build-house'])
     assert.ok(directory.nodes[`RecipeCategory-${id}`], `First directory page includes ${id}`);
   const pages = Math.ceil(recipeCount / 4);
-  assert.equal(recipeCount, 36, 'Every approved schema10 handbook entry is present');
+  assert.deepEqual(
+    recipeIds,
+    require('./expected-recipes.cjs'),
+    'Every approved handbook entry is present in order',
+  );
   for (let pageIndex = 1; pageIndex < pages; pageIndex++) {
     await nodeClick('RecipeDirectoryNext');
     directory = await ui(page);

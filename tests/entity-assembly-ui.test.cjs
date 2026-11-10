@@ -182,3 +182,32 @@ test('hammer crossing an unrelated building still upgrades the attached-material
   assert.equal(f.session.state.buildings.find((b) => b.id === 'b4').kind, 'expandedWarehouse');
   assert.equal(f.session.state.fusion.attachments.b3.wood, 1);
 });
+
+test('an unrelated building crossed on the way to a wood pile cannot hijack single-pile construction', () => {
+  const f = fixture('warehouse', 'expandedWarehouse');
+  f.session.state.groundStacks = [{ x: 15, z: 10, item: 'wood', amount: 4 }];
+  const before = g.exportSave(f.session.state);
+  f.tool.begin('hammer', 5);
+  f.tool.move(5, { id: 'b3' });
+  f.tool.move(5, { id: 'b4' });
+  f.tool.move(5, { pile: { x: 15, z: 10 } });
+  assert.equal(g.exportSave(f.session.state), before);
+  f.tool.end(5, { pile: { x: 15, z: 10 } });
+  assert.deepEqual(f.commands, [{ type: 'useTool', tool: 'hammer', x: 15, z: 10 }]);
+  assert.ok(f.session.state.fusion.discoveries['build-house']);
+  assert.equal(f.session.state.groundStacks.length, 0);
+  assert.equal(f.session.state.buildings.find((b) => b.id === 'b3').kind, 'warehouse');
+  assert.equal(f.session.state.buildings.find((b) => b.id === 'b4').kind, 'expandedWarehouse');
+});
+
+test('a complete deliberate building assembly cannot fall back to a pile recipe', () => {
+  const f = fixture('house', 'crate');
+  f.session.state.groundStacks = [{ x: 15, z: 10, item: 'wood', amount: 4 }];
+  const before = g.exportSave(f.session.state);
+  f.tool.begin('hammer', 5);
+  f.tool.move(5, { id: 'b3' });
+  f.tool.move(5, { id: 'b4' });
+  f.tool.end(5, { pile: { x: 15, z: 10 } });
+  assert.equal(f.commands.length, 0);
+  assert.equal(g.exportSave(f.session.state), before);
+});

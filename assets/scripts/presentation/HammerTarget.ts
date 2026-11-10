@@ -5,7 +5,7 @@ import type { GameSession } from '../application/GameSession';
 import type { Point } from '../application/MapGesture';
 import type { MapCamera } from './MapCamera';
 import type { TownView } from './TownView';
-/** First explicit source fixes the gesture mode. No cross-mode fallback or source replacement. */
+/** Completed recipes lock their sources; incidental building hover cannot hijack a pile drop. */
 export function hammerTarget(
   session: GameSession,
   town: TownView,
@@ -34,14 +34,15 @@ export function hammerTarget(
       ? entities.command()
       : { type: 'useTool', tool: 'hammer', buildingId };
   }
-  if (
-    entities.selected.length ||
-    town.pickTree(ray) ||
-    town.pickNatural(ray) ||
-    town.pickDrop?.(ray)
-  )
-    return null;
+  if (town.pickTree(ray) || town.pickNatural(ray) || town.pickDrop?.(ray)) return null;
   const pile = town.pickStack(ray);
+  if (entities.selected.length) {
+    // Unrelated buildings crossed en route cannot hijack a deliberate pile drop.
+    // A complete entity assembly remains locked, as do invalid/stale selections above.
+    return pile && !entities.plan(session.state)
+      ? { type: 'useTool', tool: 'hammer', x: pile.x, z: pile.z }
+      : null;
+  }
   if (pile) mixed.observe(session.state, pile);
   if (mixed.complete) {
     const target = pile ?? map.ground(point);
