@@ -208,9 +208,18 @@ export class IslandView {
     lodSpan?: number,
     maxError?: number,
     overviewError?: number,
+    priority?: { x: number; z: number },
   ): boolean {
     if (this.v6) {
-      const changed = this.v6.frame(bounds, budget, visible, lodSpan, maxError, overviewError);
+      const changed = this.v6.frame(
+        bounds,
+        budget,
+        visible,
+        lodSpan,
+        maxError,
+        overviewError,
+        priority,
+      );
       if (changed) this.naturalSurface = this.v6.naturalSurface;
       return changed;
     }

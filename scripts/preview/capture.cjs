@@ -47,6 +47,7 @@ const server = http.createServer((req, res) => {
 async function capture(browser, width, height, device, suite = 'legacy') {
   const name = suite === 'v6' ? `${device}-v6` : device;
   const touch = device === 'mobile';
+  const trace = require('./phase-trace.cjs')(evidence, `${name}-capture`);
   let setupExpired = false;
   const context = await withDeadline(
     async () => {
@@ -98,11 +99,17 @@ async function capture(browser, width, height, device, suite = 'legacy') {
   try {
     await withDeadline(
       async () => {
-        await page.goto(`http://127.0.0.1:${server.address().port}/`);
-        await page.waitForFunction(() => window.__townPreview?.ready === true, undefined, {
-          timeout: 45000,
-        });
-        const pixels = PNG.sync.read(await page.locator('#GameCanvas').screenshot());
+        await trace('initial navigation', () =>
+          page.goto(`http://127.0.0.1:${server.address().port}/`),
+        );
+        await trace('initial engine ready', () =>
+          page.waitForFunction(() => window.__townPreview?.ready === true, undefined, {
+            timeout: 45000,
+          }),
+        );
+        const pixels = PNG.sync.read(
+          await trace('canvas screenshot', () => page.locator('#GameCanvas').screenshot()),
+        );
         const colors = new Set();
         for (let i = 0; i < pixels.data.length; i += 16)
           colors.add(pixels.data.subarray(i, i + 3).toString('hex'));
@@ -111,7 +118,9 @@ async function capture(browser, width, height, device, suite = 'legacy') {
           `Canvas looks blank: only ${colors.size} distinct sampled colors`,
         );
         assert.deepEqual(errors, [], 'Runtime console errors');
-        await page.screenshot({ path: path.join(evidence, `${name}.png`) });
+        await trace('initial page screenshot', () =>
+          page.screenshot({ path: path.join(evidence, `${name}.png`) }),
+        );
         if (suite === 'v6') {
           const v6 = await require('./v6-interactions.cjs')(page, evidence, name, touch);
           assert.deepEqual(errors, [], 'Runtime errors after actual v6 interactions');
@@ -125,9 +134,15 @@ async function capture(browser, width, height, device, suite = 'legacy') {
           );
           return;
         }
-        await require('./title-interactions.cjs')(page, evidence, name, touch);
-        await require('./demo-interactions.cjs')(page, evidence, name, touch);
-        await require('./settings-interactions.cjs')(page, evidence, name, touch);
+        await trace('title interactions', () =>
+          require('./title-interactions.cjs')(page, evidence, name, touch),
+        );
+        await trace('demo interactions', () =>
+          require('./demo-interactions.cjs')(page, evidence, name, touch),
+        );
+        await trace('settings interactions', () =>
+          require('./settings-interactions.cjs')(page, evidence, name, touch),
+        );
         const checkpoint = [];
         for (let cycle = 0; cycle < 3; cycle++) {
           if (cycle) {

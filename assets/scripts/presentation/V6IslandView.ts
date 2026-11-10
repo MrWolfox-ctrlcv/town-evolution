@@ -105,6 +105,7 @@ export class V6IslandView {
     _lodSpan?: number,
     maxError = 0,
     overviewError = 0,
+    priority?: { x: number; z: number },
   ): boolean {
     if (
       !this.chunks ||
@@ -116,8 +117,12 @@ export class V6IslandView {
     const initial = !this.surfaceStatus().overviewVisible;
     if (initial && overviewError <= 0) return false;
     const farError = Math.max(0, Math.min(0.25, overviewError));
-    const cx = (bounds.minX + bounds.maxX) / 2;
-    const cz = (bounds.minZ + bounds.maxZ) / 2;
+    // Raised-geometry visibility bounds are asymmetric on an oblique camera.
+    // Their midpoint is not the ground under the player; prioritize the actual focus.
+    const cx =
+      priority && Number.isFinite(priority.x) ? priority.x : (bounds.minX + bounds.maxX) / 2;
+    const cz =
+      priority && Number.isFinite(priority.z) ? priority.z : (bounds.minZ + bounds.maxZ) / 2;
     const keys = this.coast.keys.filter((key) => {
       if (!this.constrained) return true;
       const [x, z, xx, zz] = v5CoastChunkBounds(key);

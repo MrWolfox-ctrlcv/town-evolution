@@ -15,6 +15,7 @@ export function streamTownFrame(version: TerrainVersion, map: MapCamera, town: T
       (min, max) => map.boxVisible(min, max),
       map.maxTerrainError(),
       map.maxOverviewError(),
+      { x: (flat.minX + flat.maxX) / 2, z: (flat.minZ + flat.maxZ) / 2 },
     );
   }
 }

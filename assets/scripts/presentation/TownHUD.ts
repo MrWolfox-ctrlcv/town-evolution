@@ -49,6 +49,12 @@ export interface HudData {
 /** Native Cocos HUD with transparent illustrated controls and an animated bottom shelf. */
 export class TownHUD {
   readonly mapInput: Node;
+  private readonly uiCamera: Node;
+  /** Overlay menus own input and UI rendering, while the existing world remains visible. */
+  setVisible(visible: boolean): void {
+    this.canvas.active = visible;
+    this.uiCamera.active = visible;
+  }
   private readonly canvas: Node;
   private readonly controls: SafeControls;
   private readonly top: Node;
@@ -89,6 +95,7 @@ export class TownHUD {
     this.canvas.on(Node.EventType.TOUCH_END, this.recordPoint, this, true);
     this.canvas.on(Node.EventType.TOUCH_START, this.cancelMultiTouch, this, true);
     const cam = new Node('UICamera');
+    this.uiCamera = cam;
     parent.addChild(cam);
     cam.setPosition(0, 0, 1000);
     const camera = cam.addComponent(Camera);

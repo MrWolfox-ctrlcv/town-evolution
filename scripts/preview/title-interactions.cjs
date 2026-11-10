@@ -60,8 +60,12 @@ async function namedPoint(page, name) {
   }, name);
 }
 module.exports = async function titleInteractions(page, evidence, name, touch) {
-  const { button, click, townActions } = driver(page, touch);
-  const before = await titleState(page);
+  const trace = require('./phase-trace.cjs')(evidence, `${name}-title`);
+  const controls = driver(page, touch);
+  const button = (...args) => trace(`button ${args[0]}`, () => controls.button(...args));
+  const click = (...args) => trace('pointer click', () => controls.click(...args));
+  const townActions = () => trace('town actions', () => controls.townActions());
+  const before = await trace('initial scene inspection', () => titleState(page));
   assert.equal(before.page, 'title');
   assert.equal(before.session, false);
   assert.equal(before.titleWorlds, 1);
@@ -78,7 +82,9 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
   assert.equal(after.template, before.template);
   assert.deepEqual(after.saves, before.saves);
   assert.equal(after.meshes, before.meshes, 'No per-frame mesh rebuilding');
-  await page.screenshot({ path: path.join(evidence, `${name}-live-title.png`) });
+  await trace('screenshot ${name}-live-title.png', () =>
+    page.screenshot({ path: path.join(evidence, `${name}-live-title.png`) }),
+  );
   await button('图鉴');
   await click(await namedPoint(page, 'RecipeDirectoryClose'));
   for (let repeat = 0; repeat < 2; repeat++) {
@@ -113,11 +119,13 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
   );
   try {
     // Engine readiness below is the gate; the document load event is not.
-    await waiting.goto(page.url(), { waitUntil: 'domcontentloaded' });
+    await trace('waiting tab navigation', () =>
+      waiting.goto(page.url(), { waitUntil: 'domcontentloaded' }),
+    );
     waitingDiagnostics.push({ event: 'domcontentloaded', elapsedMs: Date.now() - waitingStarted });
     // CI software WebGL renders two independent islands here. Keep a bounded
     // startup budget while preserving the real-frame and behavioral gates.
-    await ready(waiting, 120000);
+    await trace('waiting tab engine ready', () => ready(waiting, 120000));
     waitingInitializationMs = Date.now() - waitingStarted;
     console.log(`${name} waiting-tab real engine ready after ${waitingInitializationMs}ms`);
     const blocked = await titleState(waiting);

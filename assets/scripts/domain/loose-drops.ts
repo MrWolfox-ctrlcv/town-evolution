@@ -117,7 +117,20 @@ export function planLooseDrops(
   for (let dz = -radius; dz <= radius; dz += LOOSE_DROPS.spacing6)
     for (let dx = -radius; dx <= radius; dx += LOOSE_DROPS.spacing6)
       points.push({ x6: anchor.x6 + dx, z6: anchor.z6 + dz, distance: dx * dx + dz * dz });
-  points.sort((a, b) => a.distance - b.distance || a.z6 - b.z6 || a.x6 - b.x6);
+  // Excavation products should spill onto nearby ground, not disappear at the
+  // bottom of the newly cut cell behind its opaque walls. Keep the same bounded
+  // search and all existing occupancy checks; the source cell is a last resort.
+  const inExcavation = (p: { x6: number; z6: number }) =>
+    source.type === 'terrain6' &&
+    Math.floor(p.x6 / 6) === source.x &&
+    Math.floor(p.z6 / 6) === source.z;
+  points.sort(
+    (a, b) =>
+      Number(inExcavation(a)) - Number(inExcavation(b)) ||
+      a.distance - b.distance ||
+      a.z6 - b.z6 ||
+      a.x6 - b.x6,
+  );
   for (const point of points) {
     if (
       !available(world, point, source) ||

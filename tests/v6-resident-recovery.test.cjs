@@ -326,3 +326,35 @@ test('v6 batch shares the millisecond allowances and keeps earlier commits when 
   assert.deepEqual(batch.published, [1, 2]);
   assert.equal(time, 6, 'does not reset the 3ms build/3ms upload allowances per group');
 });
+
+test('oblique raised-terrain bounds do not displace ground-view streaming priority', () => {
+  const bounds = { minX: 0, minZ: 0, maxX: 96, maxZ: 96 };
+  const keys = ['0,0', '1,1', '2,2', '3,3', '4,4', '5,5'];
+  const midpoint = streamingFixture({ keys, noBuild: true });
+  midpoint.view.frame(bounds, {}, undefined, undefined, 0, 0.25);
+  assert.notEqual(midpoint.requests[0].keys[0], '0,0');
+  const grounded = streamingFixture({ keys, noBuild: true });
+  grounded.view.frame(bounds, {}, undefined, undefined, 0, 0.25, { x: 6, z: 6 });
+  assert.equal(grounded.requests[0].keys[0], '0,0');
+  assert.deepEqual(new Set(grounded.requests[0].keys), new Set(keys));
+  assert.deepEqual(grounded.requests[0].fine, midpoint.requests[0].fine);
+  assert.deepEqual(bounds, { minX: 0, minZ: 0, maxX: 96, maxZ: 96 });
+});
+
+test('streaming transports the actual ground viewport center without narrowing raised visibility', () => {
+  const { streamTownFrame } = presentation('TownStreamingFrame');
+  const flat = { minX: 2, minZ: 3, maxX: 10, maxZ: 9 };
+  const raised = { minX: 2, minZ: 3, maxX: 98, maxZ: 99 };
+  const calls = [];
+  const map = {
+    visibleBounds: (height) => (height === 0 ? flat : raised),
+    maxTerrainError: () => 0.01,
+    maxOverviewError: () => 0.25,
+    boxVisible: () => true,
+  };
+  streamTownFrame(6, map, { frame: (...args) => calls.push(args) });
+  assert.equal(calls[0][0], raised);
+  assert.deepEqual(calls[0][6], { x: 6, z: 6 });
+  streamTownFrame(5, map, { frame: (...args) => calls.push(args) });
+  assert.equal(calls[1].length, 2, 'legacy streaming remains unchanged');
+});

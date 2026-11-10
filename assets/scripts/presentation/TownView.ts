@@ -151,9 +151,18 @@ export class TownView {
     visible?: WorldBoxTest,
     maxError?: number,
     overviewError?: number,
+    priority?: { x: number; z: number },
   ): void {
     if (!this.previous || this.previous.terrainVersion < 5) return;
-    const changed = this.island.frame(bounds, {}, visible, treeLodSpan, maxError, overviewError);
+    const changed = this.island.frame(
+      bounds,
+      {},
+      visible,
+      treeLodSpan,
+      maxError,
+      overviewError,
+      priority,
+    );
     if (changed)
       this.resources.sync(
         this.previous,

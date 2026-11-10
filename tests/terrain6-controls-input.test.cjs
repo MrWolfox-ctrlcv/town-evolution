@@ -688,6 +688,7 @@ test('the actual bootstrap session replacement disposes old terrain gestures bef
             order.push('new');
           }
           layout() {}
+          setMenuOverlay() {}
           resume() {
             order.push('resume');
           }

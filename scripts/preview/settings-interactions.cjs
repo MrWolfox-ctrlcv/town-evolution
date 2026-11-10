@@ -27,28 +27,41 @@ async function state(page) {
   });
 }
 module.exports = async function settingsInteractions(page, evidence, name, touch) {
-  const { button, named } = driver(page, touch);
+  const trace = require('./phase-trace.cjs')(evidence, `${name}-settings`);
+  const controls = driver(page, touch);
+  const button = (...args) => trace(`button ${args[0]}`, () => controls.button(...args));
+  const named = (...args) => trace(`named ${args[0]}`, () => controls.named(...args));
   assert.equal((await inspect(page)).profile, 'demo');
-  const game = await state(page);
+  const game = await trace('inspect settings state', () => state(page));
   assert.equal(game.page, 'game');
   assert.ok(game.settings.width >= 44 && game.settings.height >= 44);
   assert.ok(game.settings.x >= game.summary.x + game.summary.width + 12);
   const launcher = (await inspect(page)).targets.find((target) => target.name === 'Menu-settings');
   assert.ok(launcher);
-  await page.screenshot({ path: path.join(evidence, `${name}-settings-launcher.png`) });
-  await drag(page, launcher, { x: launcher.x - 42, y: launcher.y + 50 }, touch);
-  assert.equal((await state(page)).page, 'game', 'Dragging over the button does not open settings');
+  await trace('screenshot ${name}-settings-launcher.png', () =>
+    page.screenshot({ path: path.join(evidence, `${name}-settings-launcher.png`) }),
+  );
+  await trace('launcher drag', () =>
+    drag(page, launcher, { x: launcher.x - 42, y: launcher.y + 50 }, touch),
+  );
+  assert.equal(
+    (await trace('inspect settings state', () => state(page))).page,
+    'game',
+    'Dragging over the button does not open settings',
+  );
   if (touch) {
     await interruptDrag(page, launcher, launcher);
     assert.equal(
-      (await state(page)).page,
+      (await trace('inspect settings state', () => state(page))).page,
       'game',
       'Interrupted multi-touch does not activate settings',
     );
   }
   await named('Menu-settings');
-  assert.equal((await state(page)).page, 'settings');
-  await page.screenshot({ path: path.join(evidence, `${name}-settings-menu.png`) });
+  assert.equal((await trace('inspect settings state', () => state(page))).page, 'settings');
+  await trace('screenshot ${name}-settings-menu.png', () =>
+    page.screenshot({ path: path.join(evidence, `${name}-settings-menu.png`) }),
+  );
   await button('立即保存');
   await until(
     page,
@@ -60,26 +73,34 @@ module.exports = async function settingsInteractions(page, evidence, name, touch
   await button('保存到此栏位');
   await button('返回存档');
   await button('返回设置');
-  const before = await state(page);
+  const before = await trace('inspect settings state', () => state(page));
   assert.equal(before.page, 'settings');
   for (let repeat = 0; repeat < 2; repeat++) {
     await button('重置演示岛');
-    assert.equal((await state(page)).page, 'confirm');
-    assert.deepEqual((await state(page)).saves, before.saves, 'Reset needs explicit confirmation');
+    assert.equal((await trace('inspect settings state', () => state(page))).page, 'confirm');
+    assert.deepEqual(
+      (await trace('inspect settings state', () => state(page))).saves,
+      before.saves,
+      'Reset needs explicit confirmation',
+    );
     await button('取消');
-    assert.equal((await state(page)).page, 'settings');
-    assert.deepEqual((await state(page)).saves, before.saves, 'Cancel preserves all save keys');
+    assert.equal((await trace('inspect settings state', () => state(page))).page, 'settings');
+    assert.deepEqual(
+      (await trace('inspect settings state', () => state(page))).saves,
+      before.saves,
+      'Cancel preserves all save keys',
+    );
   }
   await button('返回标题');
   await button('取消');
-  assert.equal((await state(page)).page, 'settings');
+  assert.equal((await trace('inspect settings state', () => state(page))).page, 'settings');
   await button('返回游戏');
-  assert.equal((await state(page)).page, 'game');
+  assert.equal((await trace('inspect settings state', () => state(page))).page, 'game');
   await named('Menu-settings');
   await button('重置演示岛');
   await button('确认');
   await until(page, (view) => view.save?.coins === 1000, 'confirmed demo reset');
-  const reset = await state(page);
+  const reset = await trace('inspect settings state', () => state(page));
   const key = 'town-evolution.demo.town-evolution.save.v1';
   assert.equal(reset.page, 'game');
   assert.ok(reset.saves[`${key}.before-reset`], 'Reset keeps the previous demo');
@@ -88,7 +109,7 @@ module.exports = async function settingsInteractions(page, evidence, name, touch
   await named('Menu-settings');
   await button('返回标题');
   await button('确认');
-  assert.equal((await state(page)).page, 'title');
+  assert.equal((await trace('inspect settings state', () => state(page))).page, 'title');
   await button('游览演示岛');
   await until(
     page,

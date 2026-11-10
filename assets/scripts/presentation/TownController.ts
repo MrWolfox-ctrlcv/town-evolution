@@ -145,6 +145,9 @@ export class TownController {
       this.refresh();
     }
   }
+  setMenuOverlay(open: boolean): void {
+    this.hud.setVisible(!open);
+  }
   openTownActions(): void {
     this.hud.openDetails();
     this.changeTab('tools');

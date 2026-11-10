@@ -130,7 +130,8 @@ export class TownBootstrap extends Component {
         },
       );
     }
-    if (this.stage) this.stage.active = playing;
+    if (this.stage) this.stage.active = session !== null;
+    this.controller?.setMenuOverlay(!playing);
     if (playing) {
       this.controller?.layout();
       this.controller?.resume();

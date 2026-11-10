@@ -175,8 +175,15 @@ export class StartScreen {
     this.menuHeight = height;
     const title = this.flow.page === 'title';
     const layout = startLayout(width, height, data.actions.length, title);
-    this.artwork ??= new StartArtwork(this.root);
-    this.artwork.layout(fullWidth, fullHeight);
+    // A live session already owns its island. Settings/save overlays reuse that world;
+    // only sessionless menus need an independent read-only demo background.
+    if (!this.flow.session) {
+      this.artwork ??= new StartArtwork(this.root);
+      this.artwork.layout(fullWidth, fullHeight);
+    } else {
+      this.artwork?.dispose();
+      this.artwork = null;
+    }
     this.content.active = title;
     if (!title) {
       this.buttons.forEach((button) => button.cancelGesture());
