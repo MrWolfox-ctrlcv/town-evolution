@@ -1,3 +1,4 @@
+import { V6CandidateBounds } from '../art/V6CandidateBounds';
 import { CooperativePrebuild } from '../application/CooperativePrebuild';
 import type { WorldBoxTest } from '../application/WorldVisibility';
 import type { Material, MeshRenderer } from 'cc';
@@ -16,6 +17,7 @@ import type { DropSupport } from './DropSupport';
 /** All ground authorities travel in one transaction. Hidden uploads are never pickable. */
 export class V6IslandView {
   naturalSurface: NaturalSurfaceData = { positions: [], resources: [], chunks: [] };
+  private candidates: V6CandidateBounds | null = null;
   private prebuild: CooperativePrebuild | null = null;
   private state: GameState | null = null;
   private source: ReturnType<typeof getV6EditSurface> | null = null;
@@ -98,6 +100,7 @@ export class V6IslandView {
         this.failure = null;
       }
     }
+    if (this.state !== state) this.candidates = new V6CandidateBounds(this.source!, state);
     this.state = state;
     this.support.setFarms(state.buildings, (b) => b.baseElevation ?? this.elevation(b.x, b.z));
   }
@@ -143,7 +146,11 @@ export class V6IslandView {
             if (xx < bounds.minX || x > bounds.maxX || zz < bounds.minZ || z > bounds.maxZ)
               return false;
             const chunk = this.chunks!.resident().get(key);
-            if (!visible || !chunk || !chunk.mesh.indices.length) return true;
+            if (!visible) return true;
+            if (!chunk || !chunk.mesh.indices.length) {
+              const bounds = this.candidates?.get(key);
+              return !bounds || visible(bounds.min, bounds.max);
+            }
             const { min, max } = chunk.mesh;
             return visible(
               { x: min[0]!, y: min[1]! - 0.25, z: min[2]! },
@@ -264,6 +271,7 @@ export class V6IslandView {
   dispose(): void {
     this.prebuild?.stop();
     this.prebuild = null;
+    this.candidates = null;
     this.constrained = false;
     this.requestedOverview = 0;
     this.meshes?.dispose();

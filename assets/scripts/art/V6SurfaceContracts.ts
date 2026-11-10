@@ -21,6 +21,7 @@ export interface V6SurfaceWorld {
   readonly size: number;
   readonly hydrology: V6Hydrology;
   at(x: number, z: number): { reserved: boolean } | null;
+  cellUpperBound?(x: number, z: number): number;
   groundHeight(x: number, z: number): number;
   naturalHeight(x: number, z: number): number;
   normal(x: number, z: number, ground: boolean): V3;

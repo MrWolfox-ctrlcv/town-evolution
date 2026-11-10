@@ -10,6 +10,7 @@ const recipeCount = recipeIds.length;
 const stockDrop = require('./stock-input.cjs');
 
 const ui = require('./checkpoint-ui.cjs');
+const { returnToToolTray } = require('./checkpoint-return.cjs');
 
 module.exports = async (page, evidence, name, touch) => {
   const { click, button, townActions } = driver(page, touch);
@@ -49,7 +50,8 @@ module.exports = async (page, evidence, name, touch) => {
   await button('存档', { exact: true });
   await button('立即保存');
   await button('返回游戏');
-  let state = await until(page, (s) => [10, 11].includes(s.save?.schemaVersion), 'saved demo');
+  let state = await returnToToolTray(page, click, phase);
+  assert.ok([10, 11].includes(state.save?.schemaVersion), 'Saved demo schema remains supported');
   const warehouseId = state.save.buildings.find((b) => b.kind === 'warehouse')?.id;
   assert.ok(warehouseId, 'Original unexpanded warehouse remains available');
   await showTool('WoodStock', 'ProductsRightNext');

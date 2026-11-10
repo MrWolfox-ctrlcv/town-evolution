@@ -38,6 +38,15 @@ export class V6Terrain extends V6Samples {
   at(x: number, z: number): V6Cell | null {
     return inWorld(x, z) ? (this.#cells[z * this.size + x] ?? null) : null;
   }
+  /** Exact dry-cell lattice extrema; piecewise linear interiors cannot exceed these vertices. */
+  cellUpperBound(x: number, z: number): number {
+    const cell = this.at(x, z);
+    return Math.max(
+      0.015,
+      cell?.groundRange[1] ?? 0.015,
+      this.#deposits.get(key(x, z))?.ceiling ?? 0.015,
+    );
+  }
   initialResources(): readonly V6Resource[] {
     return Object.freeze([...this.#deposits.values()].map((d) => d.resource));
   }

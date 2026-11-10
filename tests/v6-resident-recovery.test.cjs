@@ -400,3 +400,45 @@ test('ground frame publishes support before object refresh and reports either so
     }
   }
 });
+
+test('unbuilt empty lowland is culled by certified bounds but high peaks, objects and shadow reach remain requested', () => {
+  const { V6IslandView } = presentation('V6IslandView');
+  const view = Object.create(V6IslandView.prototype);
+  let detailed;
+  Object.assign(view, {
+    coast: { keys: ['0,0', '1,0', '2,0', '3,0'] },
+    candidates: {
+      get: (key) =>
+        key === '2,0'
+          ? null
+          : {
+              min: { x: Number(key.split(',')[0]) * 16, y: -4, z: 0 },
+              max: { x: Number(key.split(',')[0]) * 16 + 16, y: key === '1,0' ? 48 : 1, z: 16 },
+            },
+    },
+    requestedFine: new Set(),
+    failure: null,
+    pending: null,
+    chunks: {
+      resident: () => new Map([['-1,-1', { mesh: { indices: [0, 1, 2] } }]]),
+      request: (_keys, fine) => (detailed = fine),
+      cachedMeshes: () => new Set(),
+      advance: () => null,
+      isSettled: () => false,
+    },
+    meshes: { retain() {} },
+  });
+  // Visibility result includes a high peak and a low off-screen caster whose shadow reaches the view.
+  view.frame(
+    { minX: -16, minZ: -16, maxX: 80, maxZ: 80 },
+    {},
+    (min, max) => max.y > 40 || min.x === 48,
+    0,
+    0.01,
+    0.25,
+  );
+  assert.ok(!detailed.includes('0,0'));
+  assert.ok(detailed.includes('1,0'));
+  assert.ok(detailed.includes('2,0'));
+  assert.ok(detailed.includes('3,0'));
+});
