@@ -167,3 +167,18 @@ test('ground mud attaches one explicit snapshotted unit, then single-building ha
     assert.equal(f.events.length, 0);
   }
 });
+
+test('hammer crossing an unrelated building still upgrades the attached-material release target', () => {
+  const f = fixture('warehouse', 'expandedWarehouse');
+  f.session.state.fusion.attachments.b3 = { ...emptyStock(), wood: 3 };
+  const before = g.exportSave(f.session.state);
+  f.tool.begin('hammer', 5);
+  f.tool.move(5, { id: 'b4' });
+  f.tool.move(5, { id: 'b3' });
+  assert.equal(g.exportSave(f.session.state), before, 'hover must not consume or upgrade');
+  f.tool.end(5, { id: 'b3' });
+  assert.deepEqual(f.commands, [{ type: 'useTool', tool: 'hammer', buildingId: 'b3' }]);
+  assert.equal(f.session.state.buildings.find((b) => b.id === 'b3').kind, 'expandedWarehouse');
+  assert.equal(f.session.state.buildings.find((b) => b.id === 'b4').kind, 'expandedWarehouse');
+  assert.equal(f.session.state.fusion.attachments.b3.wood, 1);
+});

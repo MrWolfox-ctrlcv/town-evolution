@@ -3,6 +3,8 @@ import { Node } from 'cc';
 import type { Point } from '../application/MapGesture';
 import { materialQuantity } from '../application/MaterialQuantity';
 import { getV6EditSurface } from '../domain/v6-edit-surface';
+import { getEditableWorld } from '../domain/editable-world';
+import { integer } from '../domain/guards';
 import { terrain6EditLevel } from '../domain/v6-edit-level';
 import { previewTerrain6Edit } from '../domain/v6-edit-plan';
 import type { EditTerrain6Command } from '../domain/v6-edit-types';
@@ -63,6 +65,10 @@ export class V6TerrainTool {
       this.town.pickStack(ray)
     )
       return null;
+    // A coast triangle can extend outside the editable world. Chunk residency
+    // alone does not make its hit cell valid; never pass it to strict sampling.
+    const size = getEditableWorld(this.seed, this.session.state.terrainVersion).size;
+    if (!integer(hit.x, size - 1) || !integer(hit.z, size - 1)) return null;
     this.targetCell = { x: hit.x, z: hit.z };
     const level = terrain6EditLevel(this.session.state, hit.x, hit.z, this.kind);
     if (level === null) return null;

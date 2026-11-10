@@ -20,6 +20,13 @@ export function hammerTarget(
   const ray = map.screenRay(point),
     buildingId = town.pickBuilding(ray);
   if (buildingId) {
+    // An attached-material upgrade belongs to the building under the pointer.
+    // Merely crossing another building on the way must not turn it into an assembly.
+    const attached = session.state.fusion.attachments[buildingId];
+    const single: Command = { type: 'useTool', tool: 'hammer', buildingId };
+    if (attached && Object.values(attached).some((amount) => amount > 0)) {
+      if (session.reason(single) === null) return single;
+    }
     if (mixed.selected.length) return null;
     entities.observe(session.state, buildingId);
     if (!entities.selected.some((s) => s.id === buildingId)) return null;

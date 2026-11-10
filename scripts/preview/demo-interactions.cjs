@@ -40,7 +40,7 @@ module.exports = async function profiles(page, evidence, name, touch) {
   };
   const save = async () => {
     await traceSavePanel('before opening saves');
-    await button('存档');
+    await button('存档', { exact: true });
     await button('立即保存');
     await traceSavePanel('after explicit save');
     await button('返回游戏');
@@ -134,7 +134,7 @@ module.exports = async function profiles(page, evidence, name, touch) {
     'demo changes survive profile switch',
   );
   await townActions();
-  await button('存档');
+  await button('存档', { exact: true });
   await button('重置演示岛…');
   await button('确认');
   await until(

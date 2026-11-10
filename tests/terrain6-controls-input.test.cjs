@@ -79,6 +79,8 @@ function fixture() {
     dispose() {}
   };
   const { V6TerrainTool } = load('V6TerrainTool', {
+    '../domain/editable-world': { getEditableWorld: () => ({ size: 224 }) },
+    '../domain/guards': { integer: (n, max) => Number.isSafeInteger(n) && n >= 0 && n <= max },
     './ModelFactory': { ModelFactory: Factory },
     '../domain/v6-edit-level': { terrain6EditLevel: () => 2 },
     '../domain/v6-edit-plan': {
@@ -805,5 +807,22 @@ test('display-only trees and drops still block farm tools instead of disappearin
       () => true,
     );
     assert.equal(hit.buildingId, null, kind + ' must remain an opaque foreground blocker');
+  }
+});
+
+test('terrain tool ignores out-of-world coast hits without poisoning the drag', () => {
+  for (const x of [-1, 224, 0.5, NaN, Infinity]) {
+    const f = fixture();
+    f.tool.begin(9, 'dig', 'soil');
+    f.setHit({ x, z: 23, point: { x, y: 0, z: 23 } });
+    assert.doesNotThrow(() => f.tool.move(9, { x: 50, y: 50 }));
+    assert.equal(f.commands.length, 0);
+    f.setHit({ x: 17, z: 23, point: { x: 17.5, y: 2, z: 23.5 } });
+    f.tool.end(9, { x: 50, y: 50 });
+    assert.equal(
+      f.commands.length,
+      1,
+      'valid destination still works after invalid intermediate coast hit',
+    );
   }
 });

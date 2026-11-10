@@ -126,8 +126,15 @@ async function scene(page, request = {}) {
           !town.pickStack(ray)
         );
       };
-      const preview = (x, z, kind, material = 'soil') => {
-        const range = surface.range(x, z);
+      const advisory = (snapshot, command) => {
+        // Isolated receiver: preview remains pure; never assign to the live session.
+        const planning = Object.create(control.session);
+        planning.state = snapshot;
+        return planning.preview(command);
+      };
+      const preview = (x, z, kind, material = 'soil', snapshot = state) => {
+        const edited = snapshot.terrain6.cells.find((c) => c.x === x && c.z === z);
+        const range = edited ? [planes[edited.level], planes[edited.level]] : surface.range(x, z);
         const levels = planes.map((height, level) => ({ height, level }));
         const found =
           kind === 'dig'
@@ -140,15 +147,15 @@ async function scene(page, request = {}) {
           x,
           z,
           level: found.level,
-          expectedOperation: state.terrain6.nextOperation,
+          expectedOperation: snapshot.terrain6.nextOperation,
           ...(kind === 'fill'
             ? {
                 material,
-                source: { type: 'inventory', item: material, amount: state.inventory[material] },
+                source: { type: 'inventory', item: material, amount: snapshot.inventory[material] },
               }
             : {}),
         };
-        const result = control.session.preview(command);
+        const result = advisory(snapshot, command);
         if (!result.ok) return { allowed: false, reason: result.error };
         const drops = result.state.looseDrops.filter(
           (d) =>
@@ -166,7 +173,7 @@ async function scene(page, request = {}) {
             soil: drops.filter((d) => d.item === 'soil').reduce((n, d) => n + d.amount, 0),
             stone: drops.filter((d) => d.item === 'stone').reduce((n, d) => n + d.amount, 0),
           },
-          cost: state.inventory[material] - result.state.inventory[material],
+          cost: snapshot.inventory[material] - result.state.inventory[material],
         };
       };
       if (request.candidates) {
@@ -174,7 +181,7 @@ async function scene(page, request = {}) {
         const candidates = state.naturalResources
           .filter((r) => Math.hypot(r.x - 6, r.z - 6) <= 32)
           .sort((a, b) => Math.hypot(a.x - 6, a.z - 6) - Math.hypot(b.x - 6, b.z - 6))
-          .slice(0, 48);
+          .slice(0, 128);
         const allowed = [],
           rejected = [];
         for (const cell of candidates) {
@@ -185,7 +192,25 @@ async function scene(page, request = {}) {
           }
           const amount = result.yield.soil + result.yield.stone;
           if (amount <= 0 || amount > 4 || result.drops.length > 8) continue;
-          allowed.push({ x: cell.x, z: cell.z, yield: result.yield });
+          let simulated = state,
+            funded = false;
+          const gathered = { soil: 0, stone: 0 };
+          for (let attempt = 0; attempt < 3 && !funded; attempt++) {
+            const dig = preview(cell.x, cell.z, 'dig', 'soil', simulated);
+            if (!dig.allowed || dig.drops.length > 8) break;
+            simulated = dig.expected;
+            for (const drop of dig.drops) {
+              const pickup = advisory(simulated, { type: 'pickupDrop', dropId: drop.id });
+              if (!pickup.ok) break;
+              simulated = pickup.state;
+              gathered[drop.item] += drop.amount;
+            }
+            for (const material of ['soil', 'stone']) {
+              const fill = preview(cell.x, cell.z, 'fill', material, simulated);
+              if (fill.allowed && fill.cost > 0 && fill.cost <= gathered[material]) funded = true;
+            }
+          }
+          if (funded) allowed.push({ x: cell.x, z: cell.z, yield: result.yield });
           if (allowed.length === 8) break;
         }
         allowed.sort(

@@ -62,7 +62,15 @@ async function inspect(page) {
         ? storedProfile
         : 'demo';
       const saveKey = profileKeys[profile];
+      const boot = scene.getChildByName('Town')?.getComponent('TownBootstrap');
+      const bottom = boot?.controller?.hud.bottom;
       return {
+        panel: {
+          page: boot?.flow.page,
+          menuVisible: boot?.menu.root.activeInHierarchy,
+          contextVisible: bottom?.context.activeInHierarchy,
+          tab: boot?.controller?.ui.tab,
+        },
         labels,
         targets: scene
           .getComponentsInChildren(cc.UITransform)
@@ -189,13 +197,11 @@ function driver(page, touch) {
       () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
     );
   };
-  const button = async (text) => {
-    const state = await until(
-      page,
-      (state) => state.labels.some((label) => label.action && label.text.includes(text)),
-      text,
-    );
-    const targets = state.labels.filter((label) => label.action && label.text.includes(text));
+  const button = async (text, { exact = false } = {}) => {
+    const matches = (label) =>
+      label.action && (exact ? label.text === text : label.text.includes(text));
+    const state = await until(page, (state) => state.labels.some(matches), text);
+    const targets = state.labels.filter(matches);
     assert.equal(targets.length, 1, `Unique rendered button: ${text}`);
     await click(targets[0]);
   };
@@ -236,7 +242,17 @@ function driver(page, touch) {
   };
   const townActions = async () => {
     await named('Menu-settings');
-    await button('小镇事务');
+    await button('小镇事务', { exact: true });
+    await until(
+      page,
+      (view) =>
+        view.panel.page === 'game' &&
+        !view.panel.menuVisible &&
+        view.panel.contextVisible &&
+        view.panel.tab === 'tools' &&
+        view.labels.some((label) => label.action && label.text === '购买作物'),
+      'town actions rendered after settings closes',
+    );
   };
   return { click, button, pagedButton, named, townActions };
 }

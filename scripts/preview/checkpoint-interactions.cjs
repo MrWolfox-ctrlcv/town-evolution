@@ -31,7 +31,7 @@ module.exports = async (page, evidence, name, touch) => {
   };
   assert.equal((await inspect(page)).profile, 'demo');
   await townActions();
-  await button('存档');
+  await button('存档', { exact: true });
   await button('立即保存');
   await button('返回游戏');
   let state = await until(page, (s) => [10, 11].includes(s.save?.schemaVersion), 'saved demo');

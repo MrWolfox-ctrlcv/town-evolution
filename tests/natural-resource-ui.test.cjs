@@ -86,7 +86,7 @@ function fixture() {
     trees: [{ id: 't1', x: 5, z: 5 }],
     buildings: [{ id: 'b1', kind: 'warehouse', x: 7, z: 7 }],
     groundStacks: [],
-    fusion: { discoveries: {} },
+    fusion: { discoveries: {}, attachments: {} },
   };
   const session = {
     state,
