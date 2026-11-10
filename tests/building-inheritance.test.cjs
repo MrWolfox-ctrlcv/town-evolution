@@ -119,7 +119,8 @@ test('the established 53-part house keeps its original geometry, palette and nar
 
 test('shared wood material enables its texture before loading and has an actual brown fallback', () => {
   const source = fs.readFileSync('assets/scripts/presentation/BuildingTexture.ts', 'utf8');
-  assert.match(source, /readonly material = worldMaterial\(true, true\)/);
+  assert.match(source, /this\.material = worldMaterial\(true, true, scope\)/);
+  assert.ok(source.indexOf('this.material = worldMaterial(') < source.indexOf('const done'));
   const material = fs.readFileSync('assets/scripts/presentation/WorldMaterial.ts', 'utf8');
   assert.match(material, /USE_ALBEDO_MAP: textured/);
   assert.match(source, /fallback\.uploadData\(new Uint8Array\(\[183, 126, 67, 255\]\)\)/);
