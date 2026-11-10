@@ -167,7 +167,9 @@ test('Cocos controller advances view streaming every frame for v5, v6 and v7 and
   assert.match(ground, /if \(this\.v5Trees\) return this\.v5Trees\.pick\(ray\)/);
   const town = fs.readFileSync('assets/scripts/presentation/TownView.ts', 'utf8');
   assert.match(town, /if \(!this\.previous \|\| this\.previous\.terrainVersion < 5\) return/);
-  assert.match(town, /this\.resources\.frame\(treeBounds, treeLodSpan\) \|\| changed/);
+  assert.match(town, /townGroundFrame\(this\.previous, this\.island, this\.resources/);
+  const groundFrame = fs.readFileSync('assets/scripts/presentation/TownGroundFrame.ts', 'utf8');
+  assert.match(groundFrame, /resources\.frame\(treeBounds, treeLodSpan\) \|\| changed/);
 });
 test('camera visible bounds use the actual viewport and elevated tree envelope rather than a fixed chunk count', () => {
   const code = ts.transpileModule(

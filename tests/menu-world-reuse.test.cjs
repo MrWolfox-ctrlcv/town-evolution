@@ -96,3 +96,22 @@ test('overlay keeps the existing world but disables gameplay HUD; returning reus
   }
   assert.deepEqual(modes, [true, true, true, false]);
 });
+
+test('HUD visibility disables its actual canvas and camera together and restores both', () => {
+  const Canvas = class {};
+  const TownHUD = load('TownHUD', { cc: { Canvas } });
+  const cameraNode = { active: true };
+  const canvas = {
+    active: true,
+    getComponent: (type) => {
+      assert.equal(type, Canvas);
+      return { cameraComponent: { node: cameraNode } };
+    },
+  };
+  const hud = Object.assign(Object.create(TownHUD.prototype), { canvas });
+  for (const visible of [false, false, true]) {
+    hud.setVisible(visible);
+    assert.equal(canvas.active, visible);
+    assert.equal(cameraNode.active, visible);
+  }
+});

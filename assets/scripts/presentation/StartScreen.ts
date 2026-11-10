@@ -25,7 +25,6 @@ import { SafeControls } from './SafeControls';
 import { StartArtwork } from './StartArtwork';
 import { RecipeHandbook } from './RecipeHandbook';
 import { SettingsPanel } from './SettingsPanel';
-/** Native Cocos menus over an isolated, read-only rendering of the playable demo template. */
 export class StartScreen {
   readonly root: Node;
   private readonly canvas: Node;
@@ -175,8 +174,6 @@ export class StartScreen {
     this.menuHeight = height;
     const title = this.flow.page === 'title';
     const layout = startLayout(width, height, data.actions.length, title);
-    // A live session already owns its island. Settings/save overlays reuse that world;
-    // only sessionless menus need an independent read-only demo background.
     if (!this.flow.session) {
       this.artwork ??= new StartArtwork(this.root);
       this.artwork.layout(fullWidth, fullHeight);
@@ -274,7 +271,6 @@ export class StartScreen {
     if (this.flow.page === 'preparing') this.imageMenu.progress(this.flow.preparation.message);
     this.artwork?.tick(dt);
   }
-  /** Gameplay must not retain a second island, extra camera or crop updater. */
   hide(): void {
     this.cancelGestures();
     this.artwork?.dispose();

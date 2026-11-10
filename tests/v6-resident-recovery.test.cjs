@@ -358,3 +358,45 @@ test('streaming transports the actual ground viewport center without narrowing r
   streamTownFrame(5, map, { frame: (...args) => calls.push(args) });
   assert.equal(calls[1].length, 2, 'legacy streaming remains unchanged');
 });
+
+test('ground frame publishes support before object refresh and reports either source of picking invalidation', () => {
+  const { townGroundFrame } = presentation('TownGroundFrame');
+  const state = { lastSeenAt: Date.now() + 100000 };
+  for (const terrainChanged of [false, true]) {
+    for (const objectsChanged of [false, true]) {
+      const calls = [];
+      const island = {
+        naturalSurface: {},
+        dropSupport: {},
+        frame: (...args) => {
+          calls.push(['terrain', args]);
+          return terrainChanged;
+        },
+      };
+      const resources = {
+        sync: (...args) => calls.push(['sync', args]),
+        frame: (...args) => {
+          calls.push(['objects', args]);
+          return objectsChanged;
+        },
+      };
+      const terrain = [{ minX: 0, minZ: 0, maxX: 16, maxZ: 16 }, {}];
+      assert.equal(
+        townGroundFrame(state, island, resources, terrain, terrain[0], 16),
+        terrainChanged || objectsChanged,
+      );
+      assert.deepEqual(
+        calls.map((c) => c[0]),
+        terrainChanged ? ['terrain', 'sync', 'objects'] : ['terrain', 'objects'],
+      );
+      assert.deepEqual(calls[0][1], terrain);
+      if (terrainChanged)
+        assert.deepEqual(calls[1][1], [
+          state,
+          island.naturalSurface,
+          state.lastSeenAt,
+          island.dropSupport,
+        ]);
+    }
+  }
+});

@@ -4,6 +4,7 @@ import type { WorldBoxTest } from '../application/WorldVisibility';
 import type { WorldViewBounds } from '../application/TreeStreaming';
 import { buildingOutline } from './BuildingOutline';
 import { townChanges } from './TownChanges';
+import { townGroundFrame } from './TownGroundFrame';
 import { TownObjectPicking } from './TownObjectPicking';
 import { modelBounds } from './ObjectBounds';
 import type { ObjectTarget } from '../application/ObjectSelection';
@@ -154,23 +155,11 @@ export class TownView {
     priority?: { x: number; z: number },
   ): void {
     if (!this.previous || this.previous.terrainVersion < 5) return;
-    const changed = this.island.frame(
-      bounds,
-      {},
-      visible,
-      treeLodSpan,
-      maxError,
-      overviewError,
-      priority,
-    );
-    if (changed)
-      this.resources.sync(
-        this.previous,
-        this.island.naturalSurface,
-        Math.max(Date.now(), this.previous.lastSeenAt),
-        this.island.dropSupport,
-      );
-    if (this.resources.frame(treeBounds, treeLodSpan) || changed) this.picking?.clear();
+    const terrain = [bounds, {}, visible, treeLodSpan, maxError, overviewError, priority] as const;
+    if (
+      townGroundFrame(this.previous, this.island, this.resources, terrain, treeBounds, treeLodSpan)
+    )
+      this.picking?.clear();
   }
   isGroundReady(x: number, z: number): boolean {
     return this.island.isGroundReady(x, z);
