@@ -19,7 +19,7 @@ test('townActions waits for visible context, not only the flow page or stale set
       const ready = stage === 2 && ++pendingReads > 1;
       return {
         targets: [{ name: 'Menu-settings', x: 10, y: 10 }],
-        labels: [{ text: ready ? '购买作物' : '小镇事务', action: true, x: 20, y: 20 }],
+        labels: [{ text: ready ? '存档' : '小镇事务', action: true, x: 20, y: 20 }],
         panel: {
           page: stage === 2 ? 'game' : 'settings',
           menuVisible: !ready,

@@ -155,6 +155,26 @@ module.exports = async function titleInteractions(page, evidence, name, touch) {
   for (let repeat = 0; repeat < 2; repeat++) {
     await button(repeat ? '继续游戏' : '开始游戏');
     await until(page, (state) => state.profile === 'normal' && state.save !== null, 'normal game');
+    // Profile persistence precedes the scheduled Cocos render and deferred node destruction.
+    // Wait for the actual scene transition, then keep the ownership assertions below.
+    await page.waitForFunction(
+      async () => {
+        const cc = await System.import('cc');
+        const scene = cc.director.getScene();
+        const boot = scene.getChildByName('Town').getComponent('TownBootstrap');
+        const nodes = (node) => [node, ...node.children.flatMap(nodes)];
+        const active = nodes(scene).filter((node) => node.activeInHierarchy);
+        return (
+          boot.flow.page === 'game' &&
+          !boot.menu.root.activeInHierarchy &&
+          boot.menu.artwork === null &&
+          !active.some((node) => node.name === 'TitleDemoIsland') &&
+          active.filter((node) => node.name === 'TownSession').length === 1
+        );
+      },
+      undefined,
+      { timeout: 10000 },
+    );
     const playing = await titleState(page);
     assert.equal(playing.titleWorlds, 0);
     assert.equal(playing.gameWorlds, 1);

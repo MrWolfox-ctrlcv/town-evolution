@@ -250,7 +250,7 @@ function driver(page, touch) {
         !view.panel.menuVisible &&
         view.panel.contextVisible &&
         view.panel.tab === 'tools' &&
-        view.labels.some((label) => label.action && label.text === '购买作物'),
+        view.labels.some((label) => label.action && label.text === '存档'),
       'town actions rendered after settings closes',
     );
   };

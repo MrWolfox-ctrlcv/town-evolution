@@ -1,6 +1,7 @@
 /** Real pointer regression against an unmodified Cocos demo; inspection is read-only. */
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs');
 const { inspect, until, ready, worldPoint, driver } = require('./ui-driver.cjs');
 const { drag, pinch } = require('./pointer-input.cjs');
 const { ACTIVE_RECIPE_DEFINITIONS } = require('../../.domain-build/domain/recipes.js');
@@ -12,10 +13,22 @@ const ui = require('./checkpoint-ui.cjs');
 
 module.exports = async (page, evidence, name, touch) => {
   const { click, button, townActions } = driver(page, touch);
+  const started = Date.now(),
+    phases = [];
+  const phase = (step) => {
+    phases.push({ step, elapsedMs: Date.now() - started });
+    fs.writeFileSync(
+      path.join(evidence, `${name}-checkpoint-phases.json`),
+      JSON.stringify(phases, null, 2),
+    );
+  };
+  phase('start');
   const nodeClick = async (nodeName) => {
+    phase(`before click ${nodeName}`);
     const node = (await ui(page)).nodes[nodeName];
     assert.ok(node, `Visible ${nodeName}`);
     await click(node);
+    phase(`after click ${nodeName}`);
   };
   const showTool = async (toolName, pager) => {
     for (let i = 0; i < 8; i++) {
@@ -25,9 +38,11 @@ module.exports = async (page, evidence, name, touch) => {
     assert.fail(`Could not page to ${toolName}`);
   };
   const dragTool = async (toolName, target) => {
+    phase(`before drag ${toolName}`);
     await showTool(toolName, 'ToolsLeftNext');
     const from = (await inspect(page)).tools.find((tool) => tool.name === toolName);
     await drag(page, from, target, touch);
+    phase(`after drag ${toolName}`);
   };
   assert.equal((await inspect(page)).profile, 'demo');
   await townActions();
@@ -61,7 +76,9 @@ module.exports = async (page, evidence, name, touch) => {
   );
   assert.ok(state.save.fusion.discoveries['expand-warehouse']);
   assert.equal(state.save.fusion.attachments[warehouseId].wood, 1);
+  phase('before reload');
   await page.reload();
+  phase('after reload');
   await ready(page);
   await button('游览演示岛');
   state = await until(
@@ -103,6 +120,7 @@ module.exports = async (page, evidence, name, touch) => {
     'hammer construction discovery',
   );
 
+  phase('construction discovery confirmed');
   await nodeClick('RecipeBookOpen');
   state = await inspect(page);
   assert.ok(state.labels.some((v) => v.text.includes(`3 / ${recipeCount}`)));
@@ -279,6 +297,7 @@ module.exports = async (page, evidence, name, touch) => {
   await nodeClick('RecipeCategory-gather-wood');
   await nodeClick('RecipeBookClose');
   for (let i = 0; i < 3; i++) {
+    phase('construction discovery confirmed');
     await nodeClick('RecipeBookOpen');
     await nodeClick('RecipeDirectoryClose');
   }
