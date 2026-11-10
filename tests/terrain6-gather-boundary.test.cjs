@@ -193,7 +193,20 @@ test('v6 gathering retains object and coastal protection with atomic failure', (
     (s) => {
       const dug = g.dispatch(s, dig(s, r), 1001);
       assert.equal(dug.ok, true, dug.error);
-      s.looseDrops = dug.state.looseDrops;
+      // Production excavation now prefers nearby ground outside its pit. This
+      // fixture specifically protects a drop occupying the resource being dug,
+      // independent of the production spill placement policy.
+      assert.ok(dug.state.looseDrops.length > 0);
+      s.looseDrops = dug.state.looseDrops.map((drop) => ({
+        ...drop,
+        x6: r.x * 6 + 3,
+        z6: r.z * 6 + 3,
+      }));
+      assert.ok(
+        s.looseDrops.every(
+          (drop) => Math.floor(drop.x6 / 6) === r.x && Math.floor(drop.z6 / 6) === r.z,
+        ),
+      );
     },
   ];
   for (const block of cases) {
